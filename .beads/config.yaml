@@ -6,7 +6,7 @@
 # Issue prefix for this repository (used by bd init)
 # If not set, bd init will auto-detect from directory name
 # Example: issue-prefix: "myproject" creates issues like "myproject-1", "myproject-2", etc.
-issue-prefix: "rd"
+issue_prefix: "rd"
 sync-branch: "beads-sync"
 # Use no-db mode: load from JSONL, no SQLite, write back after each command
 # When true, bd will use .beads/issues.jsonl as the source of truth
@@ -19,7 +19,6 @@ sync-branch: "beads-sync"
 # Disable auto-flush of database to JSONL after mutations
 # no-auto-flush: false
 
-# sync-bra
 # Disable auto-import from JSONL when it's newer than database
 # no-auto-import: false
 
