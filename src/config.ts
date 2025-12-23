@@ -54,6 +54,7 @@ function loadConfigFile(): StoredConfig {
 function saveConfigFile(config: StoredConfig): void {
   ensureConfigDir();
   const content = JSON.stringify(config, null, 2);
+  // mode option only applies to new files; chmodSync ensures existing files also get correct perms
   writeFileSync(CONFIG_FILE, content, { mode: 0o600 });
   chmodSync(CONFIG_FILE, 0o600);
 }

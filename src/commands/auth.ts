@@ -12,7 +12,8 @@ import {
 import { getClient, resetClient } from "../client.js";
 
 /**
- * Prompt for input (hides from shell history).
+ * Prompt for input. Using readline avoids token appearing in shell history
+ * (unlike passing via CLI args). Note: input is visible while typing.
  */
 async function prompt(message: string): Promise<string> {
   const rl = createInterface({
