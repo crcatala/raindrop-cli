@@ -1,4 +1,5 @@
 import { program } from "commander";
+import { createAuthCommand } from "./commands/auth.js";
 
 program
   .name("rdcli")
@@ -8,8 +9,7 @@ program
   .option("-q, --quiet", "minimal output (just IDs)")
   .option("-v, --verbose", "verbose output with debug info");
 
-// Commands will be registered here as they are implemented
-// import { registerRaindropCommands } from "./commands/raindrops/index.js";
-// registerRaindropCommands(program);
+// Register commands
+program.addCommand(createAuthCommand());
 
 program.parse();
