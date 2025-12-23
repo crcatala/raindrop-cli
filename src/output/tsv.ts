@@ -1,22 +1,7 @@
 import type { ColumnConfig } from "./index.js";
+import { getNestedValue } from "./utils.js";
 
-function getNestedValue(obj: unknown, path: string): unknown {
-  const keys = path.split(".");
-  let current: unknown = obj;
-  for (const key of keys) {
-    if (current === null || current === undefined) {
-      return undefined;
-    }
-    if (typeof current === "object" && key in current) {
-      current = (current as Record<string, unknown>)[key];
-    } else {
-      return undefined;
-    }
-  }
-  return current;
-}
-
-function formatValue(value: unknown): string {
+function formatTsvValue(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
@@ -39,7 +24,7 @@ export function formatTsv<T>(data: T, columns: ColumnConfig[]): string {
 
   // Data rows
   for (const item of items) {
-    const row = columns.map((col) => formatValue(getNestedValue(item, col.key)));
+    const row = columns.map((col) => formatTsvValue(getNestedValue(item, col.key)));
     lines.push(row.join("\t"));
   }
 

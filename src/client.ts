@@ -1,5 +1,6 @@
 import { client, generated } from "@lasuillard/raindrop-client";
 import { getConfig } from "./config.js";
+import { ConfigError } from "./utils/errors.js";
 
 const { Raindrop } = client;
 const { Configuration } = generated;
@@ -12,7 +13,7 @@ export function getClient(): RaindropClient {
   if (!instance) {
     const config = getConfig();
     if (!config.token) {
-      throw new Error(
+      throw new ConfigError(
         "RAINDROP_TOKEN not set. Get your token from https://app.raindrop.io/settings/integrations"
       );
     }
