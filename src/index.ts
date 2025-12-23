@@ -12,4 +12,9 @@ program
 // Register commands
 program.addCommand(createAuthCommand());
 
+// Show help and exit cleanly when no command provided
+program.action(() => {
+  program.help();
+});
+
 program.parse();

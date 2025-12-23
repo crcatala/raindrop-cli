@@ -62,7 +62,11 @@ async function validateToken(token: string): Promise<{ valid: boolean; user?: { 
 }
 
 export function createAuthCommand(): Command {
-  const auth = new Command("auth").description("Manage authentication");
+  const auth = new Command("auth")
+    .description("Manage authentication")
+    .action(function (this: Command) {
+      this.help();
+    });
 
   // set-token command
   auth
