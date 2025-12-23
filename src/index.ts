@@ -1,4 +1,4 @@
-import { program } from "commander";
+import { program, CommanderError } from "commander";
 import { createAuthCommand } from "./commands/auth.js";
 
 program
@@ -7,14 +7,33 @@ program
   .version("0.1.0")
   .option("-f, --format <format>", "output format (json, table, tsv)", "json")
   .option("-q, --quiet", "minimal output (just IDs)")
-  .option("-v, --verbose", "verbose output with debug info");
+  .option("-v, --verbose", "verbose output with debug info")
+  .exitOverride();
 
 // Register commands
 program.addCommand(createAuthCommand());
 
-// Show help and exit cleanly when no command provided
-program.action(() => {
-  program.help();
-});
-
-program.parse();
+try {
+  program.parse();
+  // If we get here with no subcommand, show help
+  if (process.argv.length <= 2) {
+    program.help();
+  }
+} catch (err) {
+  if (err instanceof CommanderError) {
+    // Help/version display should exit cleanly
+    if (
+      err.code === "commander.help" ||
+      err.code === "commander.helpDisplayed" ||
+      err.code === "commander.version"
+    ) {
+      process.exit(0);
+    }
+    // Unknown command should error
+    if (err.code === "commander.unknownCommand") {
+      console.error(err.message);
+      process.exit(1);
+    }
+  }
+  throw err;
+}
