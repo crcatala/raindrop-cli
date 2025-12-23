@@ -1,0 +1,57 @@
+{
+  "name": "raindrop-cli",
+  "version": "0.1.0",
+  "description": "A TypeScript CLI for Raindrop.io built for AI agent integration and personal productivity workflows",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "rdcli": "dist/index.js"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node --format esm && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/temp && mv dist/temp dist/index.js && bun run build:dts",
+    "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
+    "dev": "bun --watch src/index.ts",
+    "test": "bun test",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "raindrop",
+    "raindrop.io",
+    "cli",
+    "bookmarks",
+    "ai-agent"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crcatala/raindrop-cli-spike.git"
+  },
+  "bugs": {
+    "url": "https://github.com/crcatala/raindrop-cli-spike/issues"
+  },
+  "homepage": "https://github.com/crcatala/raindrop-cli-spike#readme",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@lasuillard/raindrop-client": "^0.7.3",
+    "cli-table3": "^0.6.5",
+    "commander": "^14.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/bun": "latest",
+    "@types/node": "^22",
+    "eslint": "^9.39.2",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.1"
+  }
+}
