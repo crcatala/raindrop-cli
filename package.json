@@ -12,7 +12,7 @@
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --format esm && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/temp && mv dist/temp dist/index.js && bun run build:dts",
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
-    "dev": "bun --watch src/index.ts",
+    "dev": "bun src/index.ts",
     "test": "bun test",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
