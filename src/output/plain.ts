@@ -33,9 +33,14 @@ const FIELD_ICONS: Record<string, string> = {
 const BLOCK_FIELDS = new Set(["excerpt", "note", "notes", "description", "content", "body"]);
 
 /**
- * Default width for word wrapping block content.
+ * Default width for word wrapping block content (indented fields).
  */
 const WRAP_WIDTH = 72;
+
+/**
+ * Width for word wrapping prominent fields (title) - wider since no indent.
+ */
+const PROMINENT_WRAP_WIDTH = 80;
 
 /**
  * Indent size for block content.
@@ -176,13 +181,15 @@ export function formatPlain<T>(data: T, columns: ColumnConfig[]): string {
     for (const col of prominentCols) {
       const rawValue = formatPlainValue(getNestedValue(item, col.key));
       if (rawValue !== null) {
-        // Title gets bold, URL gets cyan
+        // Title gets bold + word-wrapped, URL gets cyan (no wrap - URLs shouldn't break)
         const isUrl =
           col.key.toLowerCase().includes("url") || col.key.toLowerCase().includes("link");
         if (isUrl) {
           outputLines.push(c.cyan(rawValue));
         } else {
-          outputLines.push(c.bold(rawValue));
+          // Word-wrap title at wider width since it's not indented
+          const wrapped = wordWrap(rawValue, PROMINENT_WRAP_WIDTH);
+          outputLines.push(c.bold(wrapped));
         }
       }
     }
