@@ -2,10 +2,11 @@
 # check.sh - Run individual checks with minimal output
 #
 # Usage:
-#   ./scripts/check.sh test       # Run tests silently
-#   ./scripts/check.sh lint       # Run linting silently
-#   ./scripts/check.sh typecheck  # Run typecheck silently
-#   ./scripts/check.sh format     # Run format check silently
+#   ./scripts/check.sh test        # Run tests silently
+#   ./scripts/check.sh lint        # Run linting silently
+#   ./scripts/check.sh typecheck   # Run typecheck silently
+#   ./scripts/check.sh format      # Run format check silently
+#   ./scripts/check.sh format-fix  # Run format fix silently
 #
 #   VERBOSE=1 ./scripts/check.sh test  # Full output
 
@@ -25,8 +26,11 @@ case "$1" in
   format)
     run_silent "Format" "prettier --check \"src/**/*.ts\"" "bun run format:check:verbose"
     ;;
+  format-fix)
+    run_silent "Format (fix)" "prettier --write \"src/**/*.ts\"" "bun run format:verbose"
+    ;;
   *)
-    echo "Usage: $0 {test|lint|typecheck|format}"
+    echo "Usage: $0 {test|lint|typecheck|format|format-fix}"
     echo ""
     echo "Runs the specified check with minimal output."
     echo "Set VERBOSE=1 for full output."
