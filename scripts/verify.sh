@@ -33,19 +33,19 @@ tmp_format=$(mktemp)
 pid_test=$!
 
 (
-  run_silent "Lint" "bun run lint" "bun run lint:verbose"
+  run_silent "Lint" "oxlint --type-aware src/" "bun run lint:verbose"
   echo $? > "$tmp_lint"
 ) &
 pid_lint=$!
 
 (
-  run_silent "Typecheck" "bun run typecheck" "bun run typecheck:verbose"
+  run_silent "Typecheck" "tsc --noEmit" "bun run typecheck:verbose"
   echo $? > "$tmp_typecheck"
 ) &
 pid_typecheck=$!
 
 (
-  run_silent "Format" "bun run format:check" "bun run format:verbose"
+  run_silent "Format" "prettier --check \"src/**/*.ts\"" "bun run format:check:verbose"
   echo $? > "$tmp_format"
 ) &
 pid_format=$!
@@ -66,7 +66,7 @@ rm -f "$tmp_test" "$tmp_lint" "$tmp_typecheck" "$tmp_format"
 [ "$exit_test" != "0" ] && FAILED_CHECKS+=("Tests") && FAILED_HINTS+=("bun run test:verbose")
 [ "$exit_lint" != "0" ] && FAILED_CHECKS+=("Lint") && FAILED_HINTS+=("bun run lint:verbose")
 [ "$exit_typecheck" != "0" ] && FAILED_CHECKS+=("Typecheck") && FAILED_HINTS+=("bun run typecheck:verbose")
-[ "$exit_format" != "0" ] && FAILED_CHECKS+=("Format") && FAILED_HINTS+=("bun run format:verbose")
+[ "$exit_format" != "0" ] && FAILED_CHECKS+=("Format") && FAILED_HINTS+=("bun run format:check:verbose")
 
 # Print summary
 echo ""
