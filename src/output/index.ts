@@ -3,6 +3,7 @@ import { formatJson } from "./json.js";
 import { formatTable } from "./table.js";
 import { formatTsv } from "./tsv.js";
 import { getDefaultFormat } from "../utils/tty.js";
+import { outputData } from "../utils/output-streams.js";
 
 export interface OutputOptions {
   format?: OutputFormat;
@@ -22,16 +23,16 @@ export function output<T>(data: T, columns: ColumnConfig[], options: OutputOptio
     if (Array.isArray(data)) {
       for (const item of data) {
         if (typeof item === "object" && item !== null && "_id" in item) {
-          console.log((item as { _id: unknown })._id);
+          outputData(String((item as { _id: unknown })._id));
         } else if (typeof item === "object" && item !== null && "id" in item) {
-          console.log((item as { id: unknown }).id);
+          outputData(String((item as { id: unknown }).id));
         }
       }
     } else if (typeof data === "object" && data !== null) {
       if ("_id" in data) {
-        console.log((data as { _id: unknown })._id);
+        outputData(String((data as { _id: unknown })._id));
       } else if ("id" in data) {
-        console.log((data as { id: unknown }).id);
+        outputData(String((data as { id: unknown }).id));
       }
     }
     return;
@@ -41,13 +42,13 @@ export function output<T>(data: T, columns: ColumnConfig[], options: OutputOptio
 
   switch (format) {
     case "json":
-      console.log(formatJson(data));
+      outputData(formatJson(data));
       break;
     case "table":
-      console.log(formatTable(data, columns));
+      outputData(formatTable(data, columns));
       break;
     case "tsv":
-      console.log(formatTsv(data, columns));
+      outputData(formatTsv(data, columns));
       break;
   }
 }

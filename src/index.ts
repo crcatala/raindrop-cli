@@ -1,5 +1,6 @@
 import { program, CommanderError } from "commander";
 import { createAuthCommand } from "./commands/auth.js";
+import { outputError } from "./utils/output-streams.js";
 
 program
   .name("rdcli")
@@ -31,7 +32,7 @@ try {
     }
     // Unknown command should error
     if (err.code === "commander.unknownCommand") {
-      console.error(err.message);
+      outputError(err.message);
       process.exit(1);
     }
   }

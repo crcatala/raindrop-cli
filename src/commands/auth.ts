@@ -10,6 +10,7 @@ import {
   resetConfig,
 } from "../config.js";
 import { getClient, resetClient } from "../client.js";
+import { outputData, outputMessage, outputError } from "../utils/output-streams.js";
 
 /**
  * Prompt for input. Using readline avoids token appearing in shell history
@@ -75,38 +76,38 @@ export function createAuthCommand(): Command {
     .option("--validate", "Validate token against API before saving", true)
     .option("--no-validate", "Skip token validation")
     .action(async (options) => {
-      console.log("Get your token from: https://app.raindrop.io/settings/integrations");
-      console.log("");
+      outputMessage("Get your token from: https://app.raindrop.io/settings/integrations");
+      outputMessage("");
 
       const token = await prompt("Paste your token: ");
 
       if (!token) {
-        console.error("Error: No token provided");
+        outputError("Error: No token provided");
         process.exit(1);
       }
 
       if (options.validate) {
-        console.log("Validating token...");
+        outputMessage("Validating token...");
         const result = await validateToken(token);
 
         if (!result.valid) {
-          console.error("Error: Invalid token. Please check your token and try again.");
+          outputError("Error: Invalid token. Please check your token and try again.");
           process.exit(1);
         }
 
         setStoredToken(token);
         resetConfig();
-        console.log(`Token saved successfully!`);
+        outputMessage(`Token saved successfully!`);
         if (result.user) {
-          console.log(`Authenticated as: ${result.user.name} (${result.user.email})`);
+          outputMessage(`Authenticated as: ${result.user.name} (${result.user.email})`);
         }
       } else {
         setStoredToken(token);
         resetConfig();
-        console.log("Token saved (not validated).");
+        outputMessage("Token saved (not validated).");
       }
 
-      console.log(`Config file: ${getConfigFilePath()}`);
+      outputMessage(`Config file: ${getConfigFilePath()}`);
     });
 
   // status command
@@ -120,15 +121,15 @@ export function createAuthCommand(): Command {
 
       if (!config.token) {
         if (options.json) {
-          console.log(JSON.stringify({ authenticated: false }, null, 2));
+          outputData(JSON.stringify({ authenticated: false }, null, 2));
         } else {
-          console.log("Not authenticated.");
-          console.log("");
-          console.log("To authenticate, either:");
-          console.log("  1. Run: rdcli auth set-token");
-          console.log("  2. Set RAINDROP_TOKEN environment variable");
-          console.log("");
-          console.log("Get your token from: https://app.raindrop.io/settings/integrations");
+          outputMessage("Not authenticated.");
+          outputMessage("");
+          outputMessage("To authenticate, either:");
+          outputMessage("  1. Run: rdcli auth set-token");
+          outputMessage("  2. Set RAINDROP_TOKEN environment variable");
+          outputMessage("");
+          outputMessage("Get your token from: https://app.raindrop.io/settings/integrations");
         }
         return;
       }
@@ -140,7 +141,7 @@ export function createAuthCommand(): Command {
         const user = response.data.user;
 
         if (options.json) {
-          console.log(
+          outputData(
             JSON.stringify(
               {
                 authenticated: true,
@@ -157,17 +158,19 @@ export function createAuthCommand(): Command {
             )
           );
         } else {
-          console.log("Authenticated ✓");
-          console.log("");
+          outputMessage("Authenticated ✓");
+          outputMessage("");
           if (user) {
-            console.log(`  User:   ${user.fullName ?? "Unknown"}`);
-            console.log(`  Email:  ${user.email ?? "Unknown"}`);
+            outputMessage(`  User:   ${user.fullName ?? "Unknown"}`);
+            outputMessage(`  Email:  ${user.email ?? "Unknown"}`);
           }
-          console.log(`  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`);
+          outputMessage(`  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`);
         }
       } catch {
+        // JSON output goes to stdout even on error (for scripts to parse).
+        // Exit code 1 signals failure per clig.dev guidelines.
         if (options.json) {
-          console.log(
+          outputData(
             JSON.stringify(
               {
                 authenticated: false,
@@ -179,10 +182,10 @@ export function createAuthCommand(): Command {
             )
           );
         } else {
-          console.log("Token configured but invalid or expired.");
-          console.log(`  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`);
-          console.log("");
-          console.log("Run 'rdcli auth set-token' to set a new token.");
+          outputMessage("Token configured but invalid or expired.");
+          outputMessage(`  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`);
+          outputMessage("");
+          outputMessage("Run 'rdcli auth set-token' to set a new token.");
         }
         process.exit(1);
       }
@@ -198,14 +201,14 @@ export function createAuthCommand(): Command {
       resetConfig();
 
       if (hadToken) {
-        console.log("Token cleared from config file.");
+        outputMessage("Token cleared from config file.");
       } else {
-        console.log("No token was stored in config file.");
+        outputMessage("No token was stored in config file.");
       }
 
       if (process.env["RAINDROP_TOKEN"]) {
-        console.log("");
-        console.log("Note: RAINDROP_TOKEN environment variable is still set.");
+        outputMessage("");
+        outputMessage("Note: RAINDROP_TOKEN environment variable is still set.");
       }
     });
 

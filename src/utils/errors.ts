@@ -1,3 +1,5 @@
+import { outputError } from "./output-streams.js";
+
 export class RaindropCliError extends Error {
   constructor(
     message: string,
@@ -52,24 +54,24 @@ export class RateLimitError extends RaindropCliError {
 export function handleError(error: unknown, debug = false): never {
   if (error instanceof RaindropCliError) {
     if (process.env["RDCLI_FORMAT"] === "json") {
-      console.error(JSON.stringify(error.toJSON(), null, 2));
+      outputError(JSON.stringify(error.toJSON(), null, 2));
     } else {
-      console.error(`Error: ${error.message}`);
+      outputError(`Error: ${error.message}`);
       if (debug && error.details) {
-        console.error("Details:", JSON.stringify(error.details, null, 2));
+        outputError("Details: " + JSON.stringify(error.details, null, 2));
       }
     }
     process.exit(1);
   }
 
   if (error instanceof Error) {
-    console.error(`Error: ${error.message}`);
-    if (debug) {
-      console.error(error.stack);
+    outputError(`Error: ${error.message}`);
+    if (debug && error.stack) {
+      outputError(error.stack);
     }
     process.exit(1);
   }
 
-  console.error("An unexpected error occurred");
+  outputError("An unexpected error occurred");
   process.exit(1);
 }
