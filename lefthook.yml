@@ -5,5 +5,4 @@ pre-push:
   parallel: true
   commands:
     verify:
-      run: bun run verify
-      no_tty: true
+      run: SIMPLE_OUTPUT=1 bun run verify

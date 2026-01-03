@@ -13,7 +13,8 @@
 import task from "tasuku";
 
 const VERBOSE = process.env.VERBOSE === "1";
-const IS_TTY = process.stdout.isTTY ?? false;
+const SIMPLE_OUTPUT = process.env.SIMPLE_OUTPUT === "1" || process.env.CI === "1";
+const IS_TTY = (process.stdout.isTTY ?? false) && !SIMPLE_OUTPUT;
 
 // Colors
 const GREEN = "\x1b[32m";
