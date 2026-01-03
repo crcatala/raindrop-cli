@@ -6,9 +6,9 @@ import { verbose, verboseTime, debug } from "../utils/debug.js";
 import type { GlobalOptions } from "../types/index.js";
 
 /**
- * Column configuration for raindrop list output.
+ * Column configuration for bookmark list output.
  */
-const RAINDROP_COLUMNS: ColumnConfig[] = [
+const BOOKMARK_COLUMNS: ColumnConfig[] = [
   { key: "_id", header: "ID", width: 12 },
   { key: "title", header: "Title", width: 40 },
   { key: "link", header: "URL", width: 50 },
@@ -17,7 +17,7 @@ const RAINDROP_COLUMNS: ColumnConfig[] = [
 ];
 
 /**
- * Valid sort options for raindrops.
+ * Valid sort options for bookmarks.
  * Prefix with '-' for descending order.
  */
 const VALID_SORT_OPTIONS = [
@@ -71,7 +71,7 @@ function parseCollectionId(value: string | undefined): number {
  * Format a raindrop item for output.
  * Transforms API response to a cleaner format for display.
  */
-function formatRaindropItem(item: {
+function formatBookmarkItem(item: {
   _id: number;
   title: string;
   link: string;
@@ -101,26 +101,26 @@ function formatRaindropItem(item: {
   };
 }
 
-export function createRaindropsCommand(): Command {
-  const raindrops = new Command("raindrops")
-    .description("Manage raindrops (bookmarks)")
-    .action(function (this: Command) {
-      this.help();
-    });
+export function createBookmarksCommand(): Command {
+  const bookmarks = new Command("bookmarks").description("Manage bookmarks").action(function (
+    this: Command
+  ) {
+    this.help();
+  });
 
   // list command
-  raindrops
+  bookmarks
     .command("list")
-    .description("List raindrops from a collection")
+    .description("List bookmarks from a collection")
     .argument("[collection-id]", "Collection ID or name (all, unsorted, trash). Default: all")
-    .option("-l, --limit <number>", "Maximum number of raindrops to return", "25")
+    .option("-l, --limit <number>", "Maximum number of bookmarks to return", "25")
     .option("-p, --page <number>", "Page number (0-indexed)", "0")
     .option(
       "-s, --sort <field>",
       "Sort field: created, title, domain, lastUpdate, sort. Prefix with - for descending",
       "-created"
     )
-    .option("--search <query>", "Search query to filter raindrops")
+    .option("--search <query>", "Search query to filter bookmarks")
     .action(async function (this: Command, collectionIdArg: string | undefined, options) {
       try {
         // Get global options from parent command
@@ -150,7 +150,7 @@ export function createRaindropsCommand(): Command {
           );
         }
 
-        debug("List raindrops options", {
+        debug("List bookmarks options", {
           collectionId,
           limit,
           page,
@@ -158,10 +158,10 @@ export function createRaindropsCommand(): Command {
           search,
         });
 
-        verbose(`Fetching raindrops from collection ${collectionId}`);
+        verbose(`Fetching bookmarks from collection ${collectionId}`);
 
         const client = getClient();
-        const response = await verboseTime("Fetching raindrops", () =>
+        const response = await verboseTime("Fetching bookmarks", () =>
           client.raindrop.getRaindrops(collectionId, sort, limit, page, search)
         );
 
@@ -173,13 +173,13 @@ export function createRaindropsCommand(): Command {
           collectionId: response.data.collectionId,
         });
 
-        verbose(`Found ${count} total raindrops, showing ${items.length}`);
+        verbose(`Found ${count} total bookmarks, showing ${items.length}`);
 
         // Format items for output
-        const formattedItems = items.map(formatRaindropItem);
+        const formattedItems = items.map(formatBookmarkItem);
 
         // Output the results
-        output(formattedItems, RAINDROP_COLUMNS, {
+        output(formattedItems, BOOKMARK_COLUMNS, {
           format: globalOpts.format,
           quiet: globalOpts.quiet,
           verbose: globalOpts.verbose,
@@ -190,5 +190,5 @@ export function createRaindropsCommand(): Command {
       }
     });
 
-  return raindrops;
+  return bookmarks;
 }

@@ -2,22 +2,22 @@ import { describe, test, expect } from "bun:test";
 import { runCli, runCliExpectSuccess, parseJsonOutput } from "../test-utils/index.js";
 
 /**
- * Tests for the raindrops command.
+ * Tests for the bookmarks command.
  *
  * Integration tests that run the CLI as a subprocess.
  * Some tests require a valid RAINDROP_TOKEN environment variable.
  */
 
-describe("raindrops command", () => {
+describe("bookmarks command", () => {
   describe("help", () => {
-    test("raindrops --help shows command description", async () => {
-      const result = await runCliExpectSuccess(["raindrops", "--help"]);
-      expect(result.stdout).toContain("Manage raindrops");
+    test("bookmarks --help shows command description", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "--help"]);
+      expect(result.stdout).toContain("Manage bookmarks");
       expect(result.stdout).toContain("list");
     });
 
-    test("raindrops list --help shows all options", async () => {
-      const result = await runCliExpectSuccess(["raindrops", "list", "--help"]);
+    test("bookmarks list --help shows all options", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "list", "--help"]);
       expect(result.stdout).toContain("--limit");
       expect(result.stdout).toContain("--page");
       expect(result.stdout).toContain("--sort");
@@ -28,7 +28,7 @@ describe("raindrops command", () => {
 
   describe("list command - without auth", () => {
     test("fails gracefully without token", async () => {
-      const result = await runCli(["raindrops", "list"], {
+      const result = await runCli(["bookmarks", "list"], {
         env: { RAINDROP_TOKEN: "" },
       });
       expect(result.exitCode).toBe(1);
@@ -38,7 +38,7 @@ describe("raindrops command", () => {
 
   describe("list command - validation", () => {
     test("rejects invalid limit (too high)", async () => {
-      const result = await runCli(["raindrops", "list", "--limit", "100"], {
+      const result = await runCli(["bookmarks", "list", "--limit", "100"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
       expect(result.exitCode).toBe(1);
@@ -46,7 +46,7 @@ describe("raindrops command", () => {
     });
 
     test("rejects invalid limit (too low)", async () => {
-      const result = await runCli(["raindrops", "list", "--limit", "0"], {
+      const result = await runCli(["bookmarks", "list", "--limit", "0"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
       expect(result.exitCode).toBe(1);
@@ -54,7 +54,7 @@ describe("raindrops command", () => {
     });
 
     test("rejects invalid sort option", async () => {
-      const result = await runCli(["raindrops", "list", "--sort", "invalid"], {
+      const result = await runCli(["bookmarks", "list", "--sort", "invalid"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
       expect(result.exitCode).toBe(1);
@@ -62,7 +62,7 @@ describe("raindrops command", () => {
     });
 
     test("rejects invalid collection ID", async () => {
-      const result = await runCli(["raindrops", "list", "notanumber"], {
+      const result = await runCli(["bookmarks", "list", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
       expect(result.exitCode).toBe(1);
@@ -70,7 +70,7 @@ describe("raindrops command", () => {
     });
 
     test("rejects negative page number", async () => {
-      const result = await runCli(["raindrops", "list", "--page", "-1"], {
+      const result = await runCli(["bookmarks", "list", "--page", "-1"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
       expect(result.exitCode).toBe(1);
@@ -83,13 +83,13 @@ describe("raindrops command", () => {
  * Integration tests that require a valid RAINDROP_TOKEN.
  * These are skipped if no token is available.
  */
-describe("raindrops command - with auth", () => {
+describe("bookmarks command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
 
   const testWithAuth = hasToken ? test : test.skip;
 
-  testWithAuth("list returns raindrops as JSON", async () => {
-    const result = await runCliExpectSuccess(["raindrops", "list", "--limit", "2"]);
+  testWithAuth("list returns bookmarks as JSON", async () => {
+    const result = await runCliExpectSuccess(["bookmarks", "list", "--limit", "2"]);
     const data = parseJsonOutput<Array<{ _id: number; title: string; link: string }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -103,7 +103,7 @@ describe("raindrops command - with auth", () => {
 
   testWithAuth("list supports special collection names", async () => {
     // Test 'unsorted' collection
-    const result = await runCliExpectSuccess(["raindrops", "list", "unsorted", "--limit", "1"]);
+    const result = await runCliExpectSuccess(["bookmarks", "list", "unsorted", "--limit", "1"]);
     const data = parseJsonOutput<Array<{ _id: number; collectionId: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -116,7 +116,7 @@ describe("raindrops command - with auth", () => {
 
   testWithAuth("list supports numeric collection ID", async () => {
     // Test 'all' collection (ID 0)
-    const result = await runCliExpectSuccess(["raindrops", "list", "0", "--limit", "1"]);
+    const result = await runCliExpectSuccess(["bookmarks", "list", "0", "--limit", "1"]);
     const data = parseJsonOutput<Array<{ _id: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -124,7 +124,7 @@ describe("raindrops command - with auth", () => {
 
   testWithAuth("list supports search filter", async () => {
     const result = await runCliExpectSuccess([
-      "raindrops",
+      "bookmarks",
       "list",
       "--search",
       "test",
@@ -139,7 +139,7 @@ describe("raindrops command - with auth", () => {
 
   testWithAuth("list supports sort options", async () => {
     const result = await runCliExpectSuccess([
-      "raindrops",
+      "bookmarks",
       "list",
       "--sort",
       "title",
@@ -159,7 +159,7 @@ describe("raindrops command - with auth", () => {
 
   testWithAuth("list supports descending sort", async () => {
     const result = await runCliExpectSuccess([
-      "raindrops",
+      "bookmarks",
       "list",
       "--sort",
       "-created",
@@ -178,7 +178,7 @@ describe("raindrops command - with auth", () => {
   });
 
   testWithAuth("list quiet mode outputs only IDs", async () => {
-    const result = await runCliExpectSuccess(["raindrops", "list", "--limit", "3", "-q"]);
+    const result = await runCliExpectSuccess(["bookmarks", "list", "--limit", "3", "-q"]);
 
     // Each line should be just an ID (number)
     const lines = result.stdout.trim().split("\n");
@@ -189,14 +189,14 @@ describe("raindrops command - with auth", () => {
 
   testWithAuth("list supports pagination", async () => {
     // Get first page
-    const page0 = await runCliExpectSuccess(["raindrops", "list", "--limit", "2", "--page", "0"]);
+    const page0 = await runCliExpectSuccess(["bookmarks", "list", "--limit", "2", "--page", "0"]);
     const data0 = parseJsonOutput<Array<{ _id: number }>>(page0);
 
     // Get second page
-    const page1 = await runCliExpectSuccess(["raindrops", "list", "--limit", "2", "--page", "1"]);
+    const page1 = await runCliExpectSuccess(["bookmarks", "list", "--limit", "2", "--page", "1"]);
     const data1 = parseJsonOutput<Array<{ _id: number }>>(page1);
 
-    // Pages should have different items (if there are enough raindrops)
+    // Pages should have different items (if there are enough bookmarks)
     if (data0.length > 0 && data1.length > 0) {
       const first0 = data0[0]!;
       const first1 = data1[0]!;
@@ -205,7 +205,7 @@ describe("raindrops command - with auth", () => {
   });
 
   testWithAuth("list table format works", async () => {
-    const result = await runCli(["raindrops", "list", "--limit", "2", "--format", "table"]);
+    const result = await runCli(["bookmarks", "list", "--limit", "2", "--format", "table"]);
 
     expect(result.exitCode).toBe(0);
     // Table format should have headers
@@ -215,7 +215,7 @@ describe("raindrops command - with auth", () => {
   });
 
   testWithAuth("list tsv format works", async () => {
-    const result = await runCli(["raindrops", "list", "--limit", "2", "--format", "tsv"]);
+    const result = await runCli(["bookmarks", "list", "--limit", "2", "--format", "tsv"]);
 
     expect(result.exitCode).toBe(0);
     // TSV format should have tab-separated headers
