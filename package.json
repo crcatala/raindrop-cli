@@ -50,7 +50,8 @@
   "dependencies": {
     "@lasuillard/raindrop-client": "^0.7.3",
     "cli-table3": "^0.6.5",
-    "commander": "^14.0.2"
+    "commander": "^14.0.2",
+    "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@types/bun": "latest",
