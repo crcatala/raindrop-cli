@@ -13,6 +13,8 @@ const BOOKMARK_COLUMNS: ColumnConfig[] = [
   { key: "title", header: "Title", width: 40 },
   { key: "link", header: "URL", width: 50 },
   { key: "tags", header: "Tags", width: 20 },
+  { key: "excerpt", header: "Excerpt" },
+  { key: "note", header: "Note" },
   { key: "created", header: "Created", width: 12 },
 ];
 

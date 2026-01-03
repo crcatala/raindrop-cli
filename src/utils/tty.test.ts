@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
-import { shouldUseColor, setNoColorFlag } from "./tty.js";
+import { shouldUseColor, setNoColorFlag, getDefaultFormat } from "./tty.js";
 
 describe("shouldUseColor", () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -62,5 +62,35 @@ describe("shouldUseColor", () => {
     Object.defineProperty(process.stdout, "isTTY", { value: true, writable: true });
     setNoColorFlag(false);
     expect(shouldUseColor()).toBe(true);
+  });
+});
+
+describe("getDefaultFormat", () => {
+  let originalIsTTY: boolean | undefined;
+
+  beforeEach(() => {
+    originalIsTTY = process.stdout.isTTY;
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process.stdout, "isTTY", {
+      value: originalIsTTY,
+      writable: true,
+    });
+  });
+
+  test("returns 'plain' when stdout is a TTY", () => {
+    Object.defineProperty(process.stdout, "isTTY", { value: true, writable: true });
+    expect(getDefaultFormat()).toBe("plain");
+  });
+
+  test("returns 'json' when stdout is not a TTY (piped)", () => {
+    Object.defineProperty(process.stdout, "isTTY", { value: false, writable: true });
+    expect(getDefaultFormat()).toBe("json");
+  });
+
+  test("returns 'json' when stdout.isTTY is undefined", () => {
+    Object.defineProperty(process.stdout, "isTTY", { value: undefined, writable: true });
+    expect(getDefaultFormat()).toBe("json");
   });
 });

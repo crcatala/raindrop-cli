@@ -1,5 +1,6 @@
 import type { OutputFormat } from "../types/index.js";
 import { formatJson } from "./json.js";
+import { formatPlain } from "./plain.js";
 import { formatTable } from "./table.js";
 import { formatTsv } from "./tsv.js";
 import { getDefaultFormat } from "../utils/tty.js";
@@ -44,6 +45,9 @@ export function output<T>(data: T, columns: ColumnConfig[], options: OutputOptio
   switch (format) {
     case "json":
       outputData(formatJson(data));
+      break;
+    case "plain":
+      outputData(formatPlain(data, columns));
       break;
     case "table":
       outputData(formatTable(data, columns));

@@ -18,11 +18,11 @@ export function isStderrTTY(): boolean {
 
 /**
  * Get the default output format based on TTY detection.
- * - TTY (human): table format for readability
+ * - TTY (human): plain format for full content with labeled fields
  * - Non-TTY (piped/scripted): JSON for machine parsing
  */
 export function getDefaultFormat(): OutputFormat {
-  return isStdoutTTY() ? "table" : "json";
+  return isStdoutTTY() ? "plain" : "json";
 }
 
 // Track whether --no-color flag was passed

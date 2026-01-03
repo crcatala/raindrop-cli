@@ -221,4 +221,15 @@ describe("bookmarks command - with auth", () => {
     // TSV format should have tab-separated headers
     expect(result.stdout).toContain("ID\tTitle\tURL");
   });
+
+  testWithAuth("list plain format works", async () => {
+    const result = await runCli(["bookmarks", "list", "--limit", "2", "--format", "plain"]);
+
+    expect(result.exitCode).toBe(0);
+    // Plain format should have labeled fields and separators
+    expect(result.stdout).toContain("ID");
+    expect(result.stdout).toContain("Title");
+    expect(result.stdout).toContain("URL");
+    expect(result.stdout).toContain("---");
+  });
 });
