@@ -1,7 +1,7 @@
 export type OutputFormat = "json" | "table" | "tsv";
 
 export interface GlobalOptions {
-  format: OutputFormat;
+  format?: OutputFormat;
   quiet: boolean;
   verbose: boolean;
 }

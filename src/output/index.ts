@@ -2,9 +2,10 @@ import type { OutputFormat } from "../types/index.js";
 import { formatJson } from "./json.js";
 import { formatTable } from "./table.js";
 import { formatTsv } from "./tsv.js";
+import { getDefaultFormat } from "../utils/tty.js";
 
 export interface OutputOptions {
-  format: OutputFormat;
+  format?: OutputFormat;
   quiet: boolean;
   verbose: boolean;
 }
@@ -36,7 +37,9 @@ export function output<T>(data: T, columns: ColumnConfig[], options: OutputOptio
     return;
   }
 
-  switch (options.format) {
+  const format = options.format ?? getDefaultFormat();
+
+  switch (format) {
     case "json":
       console.log(formatJson(data));
       break;

@@ -5,7 +5,7 @@ program
   .name("rdcli")
   .description("CLI for Raindrop.io - AI agent friendly bookmark management")
   .version("0.1.0")
-  .option("-f, --format <format>", "output format (json, table, tsv)", "json")
+  .option("-f, --format <format>", "output format (json, table, tsv); defaults to table for terminal, json when piped")
   .option("-q, --quiet", "minimal output (just IDs)")
   .option("-v, --verbose", "verbose output with debug info")
   .exitOverride();
