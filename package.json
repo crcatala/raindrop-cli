@@ -14,11 +14,17 @@
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "dev": "bun src/index.ts",
     "test": "bun test",
+    "test:verbose": "bun test",
     "lint": "oxlint --type-aware src/",
     "lint:fix": "oxlint --type-aware --fix src/",
+    "lint:verbose": "oxlint --type-aware src/",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "typecheck": "tsc --noEmit"
+    "format:verbose": "prettier --check \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "typecheck:verbose": "tsc --noEmit",
+    "verify": "bash scripts/verify.sh",
+    "verify:verbose": "VERBOSE=1 bash scripts/verify.sh"
   },
   "keywords": [
     "raindrop",
