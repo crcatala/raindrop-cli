@@ -24,5 +24,6 @@ export function formatValue(value: unknown): string {
   if (typeof value === "object") {
     return JSON.stringify(value);
   }
-  return String(value);
+  // At this point value is a primitive (string, number, boolean, bigint, symbol)
+  return String(value as string | number | boolean | bigint | symbol);
 }

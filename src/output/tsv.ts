@@ -11,8 +11,9 @@ function formatTsvValue(value: unknown): string {
   if (typeof value === "object") {
     return JSON.stringify(value);
   }
-  // Escape tabs and newlines in string values
-  return String(value).replace(/\t/g, "\\t").replace(/\n/g, "\\n");
+  // At this point value is a primitive (string, number, boolean, bigint, symbol)
+  const str = String(value as string | number | boolean | bigint | symbol);
+  return str.replace(/\t/g, "\\t").replace(/\n/g, "\\n");
 }
 
 export function formatTsv<T>(data: T, columns: ColumnConfig[]): string {

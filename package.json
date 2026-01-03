@@ -14,8 +14,8 @@
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "dev": "bun src/index.ts",
     "test": "bun test",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
+    "lint": "oxlint --type-aware src/",
+    "lint:fix": "oxlint --type-aware --fix src/",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit"
@@ -46,12 +46,11 @@
     "commander": "^14.0.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
     "@types/bun": "latest",
     "@types/node": "^22",
-    "eslint": "^9.39.2",
+    "oxlint": "^1.36.0",
+    "oxlint-tsgolint": "^0.10.1",
     "prettier": "^3.7.4",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.50.1"
+    "typescript": "^5.9.3"
   }
 }
