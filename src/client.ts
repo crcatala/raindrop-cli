@@ -1,6 +1,8 @@
 import { client, generated } from "@lasuillard/raindrop-client";
 import { getConfig } from "./config.js";
 import { ConfigError } from "./utils/errors.js";
+import { setupClientInterceptors } from "./utils/axios-interceptors.js";
+import { debug } from "./utils/debug.js";
 
 const { Raindrop } = client;
 const { Configuration } = generated;
@@ -18,11 +20,17 @@ export function getClient(): RaindropClient {
           "Get your token from: https://app.raindrop.io/settings/integrations"
       );
     }
+
+    debug("Creating Raindrop client");
     instance = new Raindrop(
       new Configuration({
         accessToken: config.token,
       })
     );
+
+    // Set up interceptors for error handling, retry, and logging
+    debug("Setting up client interceptors");
+    setupClientInterceptors(instance.client);
   }
   return instance;
 }
