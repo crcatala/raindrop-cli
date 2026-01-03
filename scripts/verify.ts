@@ -90,23 +90,23 @@ async function runCheck(
 }
 
 function printFinalResults(results: CheckResult[]) {
-  // Print each check's final status
+  // Print each check's final status (no indent to match tasuku's format)
   for (const result of results) {
     if (result.success) {
       const status = result.status ? ` ${DIM}(${result.status})${RESET}` : "";
-      console.log(`  ${GREEN}✔${RESET} ${result.config.name}${status}`);
+      console.log(`${GREEN}✔${RESET} ${result.config.name}${status}`);
     } else {
-      console.log(`  ${RED}✖${RESET} ${result.config.name}`);
+      console.log(`${RED}✖${RESET} ${result.config.name}`);
       // Show failure output indented
       if (result.output) {
         const lines = result.output.split("\n").slice(0, 30); // Limit to 30 lines
         for (const line of lines) {
-          console.log(`    ${DIM}${line}${RESET}`);
+          console.log(`  ${DIM}${line}${RESET}`);
         }
         if (result.output.split("\n").length > 30) {
-          console.log(`    ${DIM}... (truncated)${RESET}`);
+          console.log(`  ${DIM}... (truncated)${RESET}`);
         }
-        console.log(`    ${YELLOW}→ ${result.config.verboseHint}${RESET}`);
+        console.log(`  ${YELLOW}→ ${result.config.verboseHint}${RESET}`);
       }
     }
   }
@@ -143,7 +143,6 @@ async function main() {
   );
 
   // Print our own final summary (tasuku clears its output)
-  console.log("");
   printFinalResults(results);
 
   // Print overall summary
