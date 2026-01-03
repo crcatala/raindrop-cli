@@ -68,11 +68,12 @@ function indentMultiline(text: string, indent: number): string {
  * Records are separated by a styled divider.
  *
  * Features:
- * - Emoji icons for field types
+ * - Prominent fields (title/URL) displayed without labels, bold/cyan
+ * - Emoji icons for regular field types
  * - Bold field labels
  * - Dimmed placeholder for empty values
  * - Proper indentation for multiline content
- * - Colored separators between records
+ * - Newlines around separators for visual breathing room
  */
 export function formatPlain<T>(data: T, columns: ColumnConfig[]): string {
   const items = Array.isArray(data) ? data : [data];
@@ -82,13 +83,41 @@ export function formatPlain<T>(data: T, columns: ColumnConfig[]): string {
     return c.dim("No results found.");
   }
 
-  // Find the longest header for alignment (including icon space)
-  const maxHeaderLength = Math.max(...columns.map((col) => col.header.length));
+  // Separate prominent columns from regular columns
+  const prominentCols = columns.filter((col) => col.prominent);
+  const regularCols = columns.filter((col) => !col.prominent);
+
+  // Find the longest header for alignment (only regular columns need alignment)
+  const maxHeaderLength =
+    regularCols.length > 0 ? Math.max(...regularCols.map((col) => col.header.length)) : 0;
   // Icon (emoji) + space + header + padding
   const labelWidth = 2 + maxHeaderLength + 2;
 
   const formattedItems = items.map((item) => {
-    const lines = columns.map((col) => {
+    const outputLines: string[] = [];
+
+    // Prominent fields first (no labels, styled prominently)
+    for (const col of prominentCols) {
+      const rawValue = formatPlainValue(getNestedValue(item, col.key));
+      if (rawValue !== null) {
+        // Title gets bold, URL gets cyan
+        const isUrl =
+          col.key.toLowerCase().includes("url") || col.key.toLowerCase().includes("link");
+        if (isUrl) {
+          outputLines.push(c.cyan(rawValue));
+        } else {
+          outputLines.push(c.bold(rawValue));
+        }
+      }
+    }
+
+    // Add blank line between prominent and regular fields if both exist
+    if (prominentCols.length > 0 && regularCols.length > 0) {
+      outputLines.push("");
+    }
+
+    // Regular fields with icons and labels
+    for (const col of regularCols) {
       const icon = getFieldIcon(col.key);
       const rawValue = formatPlainValue(getNestedValue(item, col.key));
       const paddedHeader = col.header.padEnd(maxHeaderLength);
@@ -104,14 +133,14 @@ export function formatPlain<T>(data: T, columns: ColumnConfig[]): string {
         value = indentMultiline(rawValue, labelWidth);
       }
 
-      return `${label}  ${value}`;
-    });
+      outputLines.push(`${label}  ${value}`);
+    }
 
-    return lines.join("\n");
+    return outputLines.join("\n");
   });
 
-  // Styled separator between items
-  const separator = c.dim("\n  ─────────────────────────────────────\n");
+  // Styled separator between items with newlines for breathing room
+  const separator = "\n" + c.dim("  ─────────────────────────────────────") + "\n";
 
   return formattedItems.join(separator);
 }

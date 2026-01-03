@@ -17,6 +17,8 @@ export interface ColumnConfig {
   key: string;
   header: string;
   width?: number;
+  /** If true, display prominently without label (for title/URL in plain format) */
+  prominent?: boolean;
 }
 
 export function output<T>(data: T, columns: ColumnConfig[], options: OutputOptions): void {

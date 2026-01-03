@@ -105,4 +105,53 @@ describe("formatPlain", () => {
     expect(result).toContain("🔗"); // url icon
     expect(result).toContain("📅"); // created icon
   });
+
+  test("prominent fields display without labels at top", () => {
+    const mixedColumns: ColumnConfig[] = [
+      { key: "title", header: "Title", prominent: true },
+      { key: "url", header: "URL", prominent: true },
+      { key: "id", header: "ID" },
+    ];
+    const data = { title: "My Title", url: "https://example.com", id: 123 };
+    const result = formatPlain(data, mixedColumns);
+
+    // Title and URL should appear without labels
+    expect(result).toContain("My Title");
+    expect(result).toContain("https://example.com");
+    // ID should appear with label and icon
+    expect(result).toContain("🔖");
+    expect(result).toContain("ID");
+    expect(result).toContain("123");
+    // Title should come before ID in the output
+    const titleIndex = result.indexOf("My Title");
+    const idIndex = result.indexOf("123");
+    expect(titleIndex).toBeLessThan(idIndex);
+  });
+
+  test("prominent fields are separated from regular fields by blank line", () => {
+    const mixedColumns: ColumnConfig[] = [
+      { key: "title", header: "Title", prominent: true },
+      { key: "id", header: "ID" },
+    ];
+    const data = { title: "My Title", id: 123 };
+    const result = formatPlain(data, mixedColumns);
+
+    // Should have a blank line between title and ID section
+    expect(result).toContain("My Title\n\n");
+  });
+
+  test("empty prominent fields are not displayed", () => {
+    const mixedColumns: ColumnConfig[] = [
+      { key: "title", header: "Title", prominent: true },
+      { key: "url", header: "URL", prominent: true },
+      { key: "id", header: "ID" },
+    ];
+    const data = { title: "My Title", url: "", id: 123 };
+    const result = formatPlain(data, mixedColumns);
+
+    // Title should appear, empty URL should not show placeholder at top
+    expect(result).toContain("My Title");
+    // But still have the ID
+    expect(result).toContain("123");
+  });
 });

@@ -218,23 +218,23 @@ describe("bookmarks command - with auth", () => {
     const result = await runCli(["bookmarks", "list", "--limit", "2", "--format", "tsv"]);
 
     expect(result.exitCode).toBe(0);
-    // TSV format should have tab-separated headers
-    expect(result.stdout).toContain("ID\tTitle\tURL");
+    // TSV format should have tab-separated headers (Title first, ID last)
+    expect(result.stdout).toContain("Title\tURL");
+    expect(result.stdout).toContain("\tID");
   });
 
   testWithAuth("list plain format works", async () => {
     const result = await runCli(["bookmarks", "list", "--limit", "2", "--format", "plain"]);
 
     expect(result.exitCode).toBe(0);
-    // Plain format should have labeled fields with icons
-    expect(result.stdout).toContain("ID");
-    expect(result.stdout).toContain("Title");
-    expect(result.stdout).toContain("URL");
-    // Should have emoji icons
+    // Plain format has prominent title/URL at top (no labels), then labeled fields
+    // Should have emoji icons for regular fields
     expect(result.stdout).toContain("🔖"); // ID
-    expect(result.stdout).toContain("📌"); // Title
-    expect(result.stdout).toContain("🔗"); // URL
+    expect(result.stdout).toContain("📝"); // Excerpt
+    expect(result.stdout).toContain("💬"); // Note
     // Styled separator between items
     expect(result.stdout).toContain("───");
+    // Title and URL should be present (as content, not labels)
+    expect(result.stdout).toContain("https://");
   });
 });
