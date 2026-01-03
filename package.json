@@ -24,7 +24,8 @@
     "typecheck": "bash scripts/check.sh typecheck",
     "typecheck:verbose": "tsc --noEmit",
     "verify": "bun scripts/verify.ts",
-    "verify:verbose": "VERBOSE=1 bun scripts/verify.ts"
+    "verify:verbose": "VERBOSE=1 bun scripts/verify.ts",
+    "postinstall": "lefthook install"
   },
   "keywords": [
     "raindrop",
@@ -54,6 +55,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^22",
+    "lefthook": "^2.0.13",
     "oxlint": "^1.36.0",
     "oxlint-tsgolint": "^0.10.1",
     "prettier": "^3.7.4",
