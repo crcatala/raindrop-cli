@@ -226,10 +226,15 @@ describe("bookmarks command - with auth", () => {
     const result = await runCli(["bookmarks", "list", "--limit", "2", "--format", "plain"]);
 
     expect(result.exitCode).toBe(0);
-    // Plain format should have labeled fields and separators
+    // Plain format should have labeled fields with icons
     expect(result.stdout).toContain("ID");
     expect(result.stdout).toContain("Title");
     expect(result.stdout).toContain("URL");
-    expect(result.stdout).toContain("---");
+    // Should have emoji icons
+    expect(result.stdout).toContain("🔖"); // ID
+    expect(result.stdout).toContain("📌"); // Title
+    expect(result.stdout).toContain("🔗"); // URL
+    // Styled separator between items
+    expect(result.stdout).toContain("───");
   });
 });
