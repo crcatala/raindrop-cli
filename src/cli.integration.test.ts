@@ -102,9 +102,14 @@ describe("CLI integration", () => {
       expect(result.exitCode).toBe(0);
     });
 
-    test("invalid command exits with non-zero", async () => {
+    test("unknown command exits with 2 (usage error)", async () => {
       const result = await runCli(["not-a-real-command"]);
-      expect(result.exitCode).not.toBe(0);
+      expect(result.exitCode).toBe(2);
+    });
+
+    test("unknown option exits with 2 (usage error)", async () => {
+      const result = await runCli(["--not-a-real-option"]);
+      expect(result.exitCode).toBe(2);
     });
   });
 

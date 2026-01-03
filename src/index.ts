@@ -53,10 +53,20 @@ try {
     ) {
       process.exit(0);
     }
-    // Unknown command should error
-    if (err.code === "commander.unknownCommand") {
+    // Usage errors should exit with code 2 (per clig.dev conventions)
+    const usageErrors = [
+      "commander.unknownCommand",
+      "commander.unknownOption",
+      "commander.missingArgument",
+      "commander.invalidArgument",
+      "commander.missingMandatoryOptionValue",
+      "commander.optionMissingArgument",
+      "commander.excessArguments",
+      "commander.conflictingOption",
+    ];
+    if (usageErrors.includes(err.code)) {
       outputError(err.message);
-      process.exit(1);
+      process.exit(2);
     }
   }
   throw err;
