@@ -13,7 +13,7 @@ const FIELD_ICONS: Record<string, string> = {
   name: "📌",
   url: "🔗",
   link: "🔗",
-  tags: "🏷️ ",
+  tags: "🏷️",
   excerpt: "📝",
   note: "💬",
   notes: "💬",
@@ -28,11 +28,34 @@ const FIELD_ICONS: Record<string, string> = {
 };
 
 /**
+ * Fields that should be displayed in block format (label on own line, content below).
+ */
+const BLOCK_FIELDS = new Set(["excerpt", "note", "notes", "description", "content", "body"]);
+
+/**
+ * Default width for word wrapping block content.
+ */
+const WRAP_WIDTH = 72;
+
+/**
+ * Indent size for block content.
+ */
+const BLOCK_INDENT = 4;
+
+/**
  * Get icon for a field based on its key.
  */
 function getFieldIcon(key: string): string {
   const normalizedKey = key.toLowerCase().replace(/[._-]/g, "");
   return FIELD_ICONS[normalizedKey] ?? "•";
+}
+
+/**
+ * Check if a field should be displayed in block format.
+ */
+function isBlockField(key: string): boolean {
+  const normalizedKey = key.toLowerCase().replace(/[._-]/g, "");
+  return BLOCK_FIELDS.has(normalizedKey);
 }
 
 /**
@@ -48,6 +71,59 @@ function formatPlainValue(value: unknown): string | null {
     return value.join(", ");
   }
   return String(value);
+}
+
+/**
+ * Word-wrap text to a maximum width, preserving existing line breaks.
+ * Each paragraph (separated by blank lines) is wrapped independently.
+ */
+function wordWrap(text: string, maxWidth: number): string {
+  const lines = text.split("\n");
+  const wrappedLines: string[] = [];
+
+  for (const line of lines) {
+    // Preserve empty lines
+    if (line.trim() === "") {
+      wrappedLines.push("");
+      continue;
+    }
+
+    // Wrap long lines
+    if (line.length <= maxWidth) {
+      wrappedLines.push(line);
+    } else {
+      const words = line.split(/\s+/);
+      let currentLine = "";
+
+      for (const word of words) {
+        if (currentLine === "") {
+          currentLine = word;
+        } else if (currentLine.length + 1 + word.length <= maxWidth) {
+          currentLine += " " + word;
+        } else {
+          wrappedLines.push(currentLine);
+          currentLine = word;
+        }
+      }
+
+      if (currentLine) {
+        wrappedLines.push(currentLine);
+      }
+    }
+  }
+
+  return wrappedLines.join("\n");
+}
+
+/**
+ * Indent all lines of text by a given amount.
+ */
+function indentAllLines(text: string, indent: number): string {
+  const padding = " ".repeat(indent);
+  return text
+    .split("\n")
+    .map((line) => padding + line)
+    .join("\n");
 }
 
 /**
@@ -122,25 +198,33 @@ export function formatPlain<T>(data: T, columns: ColumnConfig[]): string {
       const rawValue = formatPlainValue(getNestedValue(item, col.key));
       const paddedHeader = col.header.padEnd(maxHeaderLength);
 
+      // Check if this is a block field (excerpt, note, etc.)
+      const isBlock = isBlockField(col.key);
+
       // Style the label (icon + bold header)
       const label = `${icon} ${c.bold(paddedHeader)}`;
 
-      // Style the value (dim if empty, otherwise normal with multiline support)
-      let value: string;
       if (rawValue === null) {
-        value = c.dim("—");
+        // Empty value - show placeholder inline
+        outputLines.push(`${label}  ${c.dim("—")}`);
+      } else if (isBlock) {
+        // Block field: label on its own line, content below with word-wrap
+        outputLines.push(label);
+        const wrapped = wordWrap(rawValue, WRAP_WIDTH);
+        const indented = indentAllLines(wrapped, BLOCK_INDENT);
+        outputLines.push(indented);
       } else {
-        value = indentMultiline(rawValue, labelWidth);
+        // Inline field: label and value on same line
+        const value = indentMultiline(rawValue, labelWidth);
+        outputLines.push(`${label}  ${value}`);
       }
-
-      outputLines.push(`${label}  ${value}`);
     }
 
     return outputLines.join("\n");
   });
 
-  // Styled separator between items with newlines for breathing room
-  const separator = "\n" + c.dim("  ─────────────────────────────────────") + "\n";
+  // Styled separator between items with blank lines for breathing room
+  const separator = "\n\n" + c.dim("  ─────────────────────────────────────") + "\n\n";
 
   return formattedItems.join(separator);
 }

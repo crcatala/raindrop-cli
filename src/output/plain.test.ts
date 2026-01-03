@@ -154,4 +154,53 @@ describe("formatPlain", () => {
     // But still have the ID
     expect(result).toContain("123");
   });
+
+  test("block fields (excerpt, note) display with label on own line", () => {
+    const blockColumns: ColumnConfig[] = [
+      { key: "title", header: "Title" },
+      { key: "excerpt", header: "Excerpt" },
+      { key: "note", header: "Note" },
+    ];
+    const data = {
+      title: "Test",
+      excerpt: "This is an excerpt",
+      note: "This is a note",
+    };
+    const result = formatPlain(data, blockColumns);
+
+    // Block fields should have label, then content on next line indented
+    expect(result).toContain("📝");
+    expect(result).toContain("Excerpt");
+    expect(result).toContain("    This is an excerpt");
+    expect(result).toContain("💬");
+    expect(result).toContain("Note");
+    expect(result).toContain("    This is a note");
+    // Content should come after label (on next line)
+    const excerptLabelIdx = result.indexOf("Excerpt");
+    const excerptContentIdx = result.indexOf("This is an excerpt");
+    expect(excerptContentIdx).toBeGreaterThan(excerptLabelIdx);
+  });
+
+  test("block fields word-wrap long content", () => {
+    const blockColumns: ColumnConfig[] = [{ key: "note", header: "Note" }];
+    const longText =
+      "This is a very long note that should be wrapped at the configured width to maintain readability in the terminal output";
+    const data = { note: longText };
+    const result = formatPlain(data, blockColumns);
+
+    // Should contain the text (possibly wrapped)
+    expect(result).toContain("This is a very long note");
+    // Content should be indented
+    expect(result).toContain("    ");
+  });
+
+  test("separator has blank lines above and below", () => {
+    const columns: ColumnConfig[] = [{ key: "id", header: "ID" }];
+    const data = [{ id: 1 }, { id: 2 }];
+    const result = formatPlain(data, columns);
+
+    // Separator should have blank lines around it
+    expect(result).toContain("\n\n");
+    expect(result).toContain("───");
+  });
 });
