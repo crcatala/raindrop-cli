@@ -14,7 +14,7 @@ source "$SCRIPT_DIR/run_silent.sh"
 
 case "$1" in
   test)
-    run_silent_test "Tests" "bun test --bail" "bun run test:verbose"
+    run_silent_test "Tests" "bun test --bail --only-failures" "bun run test:verbose"
     ;;
   lint)
     run_silent "Lint" "oxlint --type-aware src/" "bun run lint:verbose"

@@ -22,7 +22,7 @@ interface CheckConfig {
 const checks: CheckConfig[] = [
   {
     name: "Tests",
-    command: ["bun", "test", "--bail"],
+    command: ["bun", "test", "--bail", "--only-failures"],
     verboseHint: "bun run test:verbose",
   },
   {
