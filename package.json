@@ -23,8 +23,8 @@
     "format:check:verbose": "prettier --check \"src/**/*.ts\"",
     "typecheck": "bash scripts/check.sh typecheck",
     "typecheck:verbose": "tsc --noEmit",
-    "verify": "bash scripts/verify.sh",
-    "verify:verbose": "VERBOSE=1 bash scripts/verify.sh"
+    "verify": "bun scripts/verify.ts",
+    "verify:verbose": "VERBOSE=1 bun scripts/verify.ts"
   },
   "keywords": [
     "raindrop",
@@ -57,6 +57,7 @@
     "oxlint": "^1.36.0",
     "oxlint-tsgolint": "^0.10.1",
     "prettier": "^3.7.4",
+    "tasuku": "^2.0.5",
     "typescript": "^5.9.3"
   }
 }
