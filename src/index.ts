@@ -1,6 +1,7 @@
 import { program, CommanderError } from "commander";
 import { createAuthCommand } from "./commands/auth.js";
 import { outputError } from "./utils/output-streams.js";
+import { setNoColorFlag } from "./utils/tty.js";
 
 program
   .name("rdcli")
@@ -12,7 +13,15 @@ program
   )
   .option("-q, --quiet", "minimal output (just IDs)")
   .option("-v, --verbose", "verbose output with debug info")
-  .exitOverride();
+  .option("--no-color", "disable colored output")
+  .exitOverride()
+  .hook("preAction", (thisCommand) => {
+    // Set the no-color flag before any command runs
+    const opts = thisCommand.opts();
+    if (opts.color === false) {
+      setNoColorFlag(true);
+    }
+  });
 
 // Register commands
 program.addCommand(createAuthCommand());
