@@ -6,3 +6,4 @@ pre-push:
   commands:
     verify:
       run: bun run verify
+      no_tty: true
