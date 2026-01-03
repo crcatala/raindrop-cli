@@ -33,7 +33,9 @@ async function prompt(message: string): Promise<string> {
 /**
  * Validate token by calling the Raindrop API.
  */
-async function validateToken(token: string): Promise<{ valid: boolean; user?: { name: string; email: string } }> {
+async function validateToken(
+  token: string
+): Promise<{ valid: boolean; user?: { name: string; email: string } }> {
   // Temporarily set the token in env for validation
   const originalToken = process.env["RAINDROP_TOKEN"];
   process.env["RAINDROP_TOKEN"] = token;
@@ -63,11 +65,11 @@ async function validateToken(token: string): Promise<{ valid: boolean; user?: { 
 }
 
 export function createAuthCommand(): Command {
-  const auth = new Command("auth")
-    .description("Manage authentication")
-    .action(function (this: Command) {
-      this.help();
-    });
+  const auth = new Command("auth").description("Manage authentication").action(function (
+    this: Command
+  ) {
+    this.help();
+  });
 
   // set-token command
   auth
@@ -164,7 +166,9 @@ export function createAuthCommand(): Command {
             outputMessage(`  User:   ${user.fullName ?? "Unknown"}`);
             outputMessage(`  Email:  ${user.email ?? "Unknown"}`);
           }
-          outputMessage(`  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`);
+          outputMessage(
+            `  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`
+          );
         }
       } catch {
         // JSON output goes to stdout even on error (for scripts to parse).
@@ -183,7 +187,9 @@ export function createAuthCommand(): Command {
           );
         } else {
           outputMessage("Token configured but invalid or expired.");
-          outputMessage(`  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`);
+          outputMessage(
+            `  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`
+          );
           outputMessage("");
           outputMessage("Run 'rdcli auth set-token' to set a new token.");
         }
