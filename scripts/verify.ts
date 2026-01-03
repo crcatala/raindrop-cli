@@ -2,7 +2,8 @@
 /**
  * verify.ts - Run all verification checks in parallel with nice output
  *
- * Uses tasuku for beautiful task display with spinners and real-time updates.
+ * Uses tasuku for beautiful task display with spinners when running in a TTY.
+ * Falls back to simple output when captured (e.g., by AI agents) to save tokens.
  *
  * Usage:
  *   bun scripts/verify.ts          # Run all checks in parallel
@@ -12,6 +13,7 @@
 import task from "tasuku";
 
 const VERBOSE = process.env.VERBOSE === "1";
+const IS_TTY = process.stdout.isTTY ?? false;
 
 // Colors
 const GREEN = "\x1b[32m";
@@ -56,10 +58,7 @@ const checks: CheckConfig[] = [
   },
 ];
 
-async function runCheck(
-  config: CheckConfig,
-  setStatus: (status: string) => void
-): Promise<CheckResult> {
+async function runCheckSimple(config: CheckConfig): Promise<CheckResult> {
   const proc = Bun.spawn(config.command, {
     stdout: "pipe",
     stderr: "pipe",
@@ -75,12 +74,10 @@ async function runCheck(
 
   if (exitCode === 0) {
     let status: string | undefined;
-    // Try to extract useful info for tests
     if (config.name === "Tests") {
       const passMatch = output.match(/(\d+)\s*pass/);
       if (passMatch) {
         status = `${passMatch[1]} passed`;
-        setStatus(status);
       }
     }
     return { config, success: true, output, status };
@@ -89,41 +86,49 @@ async function runCheck(
   }
 }
 
-function printFinalResults(results: CheckResult[]) {
-  // Print each check's final status (no indent to match tasuku's format)
-  for (const result of results) {
-    if (result.success) {
-      const status = result.status ? ` ${DIM}(${result.status})${RESET}` : "";
-      console.log(`${GREEN}✔${RESET} ${result.config.name}${status}`);
-    } else {
-      console.log(`${RED}✖${RESET} ${result.config.name}`);
-      // Show failure output indented
-      if (result.output) {
-        const lines = result.output.split("\n").slice(0, 30); // Limit to 30 lines
-        for (const line of lines) {
-          console.log(`  ${DIM}${line}${RESET}`);
-        }
-        if (result.output.split("\n").length > 30) {
-          console.log(`  ${DIM}... (truncated)${RESET}`);
-        }
-        console.log(`  ${YELLOW}→ ${result.config.verboseHint}${RESET}`);
+async function runCheckWithStatus(
+  config: CheckConfig,
+  setStatus: (status: string) => void
+): Promise<CheckResult> {
+  const result = await runCheckSimple(config);
+  if (result.status) {
+    setStatus(result.status);
+  }
+  return result;
+}
+
+function printResult(result: CheckResult) {
+  if (result.success) {
+    const status = result.status ? ` ${DIM}(${result.status})${RESET}` : "";
+    console.log(`${GREEN}✔${RESET} ${result.config.name}${status}`);
+  } else {
+    console.log(`${RED}✖${RESET} ${result.config.name}`);
+    if (result.output) {
+      const lines = result.output.split("\n").slice(0, 30);
+      for (const line of lines) {
+        console.log(`  ${DIM}${line}${RESET}`);
       }
+      if (result.output.split("\n").length > 30) {
+        console.log(`  ${DIM}... (truncated)${RESET}`);
+      }
+      console.log(`  ${YELLOW}→ ${result.config.verboseHint}${RESET}`);
     }
   }
 }
 
-async function main() {
+/**
+ * Run checks with tasuku spinners (for TTY/interactive terminals)
+ */
+async function runWithTasuku(): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
 
-  // Run all checks in parallel with tasuku for spinners
   await task.group(
     (t) =>
       checks.map((check) =>
         t(check.name, async ({ setStatus, setError }) => {
-          const result = await runCheck(check, setStatus);
+          const result = await runCheckWithStatus(check, setStatus);
           results.push(result);
           if (!result.success) {
-            // Mark as error in tasuku (shows X)
             setError(new Error("failed"));
           }
           return result;
@@ -143,9 +148,34 @@ async function main() {
   );
 
   // Print our own final summary (tasuku clears its output)
-  printFinalResults(results);
+  for (const result of results) {
+    printResult(result);
+  }
 
-  // Print overall summary
+  return results;
+}
+
+/**
+ * Run checks with simple output (for non-TTY/captured output)
+ */
+async function runSimple(): Promise<CheckResult[]> {
+  console.log("Verifying...");
+
+  // Run all checks in parallel
+  const results = await Promise.all(checks.map((check) => runCheckSimple(check)));
+
+  // Print results
+  console.log("");
+  for (const result of results) {
+    printResult(result);
+  }
+
+  return results;
+}
+
+async function main() {
+  const results = IS_TTY ? await runWithTasuku() : await runSimple();
+
   const failures = results.filter((r) => !r.success);
   console.log("");
   if (failures.length === 0) {
