@@ -9,14 +9,12 @@ import type { GlobalOptions } from "../types/index.js";
  * Column configuration for bookmark list output.
  */
 const BOOKMARK_COLUMNS: ColumnConfig[] = [
-  // Title first (block format - label on own line, content below)
-  { key: "title", header: "Title", width: 40 },
-  // URL inline after title
-  { key: "link", header: "URL", width: 50 },
-  // Other block fields
+  // Prominent fields (no labels, displayed first)
+  { key: "title", header: "Title", width: 40, prominent: true },
+  { key: "link", header: "URL", width: 50, prominent: true },
+  // Regular fields in order of importance
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
-  // Inline metadata fields
   { key: "tags", header: "Tags", width: 20 },
   { key: "created", header: "Created", width: 12 },
   { key: "_id", header: "ID", width: 12 },
