@@ -179,6 +179,15 @@ describe("CLI integration", () => {
       expect(result.stdout).toContain("operational");
       expect(result.stdout).toContain("stack trace");
     });
+
+    test("--debug and --verbose can be used together", async () => {
+      const result = await runCli(["--debug", "--verbose", "auth", "status"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      // Both types of output should appear on stderr
+      expect(result.stderr).toContain("→");
+      expect(result.stderr).toContain("[debug]");
+    });
   });
 });
 
