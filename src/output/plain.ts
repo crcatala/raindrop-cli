@@ -30,7 +30,16 @@ const FIELD_ICONS: Record<string, string> = {
 /**
  * Fields that should be displayed in block format (label on own line, content below).
  */
-const BLOCK_FIELDS = new Set(["excerpt", "note", "notes", "description", "content", "body"]);
+const BLOCK_FIELDS = new Set([
+  "title",
+  "name",
+  "excerpt",
+  "note",
+  "notes",
+  "description",
+  "content",
+  "body",
+]);
 
 /**
  * Default width for word wrapping block content (indented fields).
