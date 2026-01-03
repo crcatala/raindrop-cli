@@ -43,10 +43,14 @@ export class RateLimitError extends RaindropCliError {
     public limit: number,
     public resetTime: number
   ) {
-    super(`Rate limit exceeded. Limit: ${limit}, resets at: ${new Date(resetTime * 1000).toISOString()}`, "RATE_LIMITED", {
-      limit,
-      reset: resetTime,
-    });
+    super(
+      `Rate limit exceeded. Limit: ${limit}, resets at: ${new Date(resetTime * 1000).toISOString()}`,
+      "RATE_LIMITED",
+      {
+        limit,
+        reset: resetTime,
+      }
+    );
     this.name = "RateLimitError";
   }
 }

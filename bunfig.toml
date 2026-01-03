@@ -1,0 +1,15 @@
+[test]
+# Coverage configuration
+coverage = true
+coverageReporter = ["text", "lcov"]
+coverageDir = "./coverage"
+
+# Coverage thresholds (warning only, not enforced as exit code)
+# Set to 50% to accommodate config.ts which has limited testability
+coverageThreshold = { lines = 0.50, functions = 0.50, statements = 0.50 }
+
+# Skip test files from coverage reports
+coverageSkipTestFiles = true
+
+# Ignore patterns
+coveragePathIgnorePatterns = ["node_modules", "dist"]
