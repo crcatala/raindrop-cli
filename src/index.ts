@@ -2,6 +2,7 @@ import { program, CommanderError } from "commander";
 import { createAuthCommand } from "./commands/auth.js";
 import { outputError } from "./utils/output-streams.js";
 import { setNoColorFlag } from "./utils/tty.js";
+import { setDebugEnabled, setVerboseEnabled } from "./utils/debug.js";
 
 program
   .name("rdcli")
@@ -12,14 +13,24 @@ program
     "output format (json, table, tsv); defaults to table for terminal, json when piped"
   )
   .option("-q, --quiet", "minimal output (just IDs)")
-  .option("-v, --verbose", "verbose output with debug info")
+  .option("-v, --verbose", "show operational details (API calls, timing)")
+  .option("-d, --debug", "show debug info (stack traces, internal state)")
   .option("--no-color", "disable colored output")
   .exitOverride()
   .hook("preAction", (thisCommand) => {
-    // Set the no-color flag before any command runs
     const opts = thisCommand.opts();
+
+    // Set the no-color flag before any command runs
     if (opts.color === false) {
       setNoColorFlag(true);
+    }
+
+    // Set debug/verbose flags
+    if (opts.debug) {
+      setDebugEnabled(true);
+    }
+    if (opts.verbose) {
+      setVerboseEnabled(true);
     }
   });
 

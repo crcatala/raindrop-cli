@@ -9,6 +9,7 @@ export interface OutputOptions {
   format?: OutputFormat;
   quiet: boolean;
   verbose: boolean;
+  debug: boolean;
 }
 
 export interface ColumnConfig {

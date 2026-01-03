@@ -1,4 +1,5 @@
 import { outputError } from "./output-streams.js";
+import { isDebugEnabled } from "./debug.js";
 
 export class RaindropCliError extends Error {
   constructor(
@@ -55,14 +56,30 @@ export class RateLimitError extends RaindropCliError {
   }
 }
 
-export function handleError(error: unknown, debug = false): never {
+/**
+ * Handle and output an error, then exit.
+ *
+ * When --debug is enabled:
+ * - Shows error details for RaindropCliError
+ * - Shows stack traces for all errors
+ *
+ * @param error - The error to handle
+ * @param debugOverride - Override the global debug flag (for testing)
+ */
+export function handleError(error: unknown, debugOverride?: boolean): never {
+  const showDebug = debugOverride ?? isDebugEnabled();
+
   if (error instanceof RaindropCliError) {
     if (process.env["RDCLI_FORMAT"] === "json") {
       outputError(JSON.stringify(error.toJSON(), null, 2));
     } else {
       outputError(`Error: ${error.message}`);
-      if (debug && error.details) {
-        outputError("Details: " + JSON.stringify(error.details, null, 2));
+      if (showDebug && error.details) {
+        outputError("[debug] Details: " + JSON.stringify(error.details, null, 2));
+      }
+      if (showDebug && error.stack) {
+        outputError("[debug] Stack trace:");
+        outputError(error.stack);
       }
     }
     process.exit(1);
@@ -70,12 +87,16 @@ export function handleError(error: unknown, debug = false): never {
 
   if (error instanceof Error) {
     outputError(`Error: ${error.message}`);
-    if (debug && error.stack) {
+    if (showDebug && error.stack) {
+      outputError("[debug] Stack trace:");
       outputError(error.stack);
     }
     process.exit(1);
   }
 
   outputError("An unexpected error occurred");
+  if (showDebug) {
+    outputError("[debug] Unknown error type: " + String(error));
+  }
   process.exit(1);
 }
