@@ -1,0 +1,8 @@
+# Lefthook configuration
+# https://github.com/evilmartians/lefthook
+
+pre-push:
+  parallel: true
+  commands:
+    verify:
+      run: SIMPLE_OUTPUT=1 bun run verify

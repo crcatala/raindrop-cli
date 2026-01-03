@@ -13,12 +13,19 @@
     "build": "bun build src/index.ts --outdir dist --target node --format esm && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/temp && mv dist/temp dist/index.js && bun run build:dts",
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "dev": "bun src/index.ts",
-    "test": "bun test",
-    "lint": "oxlint --type-aware src/",
+    "test": "bash scripts/check.sh test",
+    "test:verbose": "bun test",
+    "lint": "bash scripts/check.sh lint",
     "lint:fix": "oxlint --type-aware --fix src/",
+    "lint:verbose": "oxlint --type-aware src/",
     "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
-    "typecheck": "tsc --noEmit"
+    "format:check": "bash scripts/check.sh format",
+    "format:check:verbose": "prettier --check \"src/**/*.ts\"",
+    "typecheck": "bash scripts/check.sh typecheck",
+    "typecheck:verbose": "tsc --noEmit",
+    "verify": "bun scripts/verify.ts",
+    "verify:verbose": "VERBOSE=1 bun scripts/verify.ts",
+    "postinstall": "lefthook install"
   },
   "keywords": [
     "raindrop",
@@ -48,9 +55,11 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^22",
+    "lefthook": "^2.0.13",
     "oxlint": "^1.36.0",
     "oxlint-tsgolint": "^0.10.1",
     "prettier": "^3.7.4",
+    "tasuku": "^2.0.5",
     "typescript": "^5.9.3"
   }
 }
