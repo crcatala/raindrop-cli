@@ -11,6 +11,7 @@ import {
 } from "../config.js";
 import { getClient, resetClient } from "../client.js";
 import { outputData, outputMessage, outputError } from "../utils/output-streams.js";
+import { verbose, verboseTime, debug } from "../utils/debug.js";
 
 /**
  * Prompt for input. Using readline avoids token appearing in shell history
@@ -42,15 +43,19 @@ async function validateToken(
   resetConfig();
   resetClient();
 
+  debug("Validating token against Raindrop API");
+
   try {
     const client = getClient();
-    const response = await client.user.getCurrentUser();
+    const response = await verboseTime("Calling Raindrop API", () => client.user.getCurrentUser());
     const user = response.data.user;
+    debug("API response received", { userId: user?._id, email: user?.email });
     return {
       valid: true,
       user: user ? { name: user.fullName ?? "Unknown", email: user.email ?? "Unknown" } : undefined,
     };
-  } catch {
+  } catch (error) {
+    debug("Token validation failed", { error: String(error) });
     return { valid: false };
   } finally {
     // Restore original env
@@ -118,10 +123,13 @@ export function createAuthCommand(): Command {
     .description("Show authentication status")
     .option("--json", "Output as JSON")
     .action(async (options) => {
+      verbose("Checking authentication status");
       const config = getConfig();
       const source = getTokenSource();
+      debug("Token lookup result", { hasToken: !!config.token, source });
 
       if (!config.token) {
+        verbose("No token configured");
         if (options.json) {
           outputData(JSON.stringify({ authenticated: false }, null, 2));
         } else {
@@ -139,7 +147,9 @@ export function createAuthCommand(): Command {
       // Try to validate and get user info
       try {
         const client = getClient();
-        const response = await client.user.getCurrentUser();
+        const response = await verboseTime("Fetching user info", () =>
+          client.user.getCurrentUser()
+        );
         const user = response.data.user;
 
         if (options.json) {

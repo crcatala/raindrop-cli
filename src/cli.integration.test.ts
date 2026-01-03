@@ -136,6 +136,50 @@ describe("CLI integration", () => {
       expect(result.stdout).not.toMatch(/\x1b\[[0-9;]*m/);
     });
   });
+
+  describe("debug and verbose flags", () => {
+    test("--debug flag is recognized", async () => {
+      const result = await runCli(["--debug", "--help"]);
+      expect(result.exitCode).toBe(0);
+      // Should not error due to unrecognized flag
+      expect(result.stderr).not.toContain("unknown option");
+    });
+
+    test("-d is alias for --debug", async () => {
+      const result = await runCli(["-d", "--help"]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain("unknown option");
+    });
+
+    test("--verbose flag is recognized", async () => {
+      const result = await runCli(["--verbose", "--help"]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain("unknown option");
+    });
+
+    test("-v is alias for --verbose", async () => {
+      const result = await runCli(["-v", "--help"]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain("unknown option");
+    });
+
+    test("--verbose shows operational output on stderr", async () => {
+      const result = await runCli(["--verbose", "auth", "status"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      // Verbose output should go to stderr
+      expect(result.stderr).toContain("→");
+    });
+
+    test("help text describes --debug and --verbose correctly", async () => {
+      const result = await runCliExpectSuccess(["--help"]);
+      expect(result.stdout).toContain("--verbose");
+      expect(result.stdout).toContain("--debug");
+      // Verify the descriptions are distinct
+      expect(result.stdout).toContain("operational");
+      expect(result.stdout).toContain("stack trace");
+    });
+  });
 });
 
 describe("CLI piping behavior", () => {
