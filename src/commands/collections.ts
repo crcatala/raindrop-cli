@@ -426,31 +426,20 @@ export function createCollectionsCommand(): Command {
           _id: item._id,
         }));
 
-        if (globalOpts.format === "json" || globalOpts.quiet) {
-          output(
-            stats,
-            [
-              { key: "name", header: "Collection" },
-              { key: "count", header: "Count" },
-              { key: "_id", header: "ID" },
-            ],
-            {
-              format: globalOpts.format,
-              quiet: globalOpts.quiet,
-              verbose: globalOpts.verbose,
-              debug: globalOpts.debug,
-            }
-          );
-        } else {
-          // Pretty print for table/plain formats
-          const c = getColors();
-          console.log();
-          for (const stat of stats) {
-            const label = stat.name.padEnd(15);
-            console.log(`  ${c.bold(label)} ${c.cyan(stat.count)}`);
+        output(
+          stats,
+          [
+            { key: "name", header: "Collection", prominent: true },
+            { key: "count", header: "Count" },
+            { key: "_id", header: "ID" },
+          ],
+          {
+            format: globalOpts.format,
+            quiet: globalOpts.quiet,
+            verbose: globalOpts.verbose,
+            debug: globalOpts.debug,
           }
-          console.log();
-        }
+        );
       } catch (error) {
         handleError(error);
       }
