@@ -611,3 +611,216 @@ describe("bookmarks delete command", () => {
     });
   });
 });
+
+describe("bookmarks add command", () => {
+  describe("help", () => {
+    test("bookmarks add --help shows usage", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "add", "--help"]);
+      expect(result.stdout).toContain("Add a new bookmark");
+      expect(result.stdout).toContain("<url>");
+      expect(result.stdout).toContain("--title");
+      expect(result.stdout).toContain("--excerpt");
+      expect(result.stdout).toContain("--note");
+      expect(result.stdout).toContain("--tags");
+      expect(result.stdout).toContain("--collection");
+      expect(result.stdout).toContain("--parse");
+    });
+  });
+
+  describe("validation", () => {
+    test("rejects missing URL argument", async () => {
+      const result = await runCli(["bookmarks", "add"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("missing required argument");
+    });
+
+    test("rejects invalid URL (no protocol)", async () => {
+      const result = await runCli(["bookmarks", "add", "example.com"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid URL");
+    });
+
+    test("rejects invalid URL (wrong protocol)", async () => {
+      const result = await runCli(["bookmarks", "add", "ftp://example.com"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid URL");
+    });
+
+    test("rejects malformed URL (empty host)", async () => {
+      const result = await runCli(["bookmarks", "add", "https://"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid URL");
+    });
+
+    test("rejects malformed URL (invalid characters)", async () => {
+      const result = await runCli(["bookmarks", "add", "https://[invalid"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid URL");
+    });
+
+    test("rejects invalid collection ID", async () => {
+      const result = await runCli(
+        ["bookmarks", "add", "https://example.com", "--collection", "notanumber"],
+        {
+          env: { RAINDROP_TOKEN: "fake-token" },
+        }
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid collection ID");
+    });
+  });
+
+  describe("without auth", () => {
+    test("fails gracefully without token", async () => {
+      const result = await runCli(["bookmarks", "add", "https://example.com"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      expect(result.exitCode).toBe(1);
+      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
+      expect(hasAuthError).toBe(true);
+    });
+  });
+});
+
+/**
+ * Integration tests for add command that require a valid RAINDROP_TOKEN.
+ * These create and clean up test bookmarks.
+ */
+describe("bookmarks add command - with auth", () => {
+  const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const testWithAuth = hasToken ? test : test.skip;
+
+  // Helper to delete a bookmark (cleanup)
+  async function deleteBookmark(id: number): Promise<void> {
+    await runCli(["bookmarks", "delete", String(id), "--permanent", "--force"]);
+  }
+
+  testWithAuth("add creates a bookmark with just URL", async () => {
+    const testUrl = `https://example.com/test-${Date.now()}`;
+
+    const result = await runCliExpectSuccess(["bookmarks", "add", testUrl]);
+    const data = parseJsonOutput<{ _id: number; link: string }>(result);
+
+    expect(data).toHaveProperty("_id");
+    expect(data.link).toBe(testUrl);
+
+    // Cleanup
+    await deleteBookmark(data._id);
+  });
+
+  testWithAuth("add creates a bookmark with all options", async () => {
+    const testUrl = `https://example.com/full-test-${Date.now()}`;
+    const testTitle = "Test Bookmark Title";
+    const testExcerpt = "This is a test excerpt";
+    const testNote = "This is a test note";
+    const testTags = "test,automated,cli";
+
+    const result = await runCliExpectSuccess([
+      "bookmarks",
+      "add",
+      testUrl,
+      "--title",
+      testTitle,
+      "--excerpt",
+      testExcerpt,
+      "--note",
+      testNote,
+      "--tags",
+      testTags,
+      "--collection",
+      "unsorted",
+    ]);
+
+    const data = parseJsonOutput<{
+      _id: number;
+      link: string;
+      title: string;
+      excerpt: string;
+      note: string;
+      tags: string;
+      collectionId: number;
+    }>(result);
+
+    expect(data.link).toBe(testUrl);
+    expect(data.title).toBe(testTitle);
+    expect(data.excerpt).toBe(testExcerpt);
+    expect(data.note).toBe(testNote);
+    expect(data.tags).toContain("test");
+    expect(data.tags).toContain("automated");
+    expect(data.tags).toContain("cli");
+    expect(data.collectionId).toBe(-1); // unsorted
+
+    // Cleanup
+    await deleteBookmark(data._id);
+  });
+
+  testWithAuth("add with --parse extracts metadata", async () => {
+    // Use a well-known URL that should have parseable metadata
+    const testUrl = "https://github.com";
+
+    const result = await runCliExpectSuccess(["bookmarks", "add", testUrl, "--parse"]);
+
+    const data = parseJsonOutput<{
+      _id: number;
+      title: string;
+      domain: string;
+    }>(result);
+
+    expect(data).toHaveProperty("_id");
+    // With --parse, Raindrop should extract title from the page
+    expect(data.title).toBeTruthy();
+    expect(data.domain).toBe("github.com");
+
+    // Cleanup
+    await deleteBookmark(data._id);
+  });
+
+  testWithAuth("add quiet mode outputs only ID", async () => {
+    const testUrl = `https://example.com/quiet-test-${Date.now()}`;
+
+    const result = await runCliExpectSuccess(["bookmarks", "add", testUrl, "-q"]);
+
+    // Should output just the ID (a number)
+    const id = parseInt(result.stdout.trim(), 10);
+    expect(id).toBeGreaterThan(0);
+
+    // Cleanup
+    await deleteBookmark(id);
+  });
+
+  testWithAuth("add with empty tags is handled correctly", async () => {
+    const testUrl = `https://example.com/empty-tags-${Date.now()}`;
+
+    // Empty string for tags should result in no tags
+    const result = await runCliExpectSuccess(["bookmarks", "add", testUrl, "--tags", ""]);
+
+    const data = parseJsonOutput<{ _id: number; tags: string }>(result);
+    expect(data.tags).toBe("");
+
+    // Cleanup
+    await deleteBookmark(data._id);
+  });
+
+  testWithAuth("add supports numeric collection ID", async () => {
+    const testUrl = `https://example.com/collection-test-${Date.now()}`;
+
+    // Use -1 for unsorted (numeric)
+    const result = await runCliExpectSuccess(["bookmarks", "add", testUrl, "--collection", "-1"]);
+
+    const data = parseJsonOutput<{ _id: number; collectionId: number }>(result);
+    expect(data.collectionId).toBe(-1);
+
+    // Cleanup
+    await deleteBookmark(data._id);
+  });
+});

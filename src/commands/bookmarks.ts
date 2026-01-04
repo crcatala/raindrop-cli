@@ -460,5 +460,141 @@ export function createBookmarksCommand(): Command {
       }
     });
 
+  // add command - create a new bookmark
+  bookmarks
+    .command("add")
+    .description("Add a new bookmark")
+    .argument("<url>", "URL to bookmark")
+    .option("-t, --title <title>", "Bookmark title (auto-detected if --parse is used)")
+    .option("-e, --excerpt <excerpt>", "Short description/excerpt")
+    .option("-n, --note <note>", "Personal note")
+    .option("--tags <tags>", "Comma-separated tags (e.g., 'tech,reading,important')")
+    .option(
+      "-c, --collection <id>",
+      "Collection ID or name (all, unsorted, trash). Default: unsorted",
+      "unsorted"
+    )
+    .option("-p, --parse", "Auto-parse URL to extract title, excerpt, and metadata")
+    .action(async function (this: Command, url: string, options) {
+      try {
+        const globalOpts = this.optsWithGlobals() as GlobalOptions;
+
+        // Validate URL format using URL constructor for proper parsing
+        try {
+          const parsedUrl = new URL(url);
+          if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+            throw new Error("Invalid URL: must use http:// or https:// protocol");
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message.includes("protocol")) {
+            throw e; // Re-throw our protocol error
+          }
+          throw new Error("Invalid URL: must be a valid URL with http:// or https:// protocol");
+        }
+
+        // Parse collection ID
+        const collectionId = parseCollectionId(options.collection);
+
+        // Parse tags from comma-separated string
+        const tags = options.tags
+          ? options.tags
+              .split(",")
+              .map((t: string) => t.trim())
+              .filter((t: string) => t.length > 0)
+          : undefined;
+
+        debug("Add bookmark options", {
+          url,
+          title: options.title,
+          excerpt: options.excerpt,
+          note: options.note,
+          tags,
+          collectionId,
+          parse: !!options.parse,
+        });
+
+        verbose(`Adding bookmark: ${url}`);
+
+        const client = getClient();
+
+        // Build the request payload
+        // Note: We include 'note' even though it may not be in the TypeScript types,
+        // as the Raindrop API does support it
+        const requestBody: Record<string, unknown> = {
+          link: url,
+        };
+
+        if (options.title) {
+          requestBody.title = options.title;
+        }
+
+        if (options.excerpt) {
+          requestBody.excerpt = options.excerpt;
+        }
+
+        if (options.note) {
+          requestBody.note = options.note;
+        }
+
+        if (tags && tags.length > 0) {
+          requestBody.tags = tags;
+        }
+
+        if (collectionId !== 0) {
+          // Only set collection if not "all" (0)
+          // Use -1 for unsorted which is the default
+          requestBody.collection = { $id: collectionId };
+        }
+
+        if (options.parse) {
+          requestBody.pleaseParse = {};
+        }
+
+        // Cast through unknown because the API accepts fields (like 'note') that aren't
+        // in the generated TypeScript types
+        const response = await verboseTime("Creating bookmark", () =>
+          client.raindrop.createRaindrop(
+            requestBody as unknown as Parameters<typeof client.raindrop.createRaindrop>[0]
+          )
+        );
+
+        const { item } = response.data;
+
+        debug("API response", {
+          id: item._id,
+          title: item.title,
+          result: response.data.result,
+        });
+
+        verbose(`Created bookmark ${item._id}: ${item.title}`);
+
+        // Format for output (reuse detail format)
+        const formatted = formatBookmarkDetail({
+          _id: item._id,
+          title: item.title,
+          link: item.link,
+          tags: item.tags || [],
+          created: item.created,
+          excerpt: item.excerpt || "",
+          domain: item.domain || "",
+          type: item.type || "link",
+          collectionId: item.collection?.$id ?? -1,
+          note: item.note || "",
+          highlights: [],
+          lastUpdate: item.lastUpdate || item.created,
+        });
+
+        // Output the result
+        output(formatted, BOOKMARK_DETAIL_COLUMNS, {
+          format: globalOpts.format,
+          quiet: globalOpts.quiet,
+          verbose: globalOpts.verbose,
+          debug: globalOpts.debug,
+        });
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   return bookmarks;
 }
