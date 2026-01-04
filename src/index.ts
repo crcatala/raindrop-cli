@@ -13,6 +13,7 @@ program
   .name("rdcli")
   .description("CLI for Raindrop.io - AI agent friendly bookmark management")
   .version("0.1.0")
+  .addHelpText("after", "\nReport issues: https://github.com/crcatala/raindrop-cli-spike/issues")
   .option(
     "-f, --format <format>",
     "output format (json, table, tsv); defaults to table for terminal, json when piped"
