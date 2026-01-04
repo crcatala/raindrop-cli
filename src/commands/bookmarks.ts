@@ -66,6 +66,19 @@ const VALID_SORT_OPTIONS = [
 const VALID_TYPES = ["article", "video", "link", "image", "document", "audio"] as const;
 
 /**
+ * Parse a comma-separated tag string into an array of trimmed, non-empty tags.
+ * Returns undefined if the input is undefined or results in no valid tags.
+ */
+function parseTags(tagsString: string | undefined): string[] | undefined {
+  if (tagsString === undefined) return undefined;
+  const tags = tagsString
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+  return tags.length > 0 ? tags : undefined;
+}
+
+/**
  * Options for building a search query from convenience flags.
  */
 interface FilterOptions {
@@ -496,12 +509,7 @@ export function createBookmarksCommand(): Command {
         const collectionId = parseCollectionId(options.collection);
 
         // Parse tags from comma-separated string
-        const tags = options.tags
-          ? options.tags
-              .split(",")
-              .map((t: string) => t.trim())
-              .filter((t: string) => t.length > 0)
-          : undefined;
+        const tags = parseTags(options.tags);
 
         debug("Add bookmark options", {
           url,
@@ -581,6 +589,195 @@ export function createBookmarksCommand(): Command {
           collectionId: item.collection?.$id ?? -1,
           note: item.note || "",
           highlights: [],
+          lastUpdate: item.lastUpdate || item.created,
+        });
+
+        // Output the result
+        output(formatted, BOOKMARK_DETAIL_COLUMNS, {
+          format: globalOpts.format,
+          quiet: globalOpts.quiet,
+          verbose: globalOpts.verbose,
+          debug: globalOpts.debug,
+        });
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // update command - update an existing bookmark
+  bookmarks
+    .command("update")
+    .description("Update an existing bookmark")
+    .argument("<id>", "Bookmark ID")
+    .option("-t, --title <title>", "Update bookmark title")
+    .option(
+      "-e, --excerpt <excerpt>",
+      "Update short description/excerpt (use empty string to clear)"
+    )
+    .option("-n, --note <note>", "Update personal note (use empty string to clear)")
+    .option(
+      "--tags <tags>",
+      "Replace all tags with comma-separated list (cannot combine with --add-tags/--remove-tags)"
+    )
+    .option("--add-tags <tags>", "Add comma-separated tags to existing tags")
+    .option("--remove-tags <tags>", "Remove comma-separated tags from existing tags")
+    .option("-c, --collection <id>", "Move to collection (ID or name: all, unsorted, trash)")
+    .option("-i, --important", "Mark as important/favorite")
+    .option("-I, --no-important", "Remove important/favorite flag")
+    .action(async function (this: Command, idArg: string, options) {
+      try {
+        const globalOpts = this.optsWithGlobals() as GlobalOptions;
+
+        // Parse and validate bookmark ID
+        const id = parseInt(idArg, 10);
+        if (isNaN(id) || id < 1) {
+          throw new Error("Invalid bookmark ID: must be a positive number");
+        }
+
+        // Validate that --tags is not combined with --add-tags or --remove-tags
+        if (options.tags !== undefined && (options.addTags || options.removeTags)) {
+          throw new Error(
+            "Cannot combine --tags with --add-tags or --remove-tags. " +
+              "Use --tags to replace all tags, or --add-tags/--remove-tags for incremental changes."
+          );
+        }
+
+        // Check if any update fields were provided
+        const hasUpdates =
+          options.title !== undefined ||
+          options.excerpt !== undefined ||
+          options.note !== undefined ||
+          options.tags !== undefined ||
+          options.addTags !== undefined ||
+          options.removeTags !== undefined ||
+          options.collection !== undefined ||
+          options.important !== undefined;
+
+        if (!hasUpdates) {
+          throw new Error(
+            "No fields to update. Use --title, --excerpt, --note, --tags, --add-tags, " +
+              "--remove-tags, --collection, --important, or --no-important to specify changes."
+          );
+        }
+
+        // Parse collection ID if provided
+        const collectionId =
+          options.collection !== undefined ? parseCollectionId(options.collection) : undefined;
+
+        // Parse tags options (parseTags returns undefined for empty results)
+        const replaceTags = parseTags(options.tags);
+        const addTags = parseTags(options.addTags);
+        const removeTags = parseTags(options.removeTags);
+
+        debug("Update bookmark options", {
+          id,
+          title: options.title,
+          excerpt: options.excerpt,
+          note: options.note,
+          replaceTags,
+          addTags,
+          removeTags,
+          collectionId,
+          important: options.important,
+        });
+
+        const client = getClient();
+
+        // If using --add-tags or --remove-tags, we need to fetch current tags first
+        let currentTags: string[] | undefined;
+        if (addTags || removeTags) {
+          verbose(`Fetching current bookmark ${id} to get existing tags`);
+          const currentResponse = await verboseTime("Fetching current bookmark", () =>
+            client.raindrop.getRaindrop(id)
+          );
+          currentTags = currentResponse.data.item.tags || [];
+          debug("Current tags", { currentTags });
+        }
+
+        // Calculate final tags
+        let finalTags: string[] | undefined;
+        if (replaceTags !== undefined) {
+          // Replace all tags
+          finalTags = replaceTags;
+        } else if (addTags || removeTags) {
+          // Incremental tag changes
+          const tagSet = new Set(currentTags || []);
+
+          if (addTags) {
+            for (const tag of addTags) {
+              tagSet.add(tag);
+            }
+          }
+
+          if (removeTags) {
+            for (const tag of removeTags) {
+              tagSet.delete(tag);
+            }
+          }
+
+          finalTags = Array.from(tagSet);
+        }
+
+        // Build the request payload
+        const requestBody: Record<string, unknown> = {};
+
+        if (options.title !== undefined) {
+          requestBody.title = options.title;
+        }
+
+        if (options.excerpt !== undefined) {
+          requestBody.excerpt = options.excerpt;
+        }
+
+        if (options.note !== undefined) {
+          requestBody.note = options.note;
+        }
+
+        if (finalTags !== undefined) {
+          requestBody.tags = finalTags;
+        }
+
+        if (collectionId !== undefined) {
+          requestBody.collection = { $id: collectionId };
+        }
+
+        if (options.important !== undefined) {
+          requestBody.important = options.important;
+        }
+
+        verbose(`Updating bookmark ${id}`);
+
+        const response = await verboseTime("Updating bookmark", () =>
+          client.raindrop.updateRaindrop(id, requestBody)
+        );
+
+        const item = response.data.item;
+
+        if (!item) {
+          throw new Error("Update failed: no item returned from API");
+        }
+
+        debug("API response", {
+          id: item._id,
+          title: item.title,
+          result: response.data.result,
+        });
+
+        verbose(`Updated bookmark ${item._id}: ${item.title}`);
+
+        // Format for output (reuse detail format)
+        const formatted = formatBookmarkDetail({
+          _id: item._id,
+          title: item.title,
+          link: item.link,
+          tags: item.tags || [],
+          created: item.created,
+          excerpt: item.excerpt || "",
+          domain: item.domain || "",
+          type: item.type || "link",
+          collectionId: item.collection?.$id ?? -1,
+          note: item.note || "",
+          highlights: item.highlights || [],
           lastUpdate: item.lastUpdate || item.created,
         });
 

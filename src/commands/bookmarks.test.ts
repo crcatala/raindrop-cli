@@ -824,3 +824,442 @@ describe("bookmarks add command - with auth", () => {
     await deleteBookmark(data._id);
   });
 });
+
+describe("bookmarks update command", () => {
+  describe("help", () => {
+    test("bookmarks update --help shows usage", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "update", "--help"]);
+      expect(result.stdout).toContain("Update an existing bookmark");
+      expect(result.stdout).toContain("<id>");
+      expect(result.stdout).toContain("--title");
+      expect(result.stdout).toContain("--excerpt");
+      expect(result.stdout).toContain("--note");
+      expect(result.stdout).toContain("--tags");
+      expect(result.stdout).toContain("--add-tags");
+      expect(result.stdout).toContain("--remove-tags");
+      expect(result.stdout).toContain("--collection");
+      expect(result.stdout).toContain("--important");
+      expect(result.stdout).toContain("--no-important");
+    });
+  });
+
+  describe("validation", () => {
+    test("rejects missing ID argument", async () => {
+      const result = await runCli(["bookmarks", "update"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("missing required argument");
+    });
+
+    test("rejects non-numeric ID", async () => {
+      const result = await runCli(["bookmarks", "update", "abc", "--title", "Test"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+
+    test("rejects zero ID", async () => {
+      const result = await runCli(["bookmarks", "update", "0", "--title", "Test"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+
+    test("rejects negative ID", async () => {
+      const result = await runCli(["bookmarks", "update", "-1", "--title", "Test"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+
+    test("rejects update with no fields specified", async () => {
+      const result = await runCli(["bookmarks", "update", "12345"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("No fields to update");
+    });
+
+    test("rejects combining --tags with --add-tags", async () => {
+      const result = await runCli(
+        ["bookmarks", "update", "12345", "--tags", "new", "--add-tags", "extra"],
+        {
+          env: { RAINDROP_TOKEN: "fake-token" },
+        }
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Cannot combine --tags with --add-tags or --remove-tags");
+    });
+
+    test("rejects combining --tags with --remove-tags", async () => {
+      const result = await runCli(
+        ["bookmarks", "update", "12345", "--tags", "new", "--remove-tags", "old"],
+        {
+          env: { RAINDROP_TOKEN: "fake-token" },
+        }
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Cannot combine --tags with --add-tags or --remove-tags");
+    });
+
+    test("rejects invalid collection ID", async () => {
+      const result = await runCli(["bookmarks", "update", "12345", "--collection", "notanumber"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid collection ID");
+    });
+  });
+
+  describe("without auth", () => {
+    test("fails gracefully without token", async () => {
+      const result = await runCli(["bookmarks", "update", "12345", "--title", "Test"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      expect(result.exitCode).toBe(1);
+      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
+      expect(hasAuthError).toBe(true);
+    });
+  });
+});
+
+/**
+ * Integration tests for update command that require a valid RAINDROP_TOKEN.
+ * These create, update, and clean up test bookmarks.
+ */
+describe("bookmarks update command - with auth", () => {
+  const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const testWithAuth = hasToken ? test : test.skip;
+
+  // Helper to create a test bookmark
+  async function createTestBookmark(suffix: string = ""): Promise<{ id: number; url: string }> {
+    const testUrl = `https://example.com/update-test-${Date.now()}${suffix}`;
+    const result = await runCliExpectSuccess([
+      "bookmarks",
+      "add",
+      testUrl,
+      "--title",
+      "Original Title",
+      "--tags",
+      "original,test",
+    ]);
+    const data = parseJsonOutput<{ _id: number; link: string }>(result);
+    return { id: data._id, url: testUrl };
+  }
+
+  // Helper to delete a bookmark (cleanup)
+  async function deleteBookmark(id: number): Promise<void> {
+    await runCli(["bookmarks", "delete", String(id), "--permanent", "--force"]);
+  }
+
+  testWithAuth("update title", async () => {
+    const { id } = await createTestBookmark("-title");
+    const newTitle = "Updated Title";
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--title",
+        newTitle,
+      ]);
+      const data = parseJsonOutput<{ _id: number; title: string }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.title).toBe(newTitle);
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("update excerpt", async () => {
+    const { id } = await createTestBookmark("-excerpt");
+    const newExcerpt = "This is an updated excerpt";
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--excerpt",
+        newExcerpt,
+      ]);
+      const data = parseJsonOutput<{ _id: number; excerpt: string }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.excerpt).toBe(newExcerpt);
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("update note", async () => {
+    const { id } = await createTestBookmark("-note");
+    const newNote = "This is an updated note";
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--note",
+        newNote,
+      ]);
+      const data = parseJsonOutput<{ _id: number; note: string }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.note).toBe(newNote);
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("clear note with empty string", async () => {
+    const { id } = await createTestBookmark("-clear-note");
+
+    try {
+      // First add a note
+      await runCliExpectSuccess(["bookmarks", "update", String(id), "--note", "Temporary note"]);
+
+      // Then clear it
+      const result = await runCliExpectSuccess(["bookmarks", "update", String(id), "--note", ""]);
+      const data = parseJsonOutput<{ _id: number; note: string }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.note).toBe("");
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("replace all tags with --tags", async () => {
+    const { id } = await createTestBookmark("-replace-tags");
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--tags",
+        "new,replacement,tags",
+      ]);
+      const data = parseJsonOutput<{ _id: number; tags: string }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.tags).toContain("new");
+      expect(data.tags).toContain("replacement");
+      expect(data.tags).toContain("tags");
+      expect(data.tags).not.toContain("original");
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("add tags with --add-tags", async () => {
+    const { id } = await createTestBookmark("-add-tags");
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--add-tags",
+        "newtag,another",
+      ]);
+      const data = parseJsonOutput<{ _id: number; tags: string }>(result);
+
+      expect(data._id).toBe(id);
+      // Should have original tags plus new ones
+      expect(data.tags).toContain("original");
+      expect(data.tags).toContain("test");
+      expect(data.tags).toContain("newtag");
+      expect(data.tags).toContain("another");
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("remove tags with --remove-tags", async () => {
+    const { id } = await createTestBookmark("-remove-tags");
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--remove-tags",
+        "original",
+      ]);
+      const data = parseJsonOutput<{ _id: number; tags: string }>(result);
+
+      expect(data._id).toBe(id);
+      // Should still have 'test' but not 'original'
+      expect(data.tags).toContain("test");
+      expect(data.tags).not.toContain("original");
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("combine --add-tags and --remove-tags", async () => {
+    const { id } = await createTestBookmark("-combo-tags");
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--add-tags",
+        "added",
+        "--remove-tags",
+        "original",
+      ]);
+      const data = parseJsonOutput<{ _id: number; tags: string }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.tags).toContain("test");
+      expect(data.tags).toContain("added");
+      expect(data.tags).not.toContain("original");
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("clear all tags with empty --tags", async () => {
+    const { id } = await createTestBookmark("-clear-tags");
+
+    try {
+      const result = await runCliExpectSuccess(["bookmarks", "update", String(id), "--tags", ""]);
+      const data = parseJsonOutput<{ _id: number; tags: string }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.tags).toBe("");
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("update collection", async () => {
+    const { id } = await createTestBookmark("-collection");
+
+    try {
+      // Move to trash
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--collection",
+        "trash",
+      ]);
+      const data = parseJsonOutput<{ _id: number; collectionId: number }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.collectionId).toBe(-99); // trash collection ID
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("mark as important", async () => {
+    const { id } = await createTestBookmark("-important");
+
+    try {
+      const result = await runCliExpectSuccess(["bookmarks", "update", String(id), "--important"]);
+      // The API response should reflect the change
+      // Note: the formatted output may not include 'important' field directly
+      // but the update should succeed
+      expect(result.exitCode).toBe(0);
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("unmark as important with --no-important", async () => {
+    const { id } = await createTestBookmark("-no-important");
+
+    try {
+      // First mark as important
+      await runCliExpectSuccess(["bookmarks", "update", String(id), "--important"]);
+
+      // Then unmark it
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--no-important",
+      ]);
+      expect(result.exitCode).toBe(0);
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("update multiple fields at once", async () => {
+    const { id } = await createTestBookmark("-multi");
+    const newTitle = "Multi-Updated Title";
+    const newNote = "Multi-updated note";
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--title",
+        newTitle,
+        "--note",
+        newNote,
+        "--add-tags",
+        "multi",
+      ]);
+      const data = parseJsonOutput<{
+        _id: number;
+        title: string;
+        note: string;
+        tags: string;
+      }>(result);
+
+      expect(data._id).toBe(id);
+      expect(data.title).toBe(newTitle);
+      expect(data.note).toBe(newNote);
+      expect(data.tags).toContain("multi");
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("update quiet mode outputs only ID", async () => {
+    const { id } = await createTestBookmark("-quiet");
+
+    try {
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "update",
+        String(id),
+        "--title",
+        "Quiet Update",
+        "-q",
+      ]);
+
+      // Should output just the ID
+      expect(result.stdout.trim()).toBe(String(id));
+    } finally {
+      await deleteBookmark(id);
+    }
+  });
+
+  testWithAuth("update returns 404 for non-existent bookmark", async () => {
+    const result = await runCli(["bookmarks", "update", "999999999", "--title", "Does not exist"]);
+
+    expect(result.exitCode).toBe(1);
+    const hasNotFound =
+      result.stderr.includes("404") ||
+      result.stderr.includes("not found") ||
+      result.stderr.includes("Not Found");
+    expect(hasNotFound).toBe(true);
+  });
+});
