@@ -24,6 +24,30 @@ describe("bookmarks command", () => {
       expect(result.stdout).toContain("--search");
       expect(result.stdout).toContain("collection-id");
     });
+
+    test("bookmarks list --help shows search examples and doc link", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "list", "--help"]);
+      // Check for search examples
+      expect(result.stdout).toContain("type:article");
+      expect(result.stdout).toContain("#javascript");
+      expect(result.stdout).toContain("domain:github.com");
+      // Check for documentation link
+      expect(result.stdout).toContain("help.raindrop.io/using-search");
+    });
+
+    test("bookmarks list --help shows convenience filter flags", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "list", "--help"]);
+      expect(result.stdout).toContain("--type");
+      expect(result.stdout).toContain("--tag");
+      expect(result.stdout).toContain("--domain");
+      expect(result.stdout).toContain("--favorites");
+      expect(result.stdout).toContain("--with-notes");
+      expect(result.stdout).toContain("--with-highlights");
+      expect(result.stdout).toContain("--without-tags");
+      expect(result.stdout).toContain("--has-reminder");
+      expect(result.stdout).toContain("--broken");
+      expect(result.stdout).toContain("--created");
+    });
   });
 
   describe("list command - without auth", () => {
@@ -75,6 +99,48 @@ describe("bookmarks command", () => {
       });
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toContain("Page must be a non-negative number");
+    });
+
+    test("rejects invalid type option", async () => {
+      const result = await runCli(["bookmarks", "list", "--type", "invalid"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid type");
+      expect(result.stderr).toContain("article");
+    });
+
+    test("rejects invalid created date format", async () => {
+      const result = await runCli(["bookmarks", "list", "--created", "yesterday"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid date format");
+      expect(result.stderr).toContain("YYYY-MM");
+    });
+
+    test("rejects malformed created date", async () => {
+      const result = await runCli(["bookmarks", "list", "--created", "2025-1"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid date format");
+    });
+
+    test("accepts valid YYYY-MM date format", async () => {
+      // This will fail auth but validates the date format is accepted
+      const result = await runCli(["bookmarks", "list", "--created", "2025-01"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      // Should not fail on date validation (will fail on auth instead)
+      expect(result.stderr).not.toContain("Invalid date format");
+    });
+
+    test("accepts valid YYYY-MM-DD date format", async () => {
+      const result = await runCli(["bookmarks", "list", "--created", "2025-01-15"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.stderr).not.toContain("Invalid date format");
     });
   });
 });
@@ -233,5 +299,96 @@ describe("bookmarks command - with auth", () => {
     expect(result.stdout).toContain("───");
     // Title and URL should be present (as content, not labels)
     expect(result.stdout).toContain("https://");
+  });
+
+  // Convenience filter flag tests
+  testWithAuth("list supports --type filter", async () => {
+    const result = await runCliExpectSuccess([
+      "bookmarks",
+      "list",
+      "--type",
+      "article",
+      "--limit",
+      "5",
+    ]);
+    const data = parseJsonOutput<Array<{ _id: number; type: string }>>(result);
+
+    expect(Array.isArray(data)).toBe(true);
+    // If results exist, they should all be articles
+    for (const item of data) {
+      expect(item.type).toBe("article");
+    }
+  });
+
+  testWithAuth("list supports --tag filter", async () => {
+    // This test just verifies the flag is accepted; results depend on user's tags
+    const result = await runCli(["bookmarks", "list", "--tag", "test", "--limit", "5"]);
+
+    // Should succeed (even if no matches)
+    expect(result.exitCode).toBe(0);
+  });
+
+  testWithAuth("list supports --domain filter", async () => {
+    const result = await runCliExpectSuccess([
+      "bookmarks",
+      "list",
+      "--domain",
+      "github.com",
+      "--limit",
+      "5",
+    ]);
+    const data = parseJsonOutput<Array<{ _id: number; domain: string }>>(result);
+
+    expect(Array.isArray(data)).toBe(true);
+    // If results exist, they should all be from github.com
+    for (const item of data) {
+      expect(item.domain).toBe("github.com");
+    }
+  });
+
+  testWithAuth("list supports --favorites filter", async () => {
+    // This test just verifies the flag is accepted
+    const result = await runCli(["bookmarks", "list", "--favorites", "--limit", "5"]);
+
+    expect(result.exitCode).toBe(0);
+  });
+
+  testWithAuth("list supports multiple filter flags combined", async () => {
+    // Combine --type and --domain
+    const result = await runCli([
+      "bookmarks",
+      "list",
+      "--type",
+      "article",
+      "--domain",
+      "github.com",
+      "--limit",
+      "5",
+    ]);
+
+    expect(result.exitCode).toBe(0);
+  });
+
+  testWithAuth("list supports filter flags combined with --search", async () => {
+    // Combine --type with raw --search
+    const result = await runCli([
+      "bookmarks",
+      "list",
+      "--type",
+      "article",
+      "--search",
+      "react",
+      "--limit",
+      "5",
+    ]);
+
+    expect(result.exitCode).toBe(0);
+  });
+
+  testWithAuth("list supports --broken filter", async () => {
+    // This test just verifies the flag is accepted
+    const result = await runCli(["bookmarks", "list", "--broken", "--limit", "5"]);
+
+    expect(result.exitCode).toBe(0);
   });
 });

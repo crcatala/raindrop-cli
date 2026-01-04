@@ -47,6 +47,52 @@ const SPECIAL_COLLECTIONS = {
 } as const;
 
 /**
+ * Valid bookmark types for the --type filter.
+ */
+const VALID_TYPES = ["article", "video", "link", "image", "document", "audio"] as const;
+
+/**
+ * Options for building a search query from convenience flags.
+ */
+interface FilterOptions {
+  type?: string;
+  tag?: string;
+  domain?: string;
+  favorites?: boolean;
+  withNotes?: boolean;
+  withHighlights?: boolean;
+  withoutTags?: boolean;
+  hasReminder?: boolean;
+  broken?: boolean;
+  created?: string;
+  search?: string;
+}
+
+/**
+ * Build search query string from convenience flags.
+ * Combines flags with optional raw search query using AND logic.
+ */
+function buildSearchQuery(options: FilterOptions): string | undefined {
+  const parts: string[] = [];
+
+  if (options.type) parts.push(`type:${options.type}`);
+  if (options.tag) parts.push(`#${options.tag}`);
+  if (options.domain) parts.push(`domain:${options.domain}`);
+  if (options.favorites) parts.push(`❤️`);
+  if (options.withNotes) parts.push(`note:true`);
+  if (options.withHighlights) parts.push(`highlights:true`);
+  if (options.withoutTags) parts.push(`notag:true`);
+  if (options.hasReminder) parts.push(`reminder:true`);
+  if (options.broken) parts.push(`broken:true`);
+  if (options.created) parts.push(`created:${options.created}`);
+
+  // Append raw search query if provided
+  if (options.search) parts.push(options.search);
+
+  return parts.length > 0 ? parts.join(" ") : undefined;
+}
+
+/**
  * Parse collection ID from string argument.
  * Supports numeric IDs and special names (all, unsorted, trash).
  */
@@ -124,7 +170,25 @@ export function createBookmarksCommand(): Command {
       "Sort field: created, title, domain, lastUpdate, sort. Prefix with - for descending",
       "-created"
     )
-    .option("--search <query>", "Search query to filter bookmarks")
+    .option(
+      "--search <query>",
+      `Search query (raw Raindrop syntax). Examples:
+                    "type:article"       Filter by type
+                    "#javascript"        Filter by tag
+                    "domain:github.com"  Filter by domain
+                    Full syntax: https://help.raindrop.io/using-search`
+    )
+    // Convenience filter flags
+    .option("--type <type>", "Filter by type: article, video, link, image, document, audio")
+    .option("--tag <tag>", "Filter by tag")
+    .option("--domain <domain>", "Filter by domain (e.g., github.com)")
+    .option("--favorites", "Show only favorites")
+    .option("--with-notes", "Show only bookmarks with notes")
+    .option("--with-highlights", "Show only bookmarks with highlights")
+    .option("--without-tags", "Show only bookmarks without tags")
+    .option("--has-reminder", "Show only bookmarks with reminders")
+    .option("--broken", "Show only bookmarks with broken links")
+    .option("--created <date>", "Filter by creation date (YYYY-MM or YYYY-MM-DD)")
     .action(async function (this: Command, collectionIdArg: string | undefined, options) {
       try {
         // Get global options from parent command
@@ -135,7 +199,6 @@ export function createBookmarksCommand(): Command {
         const limit = parseInt(options.limit, 10);
         const page = parseInt(options.page, 10);
         const sort = options.sort;
-        const search = options.search;
 
         // Validate limit
         if (isNaN(limit) || limit < 1 || limit > 50) {
@@ -154,11 +217,42 @@ export function createBookmarksCommand(): Command {
           );
         }
 
+        // Validate type if provided
+        if (options.type && !VALID_TYPES.includes(options.type)) {
+          throw new Error(
+            `Invalid type: "${options.type}". Valid types: ${VALID_TYPES.join(", ")}`
+          );
+        }
+
+        // Validate created date format if provided
+        if (options.created && !/^\d{4}-\d{2}(-\d{2})?$/.test(options.created)) {
+          throw new Error(
+            `Invalid date format: "${options.created}". Use YYYY-MM or YYYY-MM-DD format`
+          );
+        }
+
+        // Build combined search query from convenience flags and raw search
+        const filterOptions: FilterOptions = {
+          type: options.type,
+          tag: options.tag,
+          domain: options.domain,
+          favorites: options.favorites,
+          withNotes: options.withNotes,
+          withHighlights: options.withHighlights,
+          withoutTags: options.withoutTags,
+          hasReminder: options.hasReminder,
+          broken: options.broken,
+          created: options.created,
+          search: options.search,
+        };
+        const search = buildSearchQuery(filterOptions);
+
         debug("List bookmarks options", {
           collectionId,
           limit,
           page,
           sort,
+          filterOptions,
           search,
         });
 
