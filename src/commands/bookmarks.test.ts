@@ -45,6 +45,7 @@ describe("bookmarks command", () => {
       expect(result.stdout).toContain("--with-highlights");
       expect(result.stdout).toContain("--without-tags");
       expect(result.stdout).toContain("--has-reminder");
+      expect(result.stdout).toContain("--broken");
       expect(result.stdout).toContain("--created");
     });
   });
@@ -107,6 +108,39 @@ describe("bookmarks command", () => {
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toContain("Invalid type");
       expect(result.stderr).toContain("article");
+    });
+
+    test("rejects invalid created date format", async () => {
+      const result = await runCli(["bookmarks", "list", "--created", "yesterday"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid date format");
+      expect(result.stderr).toContain("YYYY-MM");
+    });
+
+    test("rejects malformed created date", async () => {
+      const result = await runCli(["bookmarks", "list", "--created", "2025-1"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid date format");
+    });
+
+    test("accepts valid YYYY-MM date format", async () => {
+      // This will fail auth but validates the date format is accepted
+      const result = await runCli(["bookmarks", "list", "--created", "2025-01"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      // Should not fail on date validation (will fail on auth instead)
+      expect(result.stderr).not.toContain("Invalid date format");
+    });
+
+    test("accepts valid YYYY-MM-DD date format", async () => {
+      const result = await runCli(["bookmarks", "list", "--created", "2025-01-15"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.stderr).not.toContain("Invalid date format");
     });
   });
 });
@@ -347,6 +381,13 @@ describe("bookmarks command - with auth", () => {
       "--limit",
       "5",
     ]);
+
+    expect(result.exitCode).toBe(0);
+  });
+
+  testWithAuth("list supports --broken filter", async () => {
+    // This test just verifies the flag is accepted
+    const result = await runCli(["bookmarks", "list", "--broken", "--limit", "5"]);
 
     expect(result.exitCode).toBe(0);
   });

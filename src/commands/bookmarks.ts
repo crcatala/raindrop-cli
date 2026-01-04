@@ -63,6 +63,7 @@ interface FilterOptions {
   withHighlights?: boolean;
   withoutTags?: boolean;
   hasReminder?: boolean;
+  broken?: boolean;
   created?: string;
   search?: string;
 }
@@ -82,6 +83,7 @@ function buildSearchQuery(options: FilterOptions): string | undefined {
   if (options.withHighlights) parts.push(`highlights:true`);
   if (options.withoutTags) parts.push(`notag:true`);
   if (options.hasReminder) parts.push(`reminder:true`);
+  if (options.broken) parts.push(`broken:true`);
   if (options.created) parts.push(`created:${options.created}`);
 
   // Append raw search query if provided
@@ -185,6 +187,7 @@ export function createBookmarksCommand(): Command {
     .option("--with-highlights", "Show only bookmarks with highlights")
     .option("--without-tags", "Show only bookmarks without tags")
     .option("--has-reminder", "Show only bookmarks with reminders")
+    .option("--broken", "Show only bookmarks with broken links")
     .option("--created <date>", "Filter by creation date (YYYY-MM or YYYY-MM-DD)")
     .action(async function (this: Command, collectionIdArg: string | undefined, options) {
       try {
@@ -221,6 +224,13 @@ export function createBookmarksCommand(): Command {
           );
         }
 
+        // Validate created date format if provided
+        if (options.created && !/^\d{4}-\d{2}(-\d{2})?$/.test(options.created)) {
+          throw new Error(
+            `Invalid date format: "${options.created}". Use YYYY-MM or YYYY-MM-DD format`
+          );
+        }
+
         // Build combined search query from convenience flags and raw search
         const filterOptions: FilterOptions = {
           type: options.type,
@@ -231,6 +241,7 @@ export function createBookmarksCommand(): Command {
           withHighlights: options.withHighlights,
           withoutTags: options.withoutTags,
           hasReminder: options.hasReminder,
+          broken: options.broken,
           created: options.created,
           search: options.search,
         };
