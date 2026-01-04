@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
+import { parseCollectionId } from "../utils/collections.js";
 import { handleError } from "../utils/errors.js";
 import { verbose, verboseTime, debug } from "../utils/debug.js";
 import { outputError, outputMessage } from "../utils/output-streams.js";
@@ -13,40 +14,6 @@ const TAG_COLUMNS: ColumnConfig[] = [
   { key: "_id", header: "Tag", prominent: true },
   { key: "count", header: "Count", width: 10 },
 ];
-
-/**
- * Special collection IDs in Raindrop.io
- */
-const SPECIAL_COLLECTIONS = {
-  all: 0,
-  unsorted: -1,
-  trash: -99,
-} as const;
-
-/**
- * Parse collection ID from string argument.
- * Supports numeric IDs and special names (all, unsorted, trash).
- */
-function parseCollectionId(value: string | undefined): number {
-  if (value === undefined) {
-    return SPECIAL_COLLECTIONS.all;
-  }
-
-  // Check for special collection names
-  const lowerValue = value.toLowerCase();
-  if (lowerValue in SPECIAL_COLLECTIONS) {
-    return SPECIAL_COLLECTIONS[lowerValue as keyof typeof SPECIAL_COLLECTIONS];
-  }
-
-  // Parse as number
-  const num = parseInt(value, 10);
-  if (isNaN(num)) {
-    throw new Error(
-      `Invalid collection ID: "${value}". Use a number or one of: all, unsorted, trash`
-    );
-  }
-  return num;
-}
 
 export function createTagsCommand(): Command {
   const tags = new Command("tags").description("Manage tags").action(function (this: Command) {

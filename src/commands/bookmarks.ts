@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
+import { parseCollectionId } from "../utils/collections.js";
 import { handleError } from "../utils/errors.js";
 import { verbose, verboseTime, debug } from "../utils/debug.js";
 import type { GlobalOptions } from "../types/index.js";
@@ -36,15 +37,6 @@ const VALID_SORT_OPTIONS = [
   "sort", // manual sort order
   "-sort",
 ];
-
-/**
- * Special collection IDs in Raindrop.io
- */
-const SPECIAL_COLLECTIONS = {
-  all: 0,
-  unsorted: -1,
-  trash: -99,
-} as const;
 
 /**
  * Valid bookmark types for the --type filter.
@@ -90,31 +82,6 @@ function buildSearchQuery(options: FilterOptions): string | undefined {
   if (options.search) parts.push(options.search);
 
   return parts.length > 0 ? parts.join(" ") : undefined;
-}
-
-/**
- * Parse collection ID from string argument.
- * Supports numeric IDs and special names (all, unsorted, trash).
- */
-function parseCollectionId(value: string | undefined): number {
-  if (value === undefined) {
-    return SPECIAL_COLLECTIONS.all;
-  }
-
-  // Check for special collection names
-  const lowerValue = value.toLowerCase();
-  if (lowerValue in SPECIAL_COLLECTIONS) {
-    return SPECIAL_COLLECTIONS[lowerValue as keyof typeof SPECIAL_COLLECTIONS];
-  }
-
-  // Parse as number
-  const num = parseInt(value, 10);
-  if (isNaN(num)) {
-    throw new Error(
-      `Invalid collection ID: "${value}". Use a number or one of: all, unsorted, trash`
-    );
-  }
-  return num;
 }
 
 /**
