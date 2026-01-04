@@ -14,6 +14,13 @@ describe("bookmarks command", () => {
       const result = await runCliExpectSuccess(["bookmarks", "--help"]);
       expect(result.stdout).toContain("Manage bookmarks");
       expect(result.stdout).toContain("list");
+      expect(result.stdout).toContain("get");
+    });
+
+    test("bookmarks get --help shows usage", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "get", "--help"]);
+      expect(result.stdout).toContain("Get a single bookmark by ID");
+      expect(result.stdout).toContain("<id>");
     });
 
     test("bookmarks list --help shows all options", async () => {
@@ -59,6 +66,52 @@ describe("bookmarks command", () => {
       // Should fail with either no token error or 401 from API
       const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
       expect(hasAuthError).toBe(true);
+    });
+  });
+
+  describe("get command - without auth", () => {
+    test("fails gracefully without token", async () => {
+      const result = await runCli(["bookmarks", "get", "12345"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      expect(result.exitCode).toBe(1);
+      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
+      expect(hasAuthError).toBe(true);
+    });
+  });
+
+  describe("get command - validation", () => {
+    test("rejects non-numeric ID", async () => {
+      const result = await runCli(["bookmarks", "get", "abc"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+
+    test("rejects negative ID", async () => {
+      const result = await runCli(["bookmarks", "get", "-1"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+
+    test("rejects zero ID", async () => {
+      const result = await runCli(["bookmarks", "get", "0"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+
+    test("requires ID argument", async () => {
+      const result = await runCli(["bookmarks", "get"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      // Commander shows missing argument error
+      expect(result.stderr).toContain("missing required argument");
     });
   });
 
@@ -392,5 +445,126 @@ describe("bookmarks command - with auth", () => {
     const result = await runCli(["bookmarks", "list", "--broken", "--limit", "5"]);
 
     expect(result.exitCode).toBe(0);
+  });
+
+  // Get command tests
+  testWithAuth("get returns a bookmark as JSON", async () => {
+    // First get a bookmark ID from the list
+    const listResult = await runCliExpectSuccess(["bookmarks", "list", "--limit", "1"]);
+    const listData = parseJsonOutput<Array<{ _id: number }>>(listResult);
+
+    if (listData.length === 0) {
+      // No bookmarks to test with
+      return;
+    }
+
+    const bookmarkId = listData[0]!._id;
+    const result = await runCliExpectSuccess(["bookmarks", "get", String(bookmarkId)]);
+    const data = parseJsonOutput<{
+      _id: number;
+      title: string;
+      link: string;
+      highlights: Array<{ text: string }>;
+    }>(result);
+
+    expect(data._id).toBe(bookmarkId);
+    expect(data).toHaveProperty("title");
+    expect(data).toHaveProperty("link");
+    expect(data).toHaveProperty("highlights");
+    expect(Array.isArray(data.highlights)).toBe(true);
+  });
+
+  testWithAuth("get includes full metadata", async () => {
+    // First get a bookmark ID from the list
+    const listResult = await runCliExpectSuccess(["bookmarks", "list", "--limit", "1"]);
+    const listData = parseJsonOutput<Array<{ _id: number }>>(listResult);
+
+    if (listData.length === 0) {
+      return;
+    }
+
+    const bookmarkId = listData[0]!._id;
+    const result = await runCliExpectSuccess(["bookmarks", "get", String(bookmarkId)]);
+    const data = parseJsonOutput<{
+      _id: number;
+      title: string;
+      link: string;
+      domain: string;
+      type: string;
+      collectionId: number;
+      created: string;
+      lastUpdate: string;
+    }>(result);
+
+    // Verify all expected metadata fields are present
+    expect(data).toHaveProperty("_id");
+    expect(data).toHaveProperty("title");
+    expect(data).toHaveProperty("link");
+    expect(data).toHaveProperty("domain");
+    expect(data).toHaveProperty("type");
+    expect(data).toHaveProperty("collectionId");
+    expect(data).toHaveProperty("created");
+    expect(data).toHaveProperty("lastUpdate");
+  });
+
+  testWithAuth("get quiet mode outputs only ID", async () => {
+    const listResult = await runCliExpectSuccess(["bookmarks", "list", "--limit", "1"]);
+    const listData = parseJsonOutput<Array<{ _id: number }>>(listResult);
+
+    if (listData.length === 0) {
+      return;
+    }
+
+    const bookmarkId = listData[0]!._id;
+    const result = await runCliExpectSuccess(["bookmarks", "get", String(bookmarkId), "-q"]);
+
+    // Should output just the ID
+    expect(result.stdout.trim()).toBe(String(bookmarkId));
+  });
+
+  testWithAuth("get plain format works", async () => {
+    const listResult = await runCliExpectSuccess(["bookmarks", "list", "--limit", "1"]);
+    const listData = parseJsonOutput<Array<{ _id: number }>>(listResult);
+
+    if (listData.length === 0) {
+      return;
+    }
+
+    const bookmarkId = listData[0]!._id;
+    const result = await runCli(["bookmarks", "get", String(bookmarkId), "--format", "plain"]);
+
+    expect(result.exitCode).toBe(0);
+    // Plain format should include metadata fields
+    expect(result.stdout).toContain("🔖"); // ID icon
+    expect(result.stdout).toContain("🌐"); // Domain icon
+  });
+
+  testWithAuth("get table format works", async () => {
+    const listResult = await runCliExpectSuccess(["bookmarks", "list", "--limit", "1"]);
+    const listData = parseJsonOutput<Array<{ _id: number }>>(listResult);
+
+    if (listData.length === 0) {
+      return;
+    }
+
+    const bookmarkId = listData[0]!._id;
+    const result = await runCli(["bookmarks", "get", String(bookmarkId), "--format", "table"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("ID");
+    expect(result.stdout).toContain("Title");
+  });
+
+  testWithAuth("get returns 404 for non-existent bookmark", async () => {
+    // Use a very large ID that's unlikely to exist
+    const result = await runCli(["bookmarks", "get", "999999999"]);
+
+    expect(result.exitCode).toBe(1);
+    // Should return a 404 or "not found" error
+    const hasNotFound =
+      result.stderr.includes("404") ||
+      result.stderr.includes("not found") ||
+      result.stderr.includes("Not Found");
+    expect(hasNotFound).toBe(true);
   });
 });
