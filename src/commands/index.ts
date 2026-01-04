@@ -2,5 +2,6 @@
 export { createAuthCommand } from "./auth.js";
 export { createBookmarksCommand } from "./bookmarks.js";
 export { createCollectionsCommand } from "./collections.js";
+export { createHighlightsCommand } from "./highlights.js";
 export { createTagsCommand } from "./tags.js";
 export { createFiltersCommand } from "./filters.js";
