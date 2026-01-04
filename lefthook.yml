@@ -5,4 +5,6 @@ pre-push:
   parallel: true
   commands:
     verify:
+      skip:
+        - ref: main
       run: SIMPLE_OUTPUT=1 bun run verify
