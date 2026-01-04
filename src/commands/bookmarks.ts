@@ -118,12 +118,89 @@ function formatBookmarkItem(item: {
   };
 }
 
+import { confirmAction } from "../utils/prompt.js";
+
 export function createBookmarksCommand(): Command {
   const bookmarks = new Command("bookmarks").description("Manage bookmarks").action(function (
     this: Command
   ) {
     this.help();
   });
+
+  // delete command
+  bookmarks
+    .command("delete")
+    .description("Delete a bookmark")
+    .argument("<id>", "Bookmark ID")
+    .option("-p, --permanent", "Skip trash and delete permanently")
+    .option("-f, --force", "Skip confirmation prompt")
+    .action(async function (this: Command, idArg: string, options) {
+      try {
+        const globalOpts = this.optsWithGlobals() as GlobalOptions;
+        const id = parseInt(idArg, 10);
+
+        if (isNaN(id)) {
+          throw new Error("Invalid bookmark ID");
+        }
+
+        const permanent = !!options.permanent;
+        const force = !!options.force;
+
+        if (!force) {
+          const message = permanent
+            ? `Are you sure you want to PERMANENTLY delete bookmark ${id}? This cannot be undone.`
+            : `Are you sure you want to move bookmark ${id} to trash?`;
+
+          const confirmed = await confirmAction(message);
+          if (!confirmed) {
+            if (!globalOpts.quiet) {
+              console.log("Operation cancelled.");
+            }
+            return;
+          }
+        }
+
+        const client = getClient();
+
+        verbose(`Deleting bookmark ${id} (permanent: ${permanent})`);
+
+        // First deletion (moves to trash, or deletes if already in trash)
+        await verboseTime("Deleting bookmark", async () => {
+          try {
+            await client.raindrop.removeRaindrop(id);
+          } catch (error: any) {
+            // If manual permanent delete loop, we might handle 404 specially,
+            // but here checking if it exists is implicitly handled by the first call failing if not found.
+            throw error;
+          }
+        });
+
+        // If permanent deletion requested, try to delete again (from trash)
+        if (permanent) {
+          verbose(`Ensuring permanent deletion for ${id}`);
+          try {
+            await client.raindrop.removeRaindrop(id);
+          } catch (error: any) {
+            // If it was already in trash, the first delete killed it.
+            // So the second delete returns 404. We strictly consider 404 here 'success' (it's gone).
+            if (error?.response?.status !== 404) {
+              throw error;
+            }
+          }
+        }
+
+        if (globalOpts.format === "json") {
+          // We mimic a simple success response
+          console.log(JSON.stringify({ result: true, id, permanent }, null, 2));
+        } else if (!globalOpts.quiet) {
+          console.log(
+            permanent ? `Bookmark ${id} permanently deleted.` : `Bookmark ${id} moved to trash.`
+          );
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
 
   // list command
   bookmarks
