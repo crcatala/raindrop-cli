@@ -394,3 +394,46 @@ describe("bookmarks command - with auth", () => {
     expect(result.exitCode).toBe(0);
   });
 });
+
+describe("bookmarks delete command", () => {
+  describe("validation", () => {
+    test("rejects missing argument", async () => {
+      const result = await runCli(["bookmarks", "delete"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("error: missing required argument 'id'");
+    });
+
+    test("rejects invalid ID", async () => {
+      const result = await runCli(["bookmarks", "delete", "notanumber"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+    test("rejects invalid bookmark ID (zero)", async () => {
+      const result = await runCli(["bookmarks", "delete", "0"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+
+    test("rejects invalid bookmark ID (negative)", async () => {
+      const result = await runCli(["bookmarks", "delete", "-1"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+  });
+
+  describe("help", () => {
+    test("bookmarks delete --help shows options", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "delete", "--help"]);
+      expect(result.stdout).toContain("--permanent");
+      expect(result.stdout).toContain("--force");
+    });
+  });
+});
