@@ -1,6 +1,7 @@
 import { program, CommanderError } from "commander";
 import { createAuthCommand } from "./commands/auth.js";
 import { createBookmarksCommand } from "./commands/bookmarks.js";
+import { createCollectionsCommand } from "./commands/collections.js";
 import { outputError } from "./utils/output-streams.js";
 import { setNoColorFlag } from "./utils/tty.js";
 import { setDebugEnabled, setVerboseEnabled } from "./utils/debug.js";
@@ -38,6 +39,7 @@ program
 // Register commands
 program.addCommand(createAuthCommand());
 program.addCommand(createBookmarksCommand());
+program.addCommand(createCollectionsCommand());
 
 try {
   program.parse();
