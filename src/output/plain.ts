@@ -231,7 +231,7 @@ export function formatPlain<T>(data: T, columns: ColumnConfig[]): string {
   });
 
   // Styled separator between items with blank lines for breathing room
-  const separator = "\n\n" + c.dim("  ─────────────────────────────────────") + "\n\n";
+  const separator = "\n\n" + c.dim("──────────────────────────────────────────────────") + "\n\n";
 
   return formattedItems.join(separator);
 }
