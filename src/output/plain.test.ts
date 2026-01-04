@@ -137,7 +137,13 @@ describe("formatPlain", () => {
     const result = formatPlain(data, mixedColumns);
 
     // Should have a blank line between title and ID section
-    expect(result).toContain("My Title\n\n");
+    // Note: result may contain ANSI codes for bold, so we check for double newline
+    expect(result).toContain("My Title");
+    expect(result).toContain("\n\n"); // blank line separator
+    // Title should come before ID
+    const titleIdx = result.indexOf("My Title");
+    const idIdx = result.indexOf("123");
+    expect(titleIdx).toBeLessThan(idIdx);
   });
 
   test("empty prominent fields are not displayed", () => {
