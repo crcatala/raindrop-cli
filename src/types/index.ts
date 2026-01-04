@@ -1,4 +1,4 @@
-export type OutputFormat = "json" | "table" | "tsv";
+export type OutputFormat = "json" | "table" | "tsv" | "plain";
 
 export interface GlobalOptions {
   format?: OutputFormat;
