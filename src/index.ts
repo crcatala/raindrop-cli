@@ -7,6 +7,7 @@ import { createTagsCommand } from "./commands/tags.js";
 import { createFiltersCommand } from "./commands/filters.js";
 import { setNoColorFlag } from "./utils/tty.js";
 import { setDebugEnabled, setVerboseEnabled } from "./utils/debug.js";
+import { outputError } from "./utils/output-streams.js";
 
 program
   .name("rdcli")
@@ -21,6 +22,9 @@ program
   .option("-v, --verbose", "show operational details (API calls, timing)")
   .option("-d, --debug", "show debug info (stack traces, internal state)")
   .option("--no-color", "disable colored output")
+  .configureOutput({
+    outputError: () => {},
+  })
   .exitOverride()
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
@@ -64,6 +68,7 @@ try {
       process.exit(0);
     }
     // Commander errors are usage errors (per clig.dev conventions)
+    outputError(err.message);
     process.exit(2);
   }
   throw err;
