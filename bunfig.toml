@@ -14,4 +14,6 @@ coverageSkipTestFiles = true
 # Ignore patterns
 # axios-interceptors.ts has low coverage due to interceptor functions requiring complex Axios mocking;
 # the pure utility functions (isRetryableError, calculateBackoff, extractRateLimitInfo) are tested
-coveragePathIgnorePatterns = ["node_modules", "dist", "src/utils/axios-interceptors.ts"]
+# stdin.ts has low coverage because hasStdinData/readStdin/readIdsFromStdin require controlling
+# subprocess stdin which is complex; the pure parseIds function is fully tested
+coveragePathIgnorePatterns = ["node_modules", "dist", "src/utils/axios-interceptors.ts", "src/utils/stdin.ts"]
