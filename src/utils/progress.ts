@@ -11,7 +11,7 @@
  */
 
 import { verboseTime } from "./debug.js";
-import { withSpinner, type SpinnerOptions } from "./spinner.js";
+import { withSpinner } from "./spinner.js";
 
 /**
  * Execute an async operation with appropriate progress feedback.
@@ -34,29 +34,4 @@ export async function withProgress<T>(message: string, operation: () => Promise<
   // verboseTime will auto-disable in non-verbose mode
   // So we can safely wrap both and get the right behavior
   return withSpinner({ text: `${message}...` }, () => verboseTime(message, operation));
-}
-
-/**
- * Execute an async operation with customized progress feedback.
- *
- * Like withProgress, but allows customizing spinner success/fail messages.
- *
- * @param options - Spinner options with text, successText, and failText
- * @param verboseLabel - Label for verbose timing output
- * @param operation - Async operation to execute
- * @returns The result of the operation
- *
- * @example
- * const response = await withProgressOptions(
- *   { text: "Deleting...", successText: "Deleted!", failText: "Delete failed" },
- *   "Deleting bookmark",
- *   () => client.raindrop.removeRaindrop(id)
- * );
- */
-export async function withProgressOptions<T>(
-  options: SpinnerOptions,
-  verboseLabel: string,
-  operation: () => Promise<T>
-): Promise<T> {
-  return withSpinner(options, () => verboseTime(verboseLabel, operation));
 }
