@@ -59,7 +59,7 @@ describe("collections command", () => {
       const result = await runCli(["collections", "show", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
   });
@@ -69,7 +69,7 @@ describe("collections command", () => {
       const result = await runCli(["collections", "create", "   "], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Collection name cannot be empty");
     });
   });
@@ -79,7 +79,7 @@ describe("collections command", () => {
       const result = await runCli(["collections", "delete", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
   });

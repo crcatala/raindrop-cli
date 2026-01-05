@@ -71,11 +71,12 @@ async function validateToken(
 }
 
 export function createAuthCommand(): Command {
-  const auth = new Command("auth").description("Manage authentication").action(function (
-    this: Command
-  ) {
-    this.help();
-  });
+  const auth = new Command("auth")
+    .description("Manage authentication")
+    .exitOverride()
+    .action(function (this: Command) {
+      this.help();
+    });
 
   // set-token command
   auth
@@ -90,8 +91,8 @@ export function createAuthCommand(): Command {
       const token = await prompt("Paste your token: ");
 
       if (!token) {
-        outputError("Error: No token provided");
-        process.exit(1);
+        outputError("No token provided. Paste a token or run again to retry.");
+        process.exit(2);
       }
 
       if (options.validate) {
@@ -99,7 +100,7 @@ export function createAuthCommand(): Command {
         const result = await validateToken(token);
 
         if (!result.valid) {
-          outputError("Error: Invalid token. Please check your token and try again.");
+          outputError("Token validation failed. Check your token and try again.");
           process.exit(1);
         }
 

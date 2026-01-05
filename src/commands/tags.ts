@@ -2,8 +2,8 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
-import { handleError } from "../utils/errors.js";
-import { verbose, debug } from "../utils/debug.js";
+import { handleError, UsageError } from "../utils/errors.js";
+import { verbose, verboseTime, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import { outputError, outputMessage } from "../utils/output-streams.js";
 import type { GlobalOptions } from "../types/index.js";
@@ -17,9 +17,12 @@ const TAG_COLUMNS: ColumnConfig[] = [
 ];
 
 export function createTagsCommand(): Command {
-  const tags = new Command("tags").description("Manage tags").action(function (this: Command) {
-    this.help();
-  });
+  const tags = new Command("tags")
+    .description("Manage tags")
+    .exitOverride()
+    .action(function (this: Command) {
+      this.help();
+    });
 
   // list command
   tags
@@ -73,11 +76,10 @@ export function createTagsCommand(): Command {
         const collectionId = parseCollectionId(options.collection);
 
         if (!options.force) {
-          outputError(
-            `This will rename tag "${oldTag}" to "${newTag}" in collection ${collectionId}.`
+          throw new UsageError(
+            `This will rename tag "${oldTag}" to "${newTag}" in collection ${collectionId}. ` +
+              "Re-run with --force to confirm."
           );
-          outputError("Use --force to confirm this destructive operation.");
-          process.exit(1);
         }
 
         debug("Rename tag options", { oldTag, newTag, collectionId });
@@ -120,11 +122,10 @@ export function createTagsCommand(): Command {
         const collectionId = parseCollectionId(options.collection);
 
         if (!options.force) {
-          outputError(
-            `This will remove tag "${tag}" from all bookmarks in collection ${collectionId}.`
+          throw new UsageError(
+            `This will remove tag "${tag}" from all bookmarks in collection ${collectionId}. ` +
+              "Re-run with --force to confirm."
           );
-          outputError("Use --force to confirm this destructive operation.");
-          process.exit(1);
         }
 
         debug("Delete tag options", { tag, collectionId });

@@ -56,7 +56,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "list", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
   });
@@ -66,8 +66,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "rename", "old-tag", "new-tag"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("destructive operation");
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("--force");
     });
 
@@ -75,7 +74,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "rename", "my-tag", "better-tag"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("my-tag");
       expect(result.stderr).toContain("better-tag");
     });
@@ -86,8 +85,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "delete", "some-tag"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("destructive operation");
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("--force");
     });
 
@@ -95,7 +93,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "delete", "unwanted-tag"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("unwanted-tag");
     });
   });

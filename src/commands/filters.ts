@@ -84,11 +84,12 @@ function outputFlattened(sections: FilterSection[], globalOpts: GlobalOptions): 
 }
 
 export function createFiltersCommand(): Command {
-  const filters = new Command("filters").description("Discover available filters").action(function (
-    this: Command
-  ) {
-    this.help();
-  });
+  const filters = new Command("filters")
+    .description("Discover available filters")
+    .exitOverride()
+    .action(function (this: Command) {
+      this.help();
+    });
 
   // list command
   filters

@@ -48,7 +48,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "list", "--collection", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
 
@@ -56,32 +56,36 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "list", "--limit", "0"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Limit must be between 1 and 50");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid limit");
+      expect(result.stderr).toContain("1 and 50");
     });
 
     test("rejects invalid limit (too high)", async () => {
       const result = await runCli(["highlights", "list", "--limit", "100"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Limit must be between 1 and 50");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid limit");
+      expect(result.stderr).toContain("1 and 50");
     });
 
     test("rejects invalid limit (not a number)", async () => {
       const result = await runCli(["highlights", "list", "--limit", "abc"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Limit must be between 1 and 50");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid limit");
+      expect(result.stderr).toContain("1 and 50");
     });
 
     test("rejects negative page number", async () => {
       const result = await runCli(["highlights", "list", "--page", "-1"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Page must be a non-negative number");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid page");
+      expect(result.stderr).toContain("non-negative");
     });
   });
 
@@ -90,8 +94,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "get"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      // Commander may exit with 1 or 2 depending on error handling
-      expect(result.exitCode).toBeGreaterThan(0);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("bookmark-id");
     });
 
@@ -99,7 +102,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "get", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -107,7 +110,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "get", "0"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -115,7 +118,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "get", "-5"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
   });

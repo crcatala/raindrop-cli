@@ -26,7 +26,7 @@ export function outputMessage(message: string): void {
 
 /**
  * Output an error to stderr. Use for errors and warnings.
- * Examples: "Error: Invalid token", "Warning: Rate limit approaching"
+ * Examples: "Invalid token", "Warning: Rate limit approaching"
  */
 export function outputError(message: string): void {
   process.stderr.write(message + "\n");

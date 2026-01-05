@@ -1,5 +1,12 @@
 import { describe, test, expect, spyOn, beforeEach, afterEach } from "bun:test";
-import { RaindropCliError, ConfigError, ApiError, RateLimitError, handleError } from "./errors.js";
+import {
+  RaindropCliError,
+  ConfigError,
+  ApiError,
+  RateLimitError,
+  UsageError,
+  handleError,
+} from "./errors.js";
 
 describe("RaindropCliError", () => {
   test("creates error with message and code", () => {
@@ -54,6 +61,13 @@ describe("ConfigError", () => {
   });
 });
 
+describe("UsageError", () => {
+  test("uses exit code 2", () => {
+    const error = new UsageError("bad input");
+    expect(error.exitCode).toBe(2);
+  });
+});
+
 describe("ApiError", () => {
   test("creates error with API_ERROR code", () => {
     const error = new ApiError("api failed");
@@ -97,12 +111,12 @@ describe("RateLimitError", () => {
     expect(error.details).toEqual({ limit: 50, reset: resetTime });
   });
 
-  test("message includes limit and reset time", () => {
+  test("message includes retry guidance", () => {
     const resetTime = 1234567890;
     const error = new RateLimitError(100, resetTime);
 
-    expect(error.message).toContain("100");
-    expect(error.message).toContain("Rate limit exceeded");
+    expect(error.message).toContain("Rate limited by Raindrop API");
+    expect(error.message).toContain("retrying");
   });
 
   test("is instanceof RaindropCliError", () => {
@@ -139,7 +153,7 @@ describe("handleError", () => {
     const error = new RaindropCliError("test error", "TEST");
 
     expect(() => handleError(error)).toThrow("process.exit called");
-    expect(stderrSpy).toHaveBeenCalledWith("Error: test error\n");
+    expect(stderrSpy).toHaveBeenCalledWith("test error\n");
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
@@ -169,7 +183,7 @@ describe("handleError", () => {
     const error = new Error("regular error");
 
     expect(() => handleError(error)).toThrow("process.exit called");
-    expect(stderrSpy).toHaveBeenCalledWith("Error: regular error\n");
+    expect(stderrSpy).toHaveBeenCalledWith("regular error\n");
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
@@ -189,12 +203,12 @@ describe("handleError", () => {
 
   test("handles unknown error type", () => {
     expect(() => handleError("string error")).toThrow("process.exit called");
-    expect(stderrSpy).toHaveBeenCalledWith("An unexpected error occurred\n");
+    expect(stderrSpy).toHaveBeenCalledWith("An unexpected error occurred. Run with --debug for details.\n");
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   test("handles null/undefined error", () => {
     expect(() => handleError(null)).toThrow("process.exit called");
-    expect(stderrSpy).toHaveBeenCalledWith("An unexpected error occurred\n");
+    expect(stderrSpy).toHaveBeenCalledWith("An unexpected error occurred. Run with --debug for details.\n");
   });
 });
