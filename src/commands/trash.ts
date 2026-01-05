@@ -50,7 +50,10 @@ export function createTrashCommand(): Command {
                 count: trashCount,
               })
             );
-          } else if (!globalOpts.quiet) {
+          } else if (globalOpts.quiet) {
+            // Output just the count for scripting
+            console.log(trashCount);
+          } else {
             outputMessage(`Dry-run: Would permanently delete ${trashCount} item(s) from trash`);
           }
           return;

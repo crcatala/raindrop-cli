@@ -43,6 +43,20 @@ describe("trash command", () => {
     });
   });
 
+  describe("empty command - dry-run", () => {
+    test("dry-run with --quiet outputs just the count", async () => {
+      // Note: This test requires auth since dry-run fetches trash stats
+      // Skip if no token available
+      if (!process.env.RAINDROP_TOKEN) {
+        return;
+      }
+      const result = await runCli(["trash", "empty", "--dry-run", "--quiet"]);
+      expect(result.exitCode).toBe(0);
+      // Output should be just a number
+      expect(result.stdout.trim()).toMatch(/^\d+$/);
+    });
+  });
+
   describe("empty command - without auth", () => {
     test("fails gracefully without token", async () => {
       const result = await runCli(["trash", "empty", "--force"], {
