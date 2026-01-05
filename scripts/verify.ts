@@ -27,6 +27,8 @@ interface CheckConfig {
   name: string;
   command: string[];
   verboseHint: string;
+  /** Additional environment variables for this check */
+  env?: Record<string, string>;
 }
 
 interface CheckResult {
@@ -36,11 +38,14 @@ interface CheckResult {
   status?: string;
 }
 
+// Use test:all for pre-push verification (includes live tests with throttling)
+// Live tests skip automatically when RAINDROP_TOKEN is not set
 const checks: CheckConfig[] = [
   {
     name: "Tests",
-    command: ["bun", "test", "--bail", "--only-failures"],
+    command: ["bun", "test", "src", "--bail", "--only-failures"],
     verboseHint: "bun run test:verbose",
+    env: { RDCLI_API_DELAY_MS: "250" }, // Throttle live tests to avoid rate limits
   },
   {
     name: "Lint",
@@ -63,6 +68,7 @@ async function runCheckSimple(config: CheckConfig): Promise<CheckResult> {
   const proc = Bun.spawn(config.command, {
     stdout: "pipe",
     stderr: "pipe",
+    env: { ...process.env, ...config.env },
   });
 
   const [stdout, stderr] = await Promise.all([

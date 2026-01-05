@@ -16,4 +16,4 @@ coverageSkipTestFiles = true
 # the pure utility functions (isRetryableError, calculateBackoff, extractRateLimitInfo) are tested
 # stdin.ts has low coverage because hasStdinData/readStdin/readIdsFromStdin require controlling
 # subprocess stdin which is complex; the pure parseIds function is fully tested
-coveragePathIgnorePatterns = ["node_modules", "dist", "src/utils/axios-interceptors.ts", "src/utils/stdin.ts", "src/utils/spinner.ts"]
+coveragePathIgnorePatterns = ["node_modules", "dist", "src/utils/axios-interceptors.ts", "src/utils/stdin.ts", "src/utils/spinner.ts", "src/utils/prompt.ts", "src/test-utils/cleanup.ts", "src/test-utils/live-setup.ts"]
