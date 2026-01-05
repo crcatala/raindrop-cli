@@ -5,6 +5,7 @@ import { createCollectionsCommand } from "./commands/collections.js";
 import { createHighlightsCommand } from "./commands/highlights.js";
 import { createTagsCommand } from "./commands/tags.js";
 import { createFiltersCommand } from "./commands/filters.js";
+import { createTrashCommand } from "./commands/trash.js";
 import { setNoColorFlag } from "./utils/tty.js";
 import { setDebugEnabled, setVerboseEnabled } from "./utils/debug.js";
 import { outputError } from "./utils/output-streams.js";
@@ -69,6 +70,7 @@ program.addCommand(createCollectionsCommand());
 program.addCommand(createHighlightsCommand());
 program.addCommand(createTagsCommand());
 program.addCommand(createFiltersCommand());
+program.addCommand(createTrashCommand());
 
 try {
   program.parse();
