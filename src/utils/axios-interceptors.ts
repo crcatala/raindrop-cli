@@ -74,6 +74,21 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Get the API delay from environment variable.
+ * Used to throttle requests during live tests to avoid rate limits.
+ */
+function getApiDelayMs(): number {
+  const delay = process.env["RDCLI_API_DELAY_MS"];
+  if (delay) {
+    const parsed = parseInt(delay, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+  return 0;
+}
+
+/**
  * Extract rate limit info from response headers.
  */
 export function extractRateLimitInfo(headers: Record<string, string>): {
@@ -91,11 +106,18 @@ export function extractRateLimitInfo(headers: Record<string, string>): {
 }
 
 /**
- * Set up request interceptor for logging.
+ * Set up request interceptor for logging and optional rate limiting.
  */
 function setupRequestInterceptor(axiosInstance: AxiosInstance): void {
   axiosInstance.interceptors.request.use(
-    (config: ExtendedRequestConfig) => {
+    async (config: ExtendedRequestConfig) => {
+      // Apply API delay if configured (for live tests to avoid rate limits)
+      const apiDelay = getApiDelayMs();
+      if (apiDelay > 0) {
+        debug(`API delay: waiting ${apiDelay}ms before request`);
+        await sleep(apiDelay);
+      }
+
       // Track request start time for timing
       config._requestStartTime = performance.now();
 
@@ -245,5 +267,5 @@ export function setupClientInterceptors(axiosInstance: AxiosInstance): void {
   setupResponseInterceptor(axiosInstance);
 }
 
-// Export constants for testing
-export { MAX_RETRIES, INITIAL_DELAY_MS, MAX_DELAY_MS };
+// Export constants and helpers for testing
+export { MAX_RETRIES, INITIAL_DELAY_MS, MAX_DELAY_MS, getApiDelayMs };
