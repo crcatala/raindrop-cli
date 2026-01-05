@@ -99,9 +99,8 @@ function formatApiErrorMessage(error: ApiError): string {
     if (code === "ECONNREFUSED") {
       return "Can't connect to Raindrop API. Check your internet connection or try again later.";
     }
-    if (code === "ETIMEDOUT" || code === "ECONNABORTED") {
-      return "Request to Raindrop API timed out. Try again later.";
-    }
+    // Note: ETIMEDOUT and ECONNABORTED are handled upstream in axios-interceptors.ts
+    // which throws TimeoutError before reaching this code path
     return "Can't connect to Raindrop API. Check your internet connection or try again later.";
   }
 
