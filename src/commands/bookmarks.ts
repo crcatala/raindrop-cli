@@ -342,12 +342,16 @@ export function createBookmarksCommand(): Command {
 
         // Validate limit
         if (isNaN(limit) || limit < 1 || limit > 50) {
-          throw new UsageError(`Invalid limit: "${options.limit}". Use a number between 1 and 50.`);
+          throw new UsageError(
+            `Invalid limit: "${options.limit}". Use a number between 1 and 50.`
+          );
         }
 
         // Validate page
         if (isNaN(page) || page < 0) {
-          throw new UsageError(`Invalid page: "${options.page}". Use a non-negative number.`);
+          throw new UsageError(
+            `Invalid page: "${options.page}". Use a non-negative number.`
+          );
         }
 
         // Validate sort
