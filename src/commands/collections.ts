@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
-import { handleError, UsageError } from "../utils/errors.js";
+import { ApiError, handleError, UsageError } from "../utils/errors.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import { getColors } from "../utils/colors.js";
@@ -311,7 +311,11 @@ export function createCollectionsCommand(): Command {
     .command("create")
     .description("Create a new collection")
     .argument("<name>", "Collection name")
-    .action(async function (this: Command, name: string) {
+    .option("-p, --parent <id>", "Parent collection ID for creating nested collections")
+    .action(async function (this: Command, name: string, options: { parent?: string }) {
+      // Track parentId for use in error handling
+      let parentId: number | undefined;
+
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
 
@@ -319,8 +323,11 @@ export function createCollectionsCommand(): Command {
           throw new UsageError("Collection name cannot be empty. Provide a name.");
         }
 
-        debug("Create collection options", { name });
-        verbose(`Creating collection: ${name}`);
+        // Parse parent collection ID if provided
+        parentId = options.parent ? parseCollectionId(options.parent) : undefined;
+
+        debug("Create collection options", { name, parentId });
+        verbose(`Creating collection: ${name}${parentId ? ` (parent: ${parentId})` : ""}`);
 
         const client = getClient();
         const response = await withProgress("Creating collection", () =>
@@ -330,6 +337,7 @@ export function createCollectionsCommand(): Command {
             sort: 0,
             public: false,
             cover: [],
+            parent: parentId ? { $ref: "collections", $id: parentId } : undefined,
           })
         );
 
@@ -347,6 +355,14 @@ export function createCollectionsCommand(): Command {
           debug: globalOpts.debug,
         });
       } catch (error) {
+        // Provide clearer error message when parent collection doesn't exist
+        if (parentId && error instanceof ApiError && error.statusCode === 403) {
+          handleError(
+            new UsageError(
+              `Parent collection ${parentId} not found or not accessible. Run \`rdcli collections list\` to see available collections.`
+            )
+          );
+        }
         handleError(error);
       }
     });

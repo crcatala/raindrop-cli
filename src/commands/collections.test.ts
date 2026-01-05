@@ -34,9 +34,11 @@ describe("collections command", () => {
       expect(result.stdout).toContain("collection-id");
     });
 
-    test("collections create --help shows arguments", async () => {
+    test("collections create --help shows arguments and options", async () => {
       const result = await runCliExpectSuccess(["collections", "create", "--help"]);
       expect(result.stdout).toContain("name");
+      expect(result.stdout).toContain("--parent");
+      expect(result.stdout).toContain("-p");
     });
 
     test("collections delete --help shows options", async () => {
@@ -75,6 +77,14 @@ describe("collections command", () => {
       });
       expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Collection name cannot be empty");
+    });
+
+    test("rejects invalid parent ID", async () => {
+      const result = await runCli(["collections", "create", "Test", "--parent", "notanumber"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid collection ID");
     });
   });
 
@@ -181,4 +191,18 @@ describe("collections command - with auth", () => {
   // - create would create real collections in the user's account
   // - delete would delete real collections
   // These should be tested manually or with a dedicated test account
+
+  // Exception: We can test create with invalid parent since it fails before creating
+  testWithAuth("create with non-existent parent gives helpful error", async () => {
+    const result = await runCli([
+      "collections",
+      "create",
+      "Test Child Collection",
+      "--parent",
+      "999999999",
+    ]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain("Parent collection 999999999 not found");
+    expect(result.stderr).toContain("rdcli collections list");
+  });
 });
