@@ -1263,3 +1263,289 @@ describe("bookmarks update command - with auth", () => {
     expect(hasNotFound).toBe(true);
   });
 });
+
+/**
+ * Tests for batch-update command
+ */
+describe("bookmarks batch-update command", () => {
+  describe("help and validation", () => {
+    test("batch-update --help shows all options", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "batch-update", "--help"]);
+      expect(result.stdout).toContain("--ids");
+      expect(result.stdout).toContain("--collection");
+      expect(result.stdout).toContain("--add-tags");
+      expect(result.stdout).toContain("--remove-tags");
+      expect(result.stdout).toContain("--tags");
+      expect(result.stdout).toContain("--important");
+      expect(result.stdout).toContain("--no-important");
+      expect(result.stdout).toContain("--move-to");
+      expect(result.stdout).toContain("--force");
+      expect(result.stdout).toContain("stdin");
+    });
+
+    test("batch-update fails without any IDs or collection", async () => {
+      const result = await runCli(["bookmarks", "batch-update", "--add-tags", "test", "--force"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("No bookmarks specified");
+    });
+
+    test("batch-update fails without any update options", async () => {
+      const result = await runCli(["bookmarks", "batch-update", "--ids", "123", "--force"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("No updates specified");
+    });
+
+    test("batch-update rejects combining --tags with --add-tags", async () => {
+      const result = await runCli(
+        ["bookmarks", "batch-update", "--ids", "123", "--tags", "a", "--add-tags", "b", "--force"],
+        { env: { RAINDROP_TOKEN: "fake-token" } }
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Cannot combine --tags with --add-tags");
+    });
+
+    test("batch-update rejects invalid IDs", async () => {
+      const result = await runCli(
+        ["bookmarks", "batch-update", "--ids", "123,abc,456", "--add-tags", "test", "--force"],
+        { env: { RAINDROP_TOKEN: "fake-token" } }
+      );
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid bookmark IDs: abc");
+    });
+  });
+});
+
+/**
+ * Tests for batch-delete command
+ */
+describe("bookmarks batch-delete command", () => {
+  describe("help and validation", () => {
+    test("batch-delete --help shows all options", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "batch-delete", "--help"]);
+      expect(result.stdout).toContain("--ids");
+      expect(result.stdout).toContain("--collection");
+      expect(result.stdout).toContain("--search");
+      expect(result.stdout).toContain("--force");
+      expect(result.stdout).toContain("stdin");
+    });
+
+    test("batch-delete fails without any IDs or collection", async () => {
+      const result = await runCli(["bookmarks", "batch-delete", "--force"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("No bookmarks specified");
+    });
+
+    test("batch-delete rejects invalid IDs", async () => {
+      const result = await runCli(["bookmarks", "batch-delete", "--ids", "123,-5,456", "--force"], {
+        env: { RAINDROP_TOKEN: "fake-token" },
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Invalid bookmark IDs: -5");
+    });
+  });
+});
+
+/**
+ * Integration tests for batch commands that require authentication
+ */
+describe("bookmarks batch commands - with auth", () => {
+  const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const testWithAuth = hasToken ? test : test.skip;
+
+  // Helper to create a test bookmark
+  async function createTestBookmark(suffix: string = ""): Promise<{ id: number; url: string }> {
+    const testUrl = `https://example.com/batch-test-${Date.now()}${suffix}`;
+    const result = await runCliExpectSuccess([
+      "bookmarks",
+      "add",
+      testUrl,
+      "--title",
+      `Batch Test ${suffix}`,
+      "--tags",
+      "batch-test,original",
+    ]);
+    const data = parseJsonOutput<{ _id: number; link: string }>(result);
+    return { id: data._id, url: testUrl };
+  }
+
+  // Helper to delete a bookmark (cleanup)
+  async function deleteBookmark(id: number): Promise<void> {
+    await runCli(["bookmarks", "delete", String(id), "--permanent", "--force"]);
+  }
+
+  testWithAuth(
+    "batch-update adds tags to multiple bookmarks",
+    async () => {
+      const bookmark1 = await createTestBookmark("-batch1");
+      const bookmark2 = await createTestBookmark("-batch2");
+
+      try {
+        const result = await runCliExpectSuccess([
+          "bookmarks",
+          "batch-update",
+          "--ids",
+          `${bookmark1.id},${bookmark2.id}`,
+          "--add-tags",
+          "batch-added",
+          "--force",
+          "--format",
+          "json",
+        ]);
+
+        const data = parseJsonOutput<{ result: boolean; modified: number }>(result);
+        expect(data.modified).toBe(2);
+
+        // Verify the tags were added
+        const verify1 = await runCliExpectSuccess(["bookmarks", "get", String(bookmark1.id)]);
+        const verify1Data = parseJsonOutput<{ tags: string }>(verify1);
+        expect(verify1Data.tags).toContain("batch-added");
+        expect(verify1Data.tags).toContain("original");
+
+        const verify2 = await runCliExpectSuccess(["bookmarks", "get", String(bookmark2.id)]);
+        const verify2Data = parseJsonOutput<{ tags: string }>(verify2);
+        expect(verify2Data.tags).toContain("batch-added");
+      } finally {
+        await deleteBookmark(bookmark1.id);
+        await deleteBookmark(bookmark2.id);
+      }
+    },
+    30000
+  );
+
+  testWithAuth(
+    "batch-update removes tags from multiple bookmarks",
+    async () => {
+      const bookmark1 = await createTestBookmark("-remove1");
+      const bookmark2 = await createTestBookmark("-remove2");
+
+      try {
+        const result = await runCliExpectSuccess([
+          "bookmarks",
+          "batch-update",
+          "--ids",
+          `${bookmark1.id},${bookmark2.id}`,
+          "--remove-tags",
+          "original",
+          "--force",
+          "--format",
+          "json",
+        ]);
+
+        const data = parseJsonOutput<{ result: boolean; modified: number }>(result);
+        expect(data.modified).toBe(2);
+
+        // Verify the tags were removed
+        const verify1 = await runCliExpectSuccess(["bookmarks", "get", String(bookmark1.id)]);
+        const verify1Data = parseJsonOutput<{ tags: string }>(verify1);
+        expect(verify1Data.tags).not.toContain("original");
+        expect(verify1Data.tags).toContain("batch-test");
+      } finally {
+        await deleteBookmark(bookmark1.id);
+        await deleteBookmark(bookmark2.id);
+      }
+    },
+    30000
+  );
+
+  // Note: The Raindrop batch API's 'tags' field ADDS tags rather than replacing them.
+  // This is different from the single update command. For true tag replacement in batch,
+  // users should use --remove-tags first, then --add-tags.
+  testWithAuth(
+    "batch-update sets tags using --tags (adds to existing)",
+    async () => {
+      const bookmark1 = await createTestBookmark("-settags1");
+      const bookmark2 = await createTestBookmark("-settags2");
+
+      try {
+        const result = await runCliExpectSuccess([
+          "bookmarks",
+          "batch-update",
+          "--ids",
+          `${bookmark1.id},${bookmark2.id}`,
+          "--collection",
+          "all",
+          "--tags",
+          "new-batch-tag",
+          "--force",
+          "--format",
+          "json",
+        ]);
+
+        const data = parseJsonOutput<{ result: boolean; modified: number }>(result);
+        expect(data.modified).toBe(2);
+
+        // Verify the tags were added (batch API adds, doesn't replace)
+        const verify1 = await runCliExpectSuccess(["bookmarks", "get", String(bookmark1.id)]);
+        const verify1Data = parseJsonOutput<{ tags: string }>(verify1);
+        expect(verify1Data.tags).toContain("new-batch-tag");
+        // Original tags are preserved with batch API
+        expect(verify1Data.tags).toContain("original");
+      } finally {
+        await deleteBookmark(bookmark1.id);
+        await deleteBookmark(bookmark2.id);
+      }
+    },
+    15000
+  );
+
+  testWithAuth(
+    "batch-delete removes multiple bookmarks",
+    async () => {
+      const bookmark1 = await createTestBookmark("-delete1");
+      const bookmark2 = await createTestBookmark("-delete2");
+
+      const result = await runCliExpectSuccess([
+        "bookmarks",
+        "batch-delete",
+        "--ids",
+        `${bookmark1.id},${bookmark2.id}`,
+        "--force",
+        "--format",
+        "json",
+      ]);
+
+      const data = parseJsonOutput<{ result: boolean; modified: number }>(result);
+      expect(data.result).toBe(true);
+      expect(data.modified).toBe(2);
+
+      // Verify bookmarks are in trash (get should fail or return trash status)
+      // Since they're in trash, we need to permanently delete them for cleanup
+      await deleteBookmark(bookmark1.id);
+      await deleteBookmark(bookmark2.id);
+    },
+    15000
+  );
+
+  testWithAuth(
+    "batch-update with plain format shows human-readable output",
+    async () => {
+      const bookmark1 = await createTestBookmark("-plain1");
+
+      try {
+        const result = await runCliExpectSuccess([
+          "bookmarks",
+          "batch-update",
+          "--ids",
+          String(bookmark1.id),
+          "--add-tags",
+          "plain-test",
+          "--force",
+          "--format",
+          "plain",
+        ]);
+
+        expect(result.stdout).toContain("Updated");
+        expect(result.stdout).toContain("bookmark");
+      } finally {
+        await deleteBookmark(bookmark1.id);
+      }
+    },
+    15000
+  );
+});

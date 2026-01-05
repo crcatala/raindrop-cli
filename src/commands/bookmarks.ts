@@ -5,6 +5,7 @@ import { parseCollectionId } from "../utils/collections.js";
 import { handleError } from "../utils/errors.js";
 import { verbose, verboseTime, debug } from "../utils/debug.js";
 import { confirmAction } from "../utils/prompt.js";
+import { hasStdinData, readIdsFromStdin, parseIds } from "../utils/stdin.js";
 import type { GlobalOptions } from "../types/index.js";
 
 /**
@@ -788,6 +789,336 @@ export function createBookmarksCommand(): Command {
           verbose: globalOpts.verbose,
           debug: globalOpts.debug,
         });
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // batch-update command - update multiple bookmarks at once
+  bookmarks
+    .command("batch-update")
+    .description(
+      "Update multiple bookmarks at once. Provide IDs via --ids, stdin, or use --collection to update all in a collection."
+    )
+    .option(
+      "--ids <ids>",
+      "Comma-separated list of bookmark IDs (or pipe IDs via stdin, separated by newlines/commas/spaces)"
+    )
+    .option(
+      "-c, --collection <id>",
+      "Collection ID or name. Required as scope for the batch operation."
+    )
+    .option("--add-tags <tags>", "Add comma-separated tags to existing tags")
+    .option("--remove-tags <tags>", "Remove comma-separated tags from existing tags")
+    .option("--tags <tags>", "Set tags (comma-separated). Note: batch API adds to existing tags")
+    .option("-i, --important", "Mark as important/favorite")
+    .option("-I, --no-important", "Remove important/favorite flag")
+    .option("--move-to <collection>", "Move bookmarks to a different collection")
+    .option("-f, --force", "Skip confirmation prompt")
+    .action(async function (this: Command, options) {
+      try {
+        const globalOpts = this.optsWithGlobals() as GlobalOptions;
+        const client = getClient();
+
+        // Collect IDs from --ids flag and/or stdin
+        let ids: number[] = [];
+
+        // Parse --ids flag if provided
+        if (options.ids) {
+          ids = parseIds(options.ids);
+        }
+
+        // Read from stdin if available
+        if (hasStdinData()) {
+          const stdinIds = await readIdsFromStdin();
+          ids = [...ids, ...stdinIds];
+        }
+
+        // Remove duplicates
+        ids = [...new Set(ids)];
+
+        // Parse collection ID (required for API call)
+        const collectionId =
+          options.collection !== undefined ? parseCollectionId(options.collection) : 0; // 0 = all collections
+
+        // Validate that we have something to update
+        const hasTagChanges = options.addTags || options.removeTags || options.tags !== undefined;
+        const hasImportantChange = options.important !== undefined;
+        const hasMoveOperation = options.moveTo !== undefined;
+
+        if (!hasTagChanges && !hasImportantChange && !hasMoveOperation) {
+          throw new Error(
+            "No updates specified. Use --add-tags, --remove-tags, --tags, --important, --no-important, or --move-to."
+          );
+        }
+
+        // Validate that --tags is not combined with --add-tags or --remove-tags
+        if (options.tags !== undefined && (options.addTags || options.removeTags)) {
+          throw new Error(
+            "Cannot combine --tags with --add-tags or --remove-tags. " +
+              "Use --tags to replace all tags, or --add-tags/--remove-tags for incremental changes."
+          );
+        }
+
+        // Parse tag options
+        const replaceTags = parseTags(options.tags);
+        const addTags = parseTags(options.addTags);
+        const removeTags = parseTags(options.removeTags);
+
+        // Parse move-to collection if provided
+        const moveToCollectionId =
+          options.moveTo !== undefined ? parseCollectionId(options.moveTo) : undefined;
+
+        debug("Batch update options", {
+          ids,
+          collectionId,
+          replaceTags,
+          addTags,
+          removeTags,
+          important: options.important,
+          moveToCollectionId,
+        });
+
+        // Determine what we're updating
+        let targetDescription: string;
+        if (ids.length > 0) {
+          targetDescription = `${ids.length} bookmark${ids.length === 1 ? "" : "s"}`;
+        } else if (options.collection) {
+          targetDescription = `all bookmarks in collection "${options.collection}"`;
+        } else {
+          throw new Error(
+            "No bookmarks specified. Provide --ids, pipe IDs via stdin, or use --collection to target all bookmarks in a collection."
+          );
+        }
+
+        // Build update description
+        const updateParts: string[] = [];
+        if (addTags) updateParts.push(`add tags: ${addTags.join(", ")}`);
+        if (removeTags) updateParts.push(`remove tags: ${removeTags.join(", ")}`);
+        if (replaceTags) updateParts.push(`set tags: ${replaceTags.join(", ")}`);
+        if (options.important === true) updateParts.push("mark as important");
+        if (options.important === false) updateParts.push("remove important flag");
+        if (moveToCollectionId !== undefined)
+          updateParts.push(`move to collection ${options.moveTo}`);
+
+        // Confirm action unless --force is used
+        if (!options.force) {
+          const message = `About to update ${targetDescription}:\n  - ${updateParts.join("\n  - ")}\n\nContinue?`;
+          const confirmed = await confirmAction(message);
+          if (!confirmed) {
+            if (!globalOpts.quiet) {
+              console.log("Operation cancelled.");
+            }
+            return;
+          }
+        }
+
+        verbose(`Batch updating ${targetDescription}`);
+
+        // For --add-tags or --remove-tags, we need to handle each bookmark individually
+        // because we need to fetch current tags first
+        if ((addTags || removeTags) && ids.length > 0) {
+          // Incremental tag updates - must process individually
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (const id of ids) {
+            try {
+              // Fetch current bookmark to get existing tags
+              const currentResponse = await client.raindrop.getRaindrop(id);
+              const currentTags = currentResponse.data.item.tags || [];
+
+              // Calculate new tags
+              const tagSet = new Set(currentTags);
+              if (addTags) {
+                for (const tag of addTags) {
+                  tagSet.add(tag);
+                }
+              }
+              if (removeTags) {
+                for (const tag of removeTags) {
+                  tagSet.delete(tag);
+                }
+              }
+              const finalTags = Array.from(tagSet);
+
+              // Build update request
+              const updateBody: Record<string, unknown> = { tags: finalTags };
+              if (options.important !== undefined) {
+                updateBody.important = options.important;
+              }
+              if (moveToCollectionId !== undefined) {
+                updateBody.collection = { $id: moveToCollectionId };
+              }
+
+              // Update the bookmark
+              await client.raindrop.updateRaindrop(id, updateBody);
+              successCount++;
+              verbose(`Updated bookmark ${id}`);
+            } catch (error) {
+              errorCount++;
+              verbose(`Failed to update bookmark ${id}: ${error}`);
+            }
+          }
+
+          // Output result
+          const result = {
+            result: errorCount === 0,
+            modified: successCount,
+            errors: errorCount,
+          };
+
+          if (globalOpts.format === "json") {
+            console.log(JSON.stringify(result, null, 2));
+          } else if (!globalOpts.quiet) {
+            console.log(`Updated ${successCount} bookmark${successCount === 1 ? "" : "s"}.`);
+            if (errorCount > 0) {
+              console.log(`Failed to update ${errorCount} bookmark${errorCount === 1 ? "" : "s"}.`);
+            }
+          }
+        } else {
+          // Use batch API for direct tag replacement or when operating on collection
+          const requestBody: Record<string, unknown> = {};
+
+          if (ids.length > 0) {
+            requestBody.ids = ids;
+          }
+
+          if (replaceTags !== undefined) {
+            requestBody.tags = replaceTags;
+          }
+
+          if (options.important !== undefined) {
+            requestBody.important = options.important;
+          }
+
+          if (moveToCollectionId !== undefined) {
+            requestBody.collection = { $id: moveToCollectionId };
+          }
+
+          const response = await verboseTime("Batch updating bookmarks", () =>
+            client.raindrop.updateRaindrops(collectionId, requestBody)
+          );
+
+          const modified = response.data.modified ?? 0;
+
+          debug("API response", {
+            result: response.data.result,
+            modified,
+          });
+
+          if (globalOpts.format === "json") {
+            console.log(JSON.stringify({ result: response.data.result, modified }, null, 2));
+          } else if (!globalOpts.quiet) {
+            console.log(`Updated ${modified} bookmark${modified === 1 ? "" : "s"}.`);
+          }
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // batch-delete command - delete multiple bookmarks at once
+  bookmarks
+    .command("batch-delete")
+    .description(
+      "Delete multiple bookmarks at once. Provide IDs via --ids, stdin, or use --collection to delete all in a collection."
+    )
+    .option(
+      "--ids <ids>",
+      "Comma-separated list of bookmark IDs (or pipe IDs via stdin, separated by newlines/commas/spaces)"
+    )
+    .option(
+      "-c, --collection <id>",
+      "Collection ID or name. When used without --ids, deletes ALL bookmarks in the collection."
+    )
+    .option("--search <query>", "Search query to filter bookmarks (used with --collection)")
+    .option("-f, --force", "Skip confirmation prompt")
+    .action(async function (this: Command, options) {
+      try {
+        const globalOpts = this.optsWithGlobals() as GlobalOptions;
+        const client = getClient();
+
+        // Collect IDs from --ids flag and/or stdin
+        let ids: number[] = [];
+
+        // Parse --ids flag if provided
+        if (options.ids) {
+          ids = parseIds(options.ids);
+        }
+
+        // Read from stdin if available
+        if (hasStdinData()) {
+          const stdinIds = await readIdsFromStdin();
+          ids = [...ids, ...stdinIds];
+        }
+
+        // Remove duplicates
+        ids = [...new Set(ids)];
+
+        // Parse collection ID (required for API call)
+        const collectionId =
+          options.collection !== undefined ? parseCollectionId(options.collection) : 0; // 0 = all collections
+
+        // Validate that we have something to delete
+        if (ids.length === 0 && options.collection === undefined) {
+          throw new Error(
+            "No bookmarks specified. Provide --ids, pipe IDs via stdin, or use --collection to target all bookmarks in a collection."
+          );
+        }
+
+        debug("Batch delete options", {
+          ids,
+          collectionId,
+          search: options.search,
+        });
+
+        // Determine what we're deleting
+        let targetDescription: string;
+        if (ids.length > 0) {
+          targetDescription = `${ids.length} bookmark${ids.length === 1 ? "" : "s"}`;
+        } else if (options.search) {
+          targetDescription = `bookmarks matching "${options.search}" in collection "${options.collection}"`;
+        } else {
+          targetDescription = `ALL bookmarks in collection "${options.collection}"`;
+        }
+
+        // Confirm action unless --force is used
+        if (!options.force) {
+          const message = `⚠️  About to DELETE ${targetDescription}. This will move them to trash.\n\nContinue?`;
+          const confirmed = await confirmAction(message);
+          if (!confirmed) {
+            if (!globalOpts.quiet) {
+              console.log("Operation cancelled.");
+            }
+            return;
+          }
+        }
+
+        verbose(`Batch deleting ${targetDescription}`);
+
+        // Build request body
+        const requestBody: { ids?: number[] } = {};
+        if (ids.length > 0) {
+          requestBody.ids = ids;
+        }
+
+        const response = await verboseTime("Batch deleting bookmarks", () =>
+          client.raindrop.removeRaindrops(collectionId, options.search, requestBody)
+        );
+
+        const modified = response.data.modified ?? ids.length;
+
+        debug("API response", {
+          result: response.data.result,
+          modified,
+        });
+
+        if (globalOpts.format === "json") {
+          console.log(JSON.stringify({ result: response.data.result, modified }, null, 2));
+        } else if (!globalOpts.quiet) {
+          console.log(`Deleted ${modified} bookmark${modified === 1 ? "" : "s"} (moved to trash).`);
+        }
       } catch (error) {
         handleError(error);
       }
