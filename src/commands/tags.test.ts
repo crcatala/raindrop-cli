@@ -111,8 +111,16 @@ describe("tags command - with auth", () => {
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
 
+  const AUTH_CLI_TIMEOUT = 20000;
+  const runCliWithAuth = (args: string[], options: Parameters<typeof runCli>[1] = {}) =>
+    runCli(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccessWithAuth = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccess>[1] = {}
+  ) => runCliExpectSuccess(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+
   testWithAuth("list returns tags as JSON", async () => {
-    const result = await runCliExpectSuccess(["tags", "list"]);
+    const result = await runCliExpectSuccessWithAuth(["tags", "list"]);
     const data = parseJsonOutput<Array<{ _id: string; count: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -125,21 +133,21 @@ describe("tags command - with auth", () => {
   });
 
   testWithAuth("list supports special collection names", async () => {
-    const result = await runCliExpectSuccess(["tags", "list", "unsorted"]);
+    const result = await runCliExpectSuccessWithAuth(["tags", "list", "unsorted"]);
     const data = parseJsonOutput<Array<{ _id: string; count: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
   });
 
   testWithAuth("list supports numeric collection ID", async () => {
-    const result = await runCliExpectSuccess(["tags", "list", "0"]);
+    const result = await runCliExpectSuccessWithAuth(["tags", "list", "0"]);
     const data = parseJsonOutput<Array<{ _id: string; count: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
   });
 
   testWithAuth("list quiet mode outputs only tag names", async () => {
-    const result = await runCliExpectSuccess(["tags", "list", "-q"]);
+    const result = await runCliExpectSuccessWithAuth(["tags", "list", "-q"]);
 
     // Each line should be a tag name (the _id field)
     const lines = result.stdout.trim().split("\n");
@@ -150,7 +158,7 @@ describe("tags command - with auth", () => {
   });
 
   testWithAuth("list table format works", async () => {
-    const result = await runCli(["tags", "list", "--format", "table"]);
+    const result = await runCliWithAuth(["tags", "list", "--format", "table"]);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Tag");
@@ -158,14 +166,14 @@ describe("tags command - with auth", () => {
   });
 
   testWithAuth("list tsv format works", async () => {
-    const result = await runCli(["tags", "list", "--format", "tsv"]);
+    const result = await runCliWithAuth(["tags", "list", "--format", "tsv"]);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Tag\t");
   });
 
   testWithAuth("list plain format works", async () => {
-    const result = await runCli(["tags", "list", "--format", "plain"]);
+    const result = await runCliWithAuth(["tags", "list", "--format", "plain"]);
 
     expect(result.exitCode).toBe(0);
     // Plain format should have styled dividers between items

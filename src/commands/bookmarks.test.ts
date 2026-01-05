@@ -1,6 +1,9 @@
 import { describe, test, expect } from "bun:test";
 import { runCli, runCliExpectSuccess, parseJsonOutput } from "../test-utils/index.js";
 
+const runCliBase = runCli;
+const runCliExpectSuccessBase = runCliExpectSuccess;
+
 /**
  * Tests for the bookmarks command.
  *
@@ -214,6 +217,14 @@ describe("bookmarks command - with auth", () => {
   const testWithAuth = hasToken
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
+
+  const AUTH_CLI_TIMEOUT = 20000;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   testWithAuth("list returns bookmarks as JSON", async () => {
     const result = await runCliExpectSuccess(["bookmarks", "list", "--limit", "2"]);
@@ -709,6 +720,14 @@ describe("bookmarks add command - with auth", () => {
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
 
+  const AUTH_CLI_TIMEOUT = 20000;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+
   // Helper to delete a bookmark (cleanup)
   async function deleteBookmark(id: number): Promise<void> {
     await runCli(["bookmarks", "delete", String(id), "--permanent", "--force"]);
@@ -946,6 +965,14 @@ describe("bookmarks update command - with auth", () => {
   const testWithAuth = hasToken
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
+
+  const AUTH_CLI_TIMEOUT = 20000;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   // Helper to create a test bookmark
   async function createTestBookmark(suffix: string = ""): Promise<{ id: number; url: string }> {

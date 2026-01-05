@@ -136,8 +136,16 @@ describe("highlights command - with auth", () => {
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
 
+  const AUTH_CLI_TIMEOUT = 20000;
+  const runCliWithAuth = (args: string[], options: Parameters<typeof runCli>[1] = {}) =>
+    runCli(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccessWithAuth = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccess>[1] = {}
+  ) => runCliExpectSuccess(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+
   testWithAuth("list returns highlights as JSON", async () => {
-    const result = await runCliExpectSuccess(["highlights", "list"]);
+    const result = await runCliExpectSuccessWithAuth(["highlights", "list"]);
     const data = parseJsonOutput<
       Array<{
         _id: string;
@@ -160,7 +168,7 @@ describe("highlights command - with auth", () => {
   });
 
   testWithAuth("list supports --limit option", async () => {
-    const result = await runCliExpectSuccess(["highlights", "list", "--limit", "5"]);
+    const result = await runCliExpectSuccessWithAuth(["highlights", "list", "--limit", "5"]);
     const data = parseJsonOutput<Array<{ _id: string }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -168,21 +176,21 @@ describe("highlights command - with auth", () => {
   });
 
   testWithAuth("list supports special collection names", async () => {
-    const result = await runCliExpectSuccess(["highlights", "list", "--collection", "all"]);
+    const result = await runCliExpectSuccessWithAuth(["highlights", "list", "--collection", "all"]);
     const data = parseJsonOutput<Array<{ _id: string }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
   });
 
   testWithAuth("list supports numeric collection ID", async () => {
-    const result = await runCliExpectSuccess(["highlights", "list", "--collection", "0"]);
+    const result = await runCliExpectSuccessWithAuth(["highlights", "list", "--collection", "0"]);
     const data = parseJsonOutput<Array<{ _id: string }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
   });
 
   testWithAuth("list quiet mode outputs only highlight IDs", async () => {
-    const result = await runCliExpectSuccess(["highlights", "list", "-q"]);
+    const result = await runCliExpectSuccessWithAuth(["highlights", "list", "-q"]);
 
     const lines = result.stdout.trim().split("\n");
     if (lines.length > 0 && lines[0]) {
@@ -191,7 +199,7 @@ describe("highlights command - with auth", () => {
   });
 
   testWithAuth("list table format works", async () => {
-    const result = await runCli(["highlights", "list", "--format", "table"]);
+    const result = await runCliWithAuth(["highlights", "list", "--format", "table"]);
 
     expect(result.exitCode).toBe(0);
     // Table format has headers
@@ -200,14 +208,14 @@ describe("highlights command - with auth", () => {
   });
 
   testWithAuth("list tsv format works", async () => {
-    const result = await runCli(["highlights", "list", "--format", "tsv"]);
+    const result = await runCliWithAuth(["highlights", "list", "--format", "tsv"]);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("ID\t");
   });
 
   testWithAuth("list plain format works", async () => {
-    const result = await runCli(["highlights", "list", "--format", "plain"]);
+    const result = await runCliWithAuth(["highlights", "list", "--format", "plain"]);
 
     expect(result.exitCode).toBe(0);
     // Plain format should have styled dividers between items (if there are items)
