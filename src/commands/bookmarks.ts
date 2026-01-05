@@ -3,7 +3,7 @@ import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { handleError, UsageError } from "../utils/errors.js";
-import { verbose, verboseTime, debug } from "../utils/debug.js";
+import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import { confirmAction } from "../utils/prompt.js";
 import { hasStdinData, readIdsFromStdin, parseIds } from "../utils/stdin.js";
