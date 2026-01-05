@@ -3,7 +3,8 @@ import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { handleError } from "../utils/errors.js";
-import { verbose, verboseTime, debug } from "../utils/debug.js";
+import { verbose, debug } from "../utils/debug.js";
+import { withProgress } from "../utils/progress.js";
 import type { GlobalOptions } from "../types/index.js";
 
 /**
@@ -87,7 +88,7 @@ export function createHighlightsCommand(): Command {
           debug("List highlights options", { collectionId, limit, page });
           verbose(`Fetching highlights from collection ${collectionId}`);
 
-          const response = await verboseTime("Fetching highlights", () =>
+          const response = await withProgress("Fetching highlights", () =>
             client.highlight.getHighlightsInCollection(collectionId, page, limit)
           );
           // Cast to include color field which exists in API but not in types
@@ -97,7 +98,7 @@ export function createHighlightsCommand(): Command {
           debug("List highlights options", { limit, page });
           verbose("Fetching all highlights");
 
-          const response = await verboseTime("Fetching highlights", () =>
+          const response = await withProgress("Fetching highlights", () =>
             client.highlight.getAllHighlights(page, limit)
           );
           // Cast to include color field which exists in API but not in types
@@ -137,7 +138,7 @@ export function createHighlightsCommand(): Command {
         verbose(`Fetching highlights for bookmark ${bookmarkId}`);
 
         const client = getClient();
-        const response = await verboseTime("Fetching bookmark", () =>
+        const response = await withProgress("Fetching bookmark", () =>
           client.highlight.getRaindrop(bookmarkId)
         );
 

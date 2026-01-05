@@ -3,7 +3,8 @@ import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { handleError } from "../utils/errors.js";
-import { verbose, verboseTime, debug } from "../utils/debug.js";
+import { verbose, debug } from "../utils/debug.js";
+import { withProgress } from "../utils/progress.js";
 import { outputMessage } from "../utils/output-streams.js";
 import type { GlobalOptions } from "../types/index.js";
 
@@ -103,7 +104,7 @@ export function createFiltersCommand(): Command {
         verbose(`Fetching filters for collection ${collectionId}`);
 
         const client = getClient();
-        const response = await verboseTime("Fetching filters", () =>
+        const response = await withProgress("Fetching filters", () =>
           client.filter.getFilters(collectionId)
         );
 

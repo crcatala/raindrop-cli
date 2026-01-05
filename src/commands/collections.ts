@@ -2,7 +2,8 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { handleError } from "../utils/errors.js";
-import { verbose, verboseTime, debug } from "../utils/debug.js";
+import { verbose, debug } from "../utils/debug.js";
+import { withProgress } from "../utils/progress.js";
 import { getColors } from "../utils/colors.js";
 import type { GlobalOptions } from "../types/index.js";
 
@@ -219,7 +220,7 @@ export function createCollectionsCommand(): Command {
         const client = getClient();
 
         // Fetch root and child collections in parallel
-        const [rootResponse, childResponse] = await verboseTime("Fetching collections", () =>
+        const [rootResponse, childResponse] = await withProgress("Fetching collections", () =>
           Promise.all([
             client.collection.getRootCollections(),
             client.collection.getChildCollections(),
@@ -280,7 +281,7 @@ export function createCollectionsCommand(): Command {
         verbose(`Fetching collection ${collectionId}`);
 
         const client = getClient();
-        const response = await verboseTime("Fetching collection", () =>
+        const response = await withProgress("Fetching collection", () =>
           client.collection.getCollection(collectionId)
         );
 
@@ -319,7 +320,7 @@ export function createCollectionsCommand(): Command {
         verbose(`Creating collection: ${name}`);
 
         const client = getClient();
-        const response = await verboseTime("Creating collection", () =>
+        const response = await withProgress("Creating collection", () =>
           client.collection.createCollection({
             title: name,
             view: "list",
@@ -364,7 +365,7 @@ export function createCollectionsCommand(): Command {
 
         // Fetch collection first to show what we're deleting
         if (!options.force) {
-          const showResponse = await verboseTime("Fetching collection", () =>
+          const showResponse = await withProgress("Fetching collection", () =>
             client.collection.getCollection(collectionId)
           );
           const collection = showResponse.data.item as CollectionItem;
@@ -384,7 +385,7 @@ export function createCollectionsCommand(): Command {
 
         verbose(`Deleting collection ${collectionId}`);
 
-        await verboseTime("Deleting collection", () =>
+        await withProgress("Deleting collection", () =>
           client.collection.removeCollection(collectionId)
         );
 
@@ -411,7 +412,7 @@ export function createCollectionsCommand(): Command {
         verbose("Fetching system collection stats");
 
         const client = getClient();
-        const response = await verboseTime("Fetching stats", () =>
+        const response = await withProgress("Fetching stats", () =>
           client.collection.getSystemCollectionStats()
         );
 

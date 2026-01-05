@@ -40,8 +40,10 @@ export async function runCli(args: string[], options: CliOptions = {}): Promise<
     env: {
       ...process.env,
       ...env,
-      // Ensure consistent output for tests
+      // Ensure consistent output for tests (disable colors)
       NO_COLOR: "1",
+      // Explicitly set FORCE_COLOR=0 to avoid Bun's warning about NO_COLOR being ignored
+      FORCE_COLOR: "0",
     },
   });
 
