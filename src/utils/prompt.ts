@@ -20,7 +20,8 @@ export function isStdinTTY(): boolean {
 
 /**
  * Prompt the user for confirmation.
- * Returns true if the user enters 'y' or 'Y', false otherwise.
+ * Returns true if the user enters 'y', 'yes', 'Y', or 'YES', false otherwise.
+ * Returns false if the user sends EOF (Ctrl+D).
  *
  * @throws {NonInteractiveError} if stdin is not a TTY (non-interactive context)
  */
@@ -37,9 +38,15 @@ export async function confirmAction(message: string): Promise<boolean> {
   });
 
   return new Promise((resolve) => {
+    // Handle Ctrl+D (EOF) - treat as "no"
+    rl.on("close", () => {
+      resolve(false);
+    });
+
     rl.question(`${message} [y/N] `, (answer) => {
       rl.close();
-      resolve(answer.toLowerCase() === "y");
+      const normalized = answer.toLowerCase().trim();
+      resolve(normalized === "y" || normalized === "yes");
     });
   });
 }
