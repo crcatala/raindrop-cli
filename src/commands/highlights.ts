@@ -74,9 +74,7 @@ export function createHighlightsCommand(): Command {
         const page = parseInt(options.page, 10);
 
         if (isNaN(limit) || limit < 1 || limit > 50) {
-          throw new UsageError(
-            `Invalid limit: "${options.limit}". Use a number between 1 and 50.`
-          );
+          throw new UsageError(`Invalid limit: "${options.limit}". Use a number between 1 and 50.`);
         }
         if (isNaN(page) || page < 0) {
           throw new UsageError(`Invalid page: "${options.page}". Use a non-negative number.`);
@@ -134,9 +132,7 @@ export function createHighlightsCommand(): Command {
         // Parse and validate bookmark ID
         const bookmarkId = parseInt(bookmarkIdArg, 10);
         if (isNaN(bookmarkId) || bookmarkId < 1) {
-          throw new UsageError(
-            `Invalid bookmark ID: "${bookmarkIdArg}". Use a positive number.`
-          );
+          throw new UsageError(`Invalid bookmark ID: "${bookmarkIdArg}". Use a positive number.`);
         }
 
         debug("Get highlights options", { bookmarkId });
