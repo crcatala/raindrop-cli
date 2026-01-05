@@ -1,5 +1,9 @@
 import { describe, test, expect } from "bun:test";
 import { runCli, runCliExpectSuccess, parseJsonOutput } from "../test-utils/index.js";
+import { AUTH_CLI_TIMEOUT_MS, AUTH_TEST_TIMEOUT_MS } from "../test-utils/timeouts.js";
+
+const runCliBase = runCli;
+const runCliExpectSuccessBase = runCliExpectSuccess;
 
 /**
  * Tests for the collections command.
@@ -91,21 +95,21 @@ describe("collections command", () => {
  */
 describe("collections command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const AUTH_TEST_TIMEOUT = 20000;
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
   const testWithAuth = hasToken
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
 
-  const AUTH_CLI_TIMEOUT = 20000;
-  const runCliWithAuth = (args: string[], options: Parameters<typeof runCli>[1] = {}) =>
-    runCli(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
-  const runCliExpectSuccessWithAuth = (
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
     args: string[],
-    options: Parameters<typeof runCliExpectSuccess>[1] = {}
-  ) => runCliExpectSuccess(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   testWithAuth("list returns collections as JSON", async () => {
-    const result = await runCliExpectSuccessWithAuth(["collections", "list"]);
+    const result = await runCliExpectSuccess(["collections", "list"]);
     const data = parseJsonOutput<Array<{ _id: number; tree?: string; count: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -116,7 +120,7 @@ describe("collections command - with auth", () => {
   });
 
   testWithAuth("list --flat returns flat structure", async () => {
-    const result = await runCliExpectSuccessWithAuth(["collections", "list", "--flat"]);
+    const result = await runCliExpectSuccess(["collections", "list", "--flat"]);
     const data = parseJsonOutput<Array<{ _id: number; title: string; count: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -128,7 +132,7 @@ describe("collections command - with auth", () => {
   });
 
   testWithAuth("list quiet mode outputs only IDs", async () => {
-    const result = await runCliExpectSuccessWithAuth(["collections", "list", "-q"]);
+    const result = await runCliExpectSuccess(["collections", "list", "-q"]);
 
     // Each line should be just an ID (number)
     const lines = result.stdout.trim().split("\n");
@@ -140,7 +144,7 @@ describe("collections command - with auth", () => {
   });
 
   testWithAuth("list table format works", async () => {
-    const result = await runCliWithAuth(["collections", "list", "--format", "table"]);
+    const result = await runCli(["collections", "list", "--format", "table"]);
 
     expect(result.exitCode).toBe(0);
     // Table format should have headers
@@ -149,7 +153,7 @@ describe("collections command - with auth", () => {
   });
 
   testWithAuth("stats returns system collection stats", async () => {
-    const result = await runCliExpectSuccessWithAuth(["collections", "stats"]);
+    const result = await runCliExpectSuccess(["collections", "stats"]);
     const data = parseJsonOutput<Array<{ name: string; count: string; _id: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -161,7 +165,7 @@ describe("collections command - with auth", () => {
   });
 
   testWithAuth("stats quiet mode outputs only IDs", async () => {
-    const result = await runCliExpectSuccessWithAuth(["collections", "stats", "-q"]);
+    const result = await runCliExpectSuccess(["collections", "stats", "-q"]);
 
     // Each line should be a number (positive or negative for system IDs)
     const lines = result.stdout.trim().split("\n");

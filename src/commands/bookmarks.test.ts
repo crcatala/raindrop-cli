@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { runCli, runCliExpectSuccess, parseJsonOutput } from "../test-utils/index.js";
+import { AUTH_CLI_TIMEOUT_MS, AUTH_TEST_TIMEOUT_MS } from "../test-utils/timeouts.js";
 
 const runCliBase = runCli;
 const runCliExpectSuccessBase = runCliExpectSuccess;
@@ -212,13 +213,13 @@ describe("bookmarks command", () => {
  */
 describe("bookmarks command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const AUTH_TEST_TIMEOUT = 20000;
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
 
   const testWithAuth = hasToken
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
 
-  const AUTH_CLI_TIMEOUT = 20000;
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
   const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
     runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
   const runCliExpectSuccess = (
@@ -715,12 +716,12 @@ describe("bookmarks add command", () => {
  */
 describe("bookmarks add command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const AUTH_TEST_TIMEOUT = 20000;
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
   const testWithAuth = hasToken
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
 
-  const AUTH_CLI_TIMEOUT = 20000;
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
   const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
     runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
   const runCliExpectSuccess = (
@@ -961,12 +962,12 @@ describe("bookmarks update command", () => {
  */
 describe("bookmarks update command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const AUTH_TEST_TIMEOUT = 20000;
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
   const testWithAuth = hasToken
     ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
     : test.skip;
 
-  const AUTH_CLI_TIMEOUT = 20000;
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
   const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
     runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
   const runCliExpectSuccess = (
