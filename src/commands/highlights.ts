@@ -2,7 +2,8 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
-import { handleError, UsageError } from "../utils/errors.js";
+import { handleError } from "../utils/errors.js";
+import { parseLimit, parsePage, parseBookmarkId } from "../utils/validation.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import type { GlobalOptions } from "../types/index.js";
@@ -70,15 +71,8 @@ export function createHighlightsCommand(): Command {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
 
         // Parse and validate pagination options
-        const limit = parseInt(options.limit, 10);
-        const page = parseInt(options.page, 10);
-
-        if (isNaN(limit) || limit < 1 || limit > 50) {
-          throw new UsageError(`Invalid limit: "${options.limit}". Use a number between 1 and 50.`);
-        }
-        if (isNaN(page) || page < 0) {
-          throw new UsageError(`Invalid page: "${options.page}". Use a non-negative number.`);
-        }
+        const limit = parseLimit(options.limit);
+        const page = parsePage(options.page);
 
         const client = getClient();
         let items: HighlightWithColor[];
@@ -130,10 +124,7 @@ export function createHighlightsCommand(): Command {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
 
         // Parse and validate bookmark ID
-        const bookmarkId = parseInt(bookmarkIdArg, 10);
-        if (isNaN(bookmarkId) || bookmarkId < 1) {
-          throw new UsageError(`Invalid bookmark ID: "${bookmarkIdArg}". Use a positive number.`);
-        }
+        const bookmarkId = parseBookmarkId(bookmarkIdArg);
 
         debug("Get highlights options", { bookmarkId });
         verbose(`Fetching highlights for bookmark ${bookmarkId}`);

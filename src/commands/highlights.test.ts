@@ -1,129 +1,94 @@
 import { describe, test, expect } from "bun:test";
-import { runCli, runCliExpectSuccess } from "../test-utils/index.js";
+import { createHighlightsCommand } from "./highlights.js";
 
 /**
  * Unit tests for the highlights command.
  *
- * These tests do NOT require authentication and test:
- * - Help output
- * - Argument validation
- * - Error handling for missing auth
+ * These tests run in-process without spawning subprocesses (~1ms vs ~200ms each).
+ * They test command structure, help text, and rely on shared validation unit tests.
  *
- * For live API tests, see highlights.live.test.ts
+ * For subprocess integration tests, see highlights.integration.test.ts.
+ * For live API tests, see highlights.live.test.ts.
  */
 
-describe("highlights command", () => {
-  describe("help", () => {
-    test("highlights --help shows command description", async () => {
-      const result = await runCliExpectSuccess(["highlights", "--help"]);
-      expect(result.stdout).toContain("View highlights");
-      expect(result.stdout).toContain("list");
-      expect(result.stdout).toContain("get");
+describe("highlights command structure", () => {
+  const highlights = createHighlightsCommand();
+
+  describe("command hierarchy", () => {
+    test("has correct name and description", () => {
+      expect(highlights.name()).toBe("highlights");
+      expect(highlights.description()).toContain("highlights");
     });
 
-    test("highlights list --help shows usage", async () => {
-      const result = await runCliExpectSuccess(["highlights", "list", "--help"]);
-      expect(result.stdout).toContain("List highlights");
-      expect(result.stdout).toContain("--collection");
-      expect(result.stdout).toContain("--limit");
-      expect(result.stdout).toContain("--page");
+    test("has list subcommand", () => {
+      const list = highlights.commands.find((c) => c.name() === "list");
+      expect(list).toBeDefined();
+      expect(list?.description()).toContain("List highlights");
     });
 
-    test("highlights get --help shows usage", async () => {
-      const result = await runCliExpectSuccess(["highlights", "get", "--help"]);
-      expect(result.stdout).toContain("Get highlights for a specific bookmark");
-      expect(result.stdout).toContain("bookmark-id");
+    test("has get subcommand", () => {
+      const get = highlights.commands.find((c) => c.name() === "get");
+      expect(get).toBeDefined();
+      expect(get?.description()).toContain("Get highlights");
     });
   });
 
-  describe("list command - without auth", () => {
-    test("fails gracefully without token", async () => {
-      const result = await runCli(["highlights", "list"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
-      expect(result.exitCode).toBe(1);
-      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
-      expect(hasAuthError).toBe(true);
+  describe("help text", () => {
+    test("highlights --help shows command description", () => {
+      const help = highlights.helpInformation();
+      expect(help).toContain("View highlights");
+      expect(help).toContain("list");
+      expect(help).toContain("get");
+    });
+
+    test("highlights list --help shows usage", () => {
+      const list = highlights.commands.find((c) => c.name() === "list");
+      const help = list?.helpInformation() ?? "";
+      expect(help).toContain("List highlights");
+      expect(help).toContain("--collection");
+      expect(help).toContain("--limit");
+      expect(help).toContain("--page");
+    });
+
+    test("highlights get --help shows usage", () => {
+      const get = highlights.commands.find((c) => c.name() === "get");
+      const help = get?.helpInformation() ?? "";
+      expect(help).toContain("Get highlights for a specific bookmark");
+      expect(help).toContain("bookmark-id");
     });
   });
 
-  describe("list command - validation", () => {
-    test("rejects invalid collection ID", async () => {
-      const result = await runCli(["highlights", "list", "--collection", "notanumber"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid collection ID");
+  describe("list command options", () => {
+    const list = highlights.commands.find((c) => c.name() === "list");
+
+    test("has --collection option", () => {
+      const opt = list?.options.find((o) => o.long === "--collection");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-c");
     });
 
-    test("rejects invalid limit (too low)", async () => {
-      const result = await runCli(["highlights", "list", "--limit", "0"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid limit");
-      expect(result.stderr).toContain("1 and 50");
+    test("has --limit option with default", () => {
+      const opt = list?.options.find((o) => o.long === "--limit");
+      expect(opt).toBeDefined();
+      expect(opt?.defaultValue).toBe("25");
     });
 
-    test("rejects invalid limit (too high)", async () => {
-      const result = await runCli(["highlights", "list", "--limit", "100"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid limit");
-      expect(result.stderr).toContain("1 and 50");
-    });
-
-    test("rejects invalid limit (not a number)", async () => {
-      const result = await runCli(["highlights", "list", "--limit", "abc"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid limit");
-      expect(result.stderr).toContain("1 and 50");
-    });
-
-    test("rejects negative page number", async () => {
-      const result = await runCli(["highlights", "list", "--page", "-1"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid page");
-      expect(result.stderr).toContain("non-negative");
+    test("has --page option with default", () => {
+      const opt = list?.options.find((o) => o.long === "--page");
+      expect(opt).toBeDefined();
+      expect(opt?.defaultValue).toBe("0");
     });
   });
 
-  describe("get command - validation", () => {
-    test("rejects missing bookmark ID", async () => {
-      const result = await runCli(["highlights", "get"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("bookmark-id");
-    });
+  describe("get command arguments", () => {
+    const get = highlights.commands.find((c) => c.name() === "get");
 
-    test("rejects invalid bookmark ID (not a number)", async () => {
-      const result = await runCli(["highlights", "get", "notanumber"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
-    });
-
-    test("rejects invalid bookmark ID (zero)", async () => {
-      const result = await runCli(["highlights", "get", "0"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
-    });
-
-    test("rejects invalid bookmark ID (negative)", async () => {
-      const result = await runCli(["highlights", "get", "-5"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
+    test("requires bookmark-id argument", () => {
+      // Commander stores arguments in _args array
+      const args = get?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("bookmark-id");
+      expect(args[0]?.required).toBe(true);
     });
   });
 });
