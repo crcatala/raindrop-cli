@@ -15,7 +15,13 @@ source "$SCRIPT_DIR/run_silent.sh"
 
 case "$1" in
   test)
-    run_silent_test "Tests" "bun test --bail --only-failures" "bun run test:verbose"
+    run_silent_test "Unit Tests" "bash scripts/test-unit.sh --bail --only-failures" "bun run test:verbose"
+    ;;
+  test:live)
+    run_silent_test "Live Tests" "RDCLI_API_DELAY_MS=250 bun test src/**/*.live.test.ts --bail --only-failures" "bun run test:live:verbose"
+    ;;
+  test:all)
+    run_silent_test "All Tests" "RDCLI_API_DELAY_MS=250 bun test src --bail --only-failures" "bun run test:all:verbose"
     ;;
   lint)
     run_silent "Lint" "oxlint --type-aware src/" "bun run lint:verbose"
@@ -30,7 +36,7 @@ case "$1" in
     run_silent "Format (fix)" "prettier --write \"src/**/*.ts\"" "bun run format:verbose"
     ;;
   *)
-    echo "Usage: $0 {test|lint|typecheck|format|format-fix}"
+    echo "Usage: $0 {test|test:live|test:all|lint|typecheck|format|format-fix}"
     echo ""
     echo "Runs the specified check with minimal output."
     echo "Set VERBOSE=1 for full output."
