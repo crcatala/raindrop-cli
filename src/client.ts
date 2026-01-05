@@ -3,6 +3,7 @@ import { getConfig } from "./config.js";
 import { ConfigError } from "./utils/errors.js";
 import { setupClientInterceptors } from "./utils/axios-interceptors.js";
 import { debug } from "./utils/debug.js";
+import { getTimeoutMs, getTimeoutSeconds } from "./utils/timeout.js";
 
 const { Raindrop } = client;
 const { Configuration } = generated;
@@ -31,6 +32,11 @@ export function getClient(): RaindropClient {
     // Set up interceptors for error handling, retry, and logging
     debug("Setting up client interceptors");
     setupClientInterceptors(instance.client);
+
+    // Configure timeout
+    const timeoutMs = getTimeoutMs();
+    debug(`Setting request timeout to ${getTimeoutSeconds()}s`);
+    instance.client.defaults.timeout = timeoutMs;
   }
   return instance;
 }

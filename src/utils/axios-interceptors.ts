@@ -9,8 +9,9 @@
  */
 
 import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
-import { ApiError, RateLimitError } from "./errors.js";
+import { ApiError, RateLimitError, TimeoutError } from "./errors.js";
 import { verbose, debug } from "./debug.js";
+import { getTimeoutSeconds } from "./timeout.js";
 
 // Rate limit header names (as documented by Raindrop API)
 const HEADER_RATE_LIMIT = "x-ratelimit-limit";
@@ -208,6 +209,21 @@ function setupResponseInterceptor(axiosInstance: AxiosInstance): void {
         throw new ApiError(String(message), status, {
           url: config?.url,
           method: config?.method,
+        });
+      }
+
+      // Check for timeout errors
+      if (
+        error.code === "ECONNABORTED" ||
+        error.code === "ETIMEDOUT" ||
+        error.message?.includes("timeout")
+      ) {
+        const timeoutSeconds = getTimeoutSeconds();
+        debug("Request timed out", { timeoutSeconds, code: error.code });
+        throw new TimeoutError(timeoutSeconds, {
+          url: config?.url,
+          method: config?.method,
+          code: error.code,
         });
       }
 

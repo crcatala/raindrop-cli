@@ -62,6 +62,21 @@ export class RateLimitError extends RaindropCliError {
   }
 }
 
+export class TimeoutError extends RaindropCliError {
+  constructor(
+    public timeoutSeconds: number,
+    details?: Record<string, unknown>
+  ) {
+    super(
+      `Request timed out after ${timeoutSeconds} seconds. ` +
+        `Use --timeout to increase the limit, or check your connection.`,
+      "TIMEOUT",
+      { timeoutSeconds, ...details }
+    );
+    this.name = "TimeoutError";
+  }
+}
+
 function formatSeconds(seconds: number): string {
   if (seconds <= 0) return "a few seconds";
   if (seconds === 1) return "1 second";
