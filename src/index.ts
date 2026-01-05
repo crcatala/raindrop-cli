@@ -23,6 +23,10 @@ program
   .option("-d, --debug", "show debug info (stack traces, internal state)")
   .option("--no-color", "disable colored output")
   .exitOverride()
+  .configureOutput({
+    // Suppress Commander's own error output since we handle errors ourselves
+    writeErr: () => {},
+  })
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
 
