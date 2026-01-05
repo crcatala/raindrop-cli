@@ -4,6 +4,7 @@ import {
   ConfigError,
   ApiError,
   RateLimitError,
+  TimeoutError,
   UsageError,
   handleError,
 } from "./errors.js";
@@ -121,6 +122,34 @@ describe("RateLimitError", () => {
 
   test("is instanceof RaindropCliError", () => {
     const error = new RateLimitError(100, 123);
+    expect(error instanceof RaindropCliError).toBe(true);
+  });
+});
+
+describe("TimeoutError", () => {
+  test("creates error with TIMEOUT code", () => {
+    const error = new TimeoutError(30);
+
+    expect(error.code).toBe("TIMEOUT");
+    expect(error.name).toBe("TimeoutError");
+    expect(error.timeoutSeconds).toBe(30);
+  });
+
+  test("includes timeout in details", () => {
+    const error = new TimeoutError(60, { url: "/api/test" });
+
+    expect(error.details).toEqual({ timeoutSeconds: 60, url: "/api/test" });
+  });
+
+  test("message includes timeout value and guidance", () => {
+    const error = new TimeoutError(30);
+
+    expect(error.message).toContain("30 seconds");
+    expect(error.message).toContain("--timeout");
+  });
+
+  test("is instanceof RaindropCliError", () => {
+    const error = new TimeoutError(30);
     expect(error instanceof RaindropCliError).toBe(true);
   });
 });

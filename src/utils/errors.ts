@@ -62,6 +62,21 @@ export class RateLimitError extends RaindropCliError {
   }
 }
 
+export class TimeoutError extends RaindropCliError {
+  constructor(
+    public timeoutSeconds: number,
+    details?: Record<string, unknown>
+  ) {
+    super(
+      `Request timed out after ${timeoutSeconds} seconds. ` +
+        `Use --timeout to increase the limit, or check your connection.`,
+      "TIMEOUT",
+      { timeoutSeconds, ...details }
+    );
+    this.name = "TimeoutError";
+  }
+}
+
 function formatSeconds(seconds: number): string {
   if (seconds <= 0) return "a few seconds";
   if (seconds === 1) return "1 second";
@@ -84,9 +99,8 @@ function formatApiErrorMessage(error: ApiError): string {
     if (code === "ECONNREFUSED") {
       return "Can't connect to Raindrop API. Check your internet connection or try again later.";
     }
-    if (code === "ETIMEDOUT" || code === "ECONNABORTED") {
-      return "Request to Raindrop API timed out. Try again later.";
-    }
+    // Note: ETIMEDOUT and ECONNABORTED are handled upstream in axios-interceptors.ts
+    // which throws TimeoutError before reaching this code path
     return "Can't connect to Raindrop API. Check your internet connection or try again later.";
   }
 

@@ -8,6 +8,7 @@ import { createFiltersCommand } from "./commands/filters.js";
 import { setNoColorFlag } from "./utils/tty.js";
 import { setDebugEnabled, setVerboseEnabled } from "./utils/debug.js";
 import { outputError } from "./utils/output-streams.js";
+import { setTimeoutSeconds, validateTimeout, DEFAULT_TIMEOUT_SECONDS } from "./utils/timeout.js";
 
 program
   .name("rdcli")
@@ -22,6 +23,10 @@ program
   .option("-v, --verbose", "show operational details (API calls, timing)")
   .option("-d, --debug", "show debug info (stack traces, internal state)")
   .option("--no-color", "disable colored output")
+  .option(
+    "--timeout <seconds>",
+    `request timeout in seconds (default: ${DEFAULT_TIMEOUT_SECONDS}, env: RDCLI_TIMEOUT)`
+  )
   .configureOutput({
     outputError: () => {},
   })
@@ -44,6 +49,16 @@ program
     }
     if (opts.verbose) {
       setVerboseEnabled(true);
+    }
+
+    // Set timeout if specified
+    if (opts.timeout !== undefined) {
+      const error = validateTimeout(opts.timeout);
+      if (error) {
+        outputError(error);
+        process.exit(2);
+      }
+      setTimeoutSeconds(parseInt(opts.timeout, 10));
     }
   });
 
