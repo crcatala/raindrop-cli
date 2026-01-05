@@ -236,6 +236,7 @@ export function createBookmarksCommand(): Command {
     .argument("<id>", "Bookmark ID")
     .option("-p, --permanent", "Skip trash and delete permanently")
     .option("-f, --force", "Skip confirmation prompt")
+    .option("-n, --dry-run", "Show what would be deleted without actually deleting")
     .action(async function (this: Command, idArg: string, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -247,6 +248,42 @@ export function createBookmarksCommand(): Command {
 
         const permanent = !!options.permanent;
         const force = !!options.force;
+        const dryRun = !!options.dryRun;
+
+        const client = getClient();
+
+        // For dry-run, fetch bookmark info to show what would be deleted
+        if (dryRun) {
+          verbose(`Dry run: fetching bookmark ${id} to show what would be deleted`);
+          const response = await withProgress("Fetching bookmark", () =>
+            client.raindrop.getRaindrop(id)
+          );
+          const item = response.data.item;
+
+          if (globalOpts.format === "json") {
+            console.log(
+              JSON.stringify(
+                {
+                  dryRun: true,
+                  wouldDelete: {
+                    id: item._id,
+                    title: item.title,
+                    link: item.link,
+                    permanent,
+                  },
+                },
+                null,
+                2
+              )
+            );
+          } else if (!globalOpts.quiet) {
+            const action = permanent ? "permanently delete" : "move to trash";
+            console.log(`Would ${action}:`);
+            console.log(`  - ${item._id}: '${item.title}'`);
+            console.log(`\nRun without --dry-run to execute.`);
+          }
+          return;
+        }
 
         if (!force) {
           const message = permanent
@@ -261,8 +298,6 @@ export function createBookmarksCommand(): Command {
             return;
           }
         }
-
-        const client = getClient();
 
         verbose(`Deleting bookmark ${id} (permanent: ${permanent})`);
 
@@ -627,6 +662,7 @@ export function createBookmarksCommand(): Command {
     .option("-c, --collection <id>", "Move to collection (ID or name: all, unsorted, trash)")
     .option("-i, --important", "Mark as important/favorite")
     .option("-I, --no-important", "Remove important/favorite flag")
+    .option("--dry-run", "Show what would be updated without actually updating")
     .action(async function (this: Command, idArg: string, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -749,6 +785,68 @@ export function createBookmarksCommand(): Command {
           requestBody.important = options.important;
         }
 
+        // Handle dry-run mode
+        if (options.dryRun) {
+          // Fetch current bookmark state for comparison
+          verbose(`Dry run: fetching bookmark ${id} to show what would be updated`);
+          const currentResponse = await withProgress("Fetching bookmark", () =>
+            client.raindrop.getRaindrop(id)
+          );
+          const currentItem = currentResponse.data.item;
+
+          // Build list of changes
+          const changes: string[] = [];
+          if (options.title !== undefined) {
+            changes.push(`title: '${currentItem.title}' → '${options.title}'`);
+          }
+          if (options.excerpt !== undefined) {
+            const oldExcerpt = currentItem.excerpt || "(empty)";
+            const newExcerpt = options.excerpt || "(empty)";
+            changes.push(`excerpt: '${oldExcerpt}' → '${newExcerpt}'`);
+          }
+          if (options.note !== undefined) {
+            const oldNote = currentItem.note || "(empty)";
+            const newNote = options.note || "(empty)";
+            changes.push(`note: '${oldNote}' → '${newNote}'`);
+          }
+          if (finalTags !== undefined) {
+            const oldTags = (currentItem.tags || []).join(", ") || "(none)";
+            const newTags = finalTags.join(", ") || "(none)";
+            changes.push(`tags: [${oldTags}] → [${newTags}]`);
+          }
+          if (collectionId !== undefined) {
+            changes.push(`collection: ${currentItem.collection?.$id ?? -1} → ${collectionId}`);
+          }
+          if (options.important !== undefined) {
+            const currentImportant = (currentItem as { important?: boolean }).important ?? false;
+            changes.push(`important: ${currentImportant} → ${options.important}`);
+          }
+
+          if (globalOpts.format === "json") {
+            console.log(
+              JSON.stringify(
+                {
+                  dryRun: true,
+                  wouldUpdate: {
+                    id: currentItem._id,
+                    title: currentItem.title,
+                    changes: requestBody,
+                  },
+                },
+                null,
+                2
+              )
+            );
+          } else if (!globalOpts.quiet) {
+            console.log(`Would update bookmark ${currentItem._id}: '${currentItem.title}'`);
+            for (const change of changes) {
+              console.log(`  - ${change}`);
+            }
+            console.log(`\nRun without --dry-run to execute.`);
+          }
+          return;
+        }
+
         verbose(`Updating bookmark ${id}`);
 
         const response = await withProgress("Updating bookmark", () =>
@@ -818,6 +916,7 @@ export function createBookmarksCommand(): Command {
     .option("-I, --no-important", "Remove important/favorite flag")
     .option("--move-to <collection>", "Move bookmarks to a different collection")
     .option("-f, --force", "Skip confirmation prompt")
+    .option("-n, --dry-run", "Show what would be updated without actually updating")
     .action(async function (this: Command, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -903,6 +1002,73 @@ export function createBookmarksCommand(): Command {
         if (options.important === false) updateParts.push("remove important flag");
         if (moveToCollectionId !== undefined)
           updateParts.push(`move to collection ${options.moveTo}`);
+
+        // Handle dry-run mode
+        if (options.dryRun) {
+          verbose(`Dry run: showing what would be updated for ${targetDescription}`);
+
+          if (ids.length > 0) {
+            // Fetch bookmark details for specific IDs
+            const bookmarkDetails: Array<{ id: number; title: string }> = [];
+            for (const id of ids) {
+              try {
+                const response = await client.raindrop.getRaindrop(id);
+                bookmarkDetails.push({
+                  id: response.data.item._id,
+                  title: response.data.item.title,
+                });
+              } catch {
+                bookmarkDetails.push({ id, title: "(unable to fetch)" });
+              }
+            }
+
+            if (globalOpts.format === "json") {
+              console.log(
+                JSON.stringify(
+                  {
+                    dryRun: true,
+                    wouldUpdate: bookmarkDetails.map((b) => ({ id: b.id, title: b.title })),
+                    changes: updateParts,
+                  },
+                  null,
+                  2
+                )
+              );
+            } else if (!globalOpts.quiet) {
+              console.log(`Would update ${ids.length} bookmark${ids.length === 1 ? "" : "s"}:`);
+              for (const bookmark of bookmarkDetails) {
+                console.log(`  - ${bookmark.id}: '${bookmark.title}'`);
+              }
+              console.log(`\nChanges:`);
+              for (const part of updateParts) {
+                console.log(`  - ${part}`);
+              }
+              console.log(`\nRun without --dry-run to execute.`);
+            }
+          } else {
+            // Collection-wide update
+            if (globalOpts.format === "json") {
+              console.log(
+                JSON.stringify(
+                  {
+                    dryRun: true,
+                    wouldUpdate: targetDescription,
+                    changes: updateParts,
+                  },
+                  null,
+                  2
+                )
+              );
+            } else if (!globalOpts.quiet) {
+              console.log(`Would update ${targetDescription}:`);
+              for (const part of updateParts) {
+                console.log(`  - ${part}`);
+              }
+              console.log(`\nRun without --dry-run to execute.`);
+            }
+          }
+          return;
+        }
 
         // Confirm action unless --force is used
         if (!options.force) {
@@ -1037,6 +1203,7 @@ export function createBookmarksCommand(): Command {
     )
     .option("--search <query>", "Search query to filter bookmarks (used with --collection)")
     .option("-f, --force", "Skip confirmation prompt")
+    .option("-n, --dry-run", "Show what would be deleted without actually deleting")
     .action(async function (this: Command, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -1084,6 +1251,64 @@ export function createBookmarksCommand(): Command {
           targetDescription = `bookmarks matching "${options.search}" in collection "${options.collection}"`;
         } else {
           targetDescription = `ALL bookmarks in collection "${options.collection}"`;
+        }
+
+        // Handle dry-run mode
+        if (options.dryRun) {
+          verbose(`Dry run: showing what would be deleted for ${targetDescription}`);
+
+          if (ids.length > 0) {
+            // Fetch bookmark details for specific IDs
+            const bookmarkDetails: Array<{ id: number; title: string }> = [];
+            for (const id of ids) {
+              try {
+                const response = await client.raindrop.getRaindrop(id);
+                bookmarkDetails.push({
+                  id: response.data.item._id,
+                  title: response.data.item.title,
+                });
+              } catch {
+                bookmarkDetails.push({ id, title: "(unable to fetch)" });
+              }
+            }
+
+            if (globalOpts.format === "json") {
+              console.log(
+                JSON.stringify(
+                  {
+                    dryRun: true,
+                    wouldDelete: bookmarkDetails.map((b) => ({ id: b.id, title: b.title })),
+                  },
+                  null,
+                  2
+                )
+              );
+            } else if (!globalOpts.quiet) {
+              console.log(`Would delete ${ids.length} bookmark${ids.length === 1 ? "" : "s"}:`);
+              for (const bookmark of bookmarkDetails) {
+                console.log(`  - ${bookmark.id}: '${bookmark.title}'`);
+              }
+              console.log(`\nRun without --dry-run to execute.`);
+            }
+          } else {
+            // Collection-wide or search-based delete
+            if (globalOpts.format === "json") {
+              console.log(
+                JSON.stringify(
+                  {
+                    dryRun: true,
+                    wouldDelete: targetDescription,
+                  },
+                  null,
+                  2
+                )
+              );
+            } else if (!globalOpts.quiet) {
+              console.log(`Would delete ${targetDescription}.`);
+              console.log(`\nRun without --dry-run to execute.`);
+            }
+          }
+          return;
         }
 
         // Confirm action unless --force is used
