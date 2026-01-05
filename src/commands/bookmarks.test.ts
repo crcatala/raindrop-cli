@@ -626,6 +626,8 @@ describe("bookmarks delete command", () => {
       const result = await runCliExpectSuccess(["bookmarks", "delete", "--help"]);
       expect(result.stdout).toContain("--permanent");
       expect(result.stdout).toContain("--force");
+      expect(result.stdout).toContain("--dry-run");
+      expect(result.stdout).toContain("-n");
     });
   });
 });
@@ -869,6 +871,7 @@ describe("bookmarks update command", () => {
       expect(result.stdout).toContain("--collection");
       expect(result.stdout).toContain("--important");
       expect(result.stdout).toContain("--no-important");
+      expect(result.stdout).toContain("--dry-run");
     });
   });
 
@@ -1321,6 +1324,8 @@ describe("bookmarks batch-update command", () => {
       expect(result.stdout).toContain("--move-to");
       expect(result.stdout).toContain("--force");
       expect(result.stdout).toContain("stdin");
+      expect(result.stdout).toContain("--dry-run");
+      expect(result.stdout).toContain("-n");
     });
 
     test("batch-update fails without any IDs or collection", async () => {
@@ -1371,6 +1376,8 @@ describe("bookmarks batch-delete command", () => {
       expect(result.stdout).toContain("--search");
       expect(result.stdout).toContain("--force");
       expect(result.stdout).toContain("stdin");
+      expect(result.stdout).toContain("--dry-run");
+      expect(result.stdout).toContain("-n");
     });
 
     test("batch-delete fails without any IDs or collection", async () => {
