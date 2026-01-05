@@ -3,7 +3,8 @@ import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { handleError } from "../utils/errors.js";
-import { verbose, verboseTime, debug } from "../utils/debug.js";
+import { verbose, debug } from "../utils/debug.js";
+import { withProgress } from "../utils/progress.js";
 import { confirmAction } from "../utils/prompt.js";
 import { hasStdinData, readIdsFromStdin, parseIds } from "../utils/stdin.js";
 import type { GlobalOptions } from "../types/index.js";
@@ -265,7 +266,7 @@ export function createBookmarksCommand(): Command {
         verbose(`Deleting bookmark ${id} (permanent: ${permanent})`);
 
         // First deletion (moves to trash, or deletes if already in trash)
-        await verboseTime("Deleting bookmark", async () => {
+        await withProgress("Deleting bookmark", async () => {
           await client.raindrop.removeRaindrop(id);
         });
 
@@ -397,7 +398,7 @@ export function createBookmarksCommand(): Command {
         verbose(`Fetching bookmarks from collection ${collectionId}`);
 
         const client = getClient();
-        const response = await verboseTime("Fetching bookmarks", () =>
+        const response = await withProgress("Fetching bookmarks", () =>
           client.raindrop.getRaindrops(collectionId, sort, limit, page, search)
         );
 
@@ -445,7 +446,7 @@ export function createBookmarksCommand(): Command {
         verbose(`Fetching bookmark ${id}`);
 
         const client = getClient();
-        const response = await verboseTime("Fetching bookmark", () =>
+        const response = await withProgress("Fetching bookmark", () =>
           client.raindrop.getRaindrop(id)
         );
 
@@ -561,7 +562,7 @@ export function createBookmarksCommand(): Command {
 
         // Cast through unknown because the API accepts fields (like 'note') that aren't
         // in the generated TypeScript types
-        const response = await verboseTime("Creating bookmark", () =>
+        const response = await withProgress("Creating bookmark", () =>
           client.raindrop.createRaindrop(
             requestBody as unknown as Parameters<typeof client.raindrop.createRaindrop>[0]
           )
@@ -688,7 +689,7 @@ export function createBookmarksCommand(): Command {
         let currentTags: string[] | undefined;
         if (addTags || removeTags) {
           verbose(`Fetching current bookmark ${id} to get existing tags`);
-          const currentResponse = await verboseTime("Fetching current bookmark", () =>
+          const currentResponse = await withProgress("Fetching current bookmark", () =>
             client.raindrop.getRaindrop(id)
           );
           currentTags = currentResponse.data.item.tags || [];
@@ -748,7 +749,7 @@ export function createBookmarksCommand(): Command {
 
         verbose(`Updating bookmark ${id}`);
 
-        const response = await verboseTime("Updating bookmark", () =>
+        const response = await withProgress("Updating bookmark", () =>
           client.raindrop.updateRaindrop(id, requestBody)
         );
 
@@ -996,7 +997,7 @@ export function createBookmarksCommand(): Command {
             requestBody.collection = { $id: moveToCollectionId };
           }
 
-          const response = await verboseTime("Batch updating bookmarks", () =>
+          const response = await withProgress("Batch updating bookmarks", () =>
             client.raindrop.updateRaindrops(collectionId, requestBody)
           );
 
@@ -1103,7 +1104,7 @@ export function createBookmarksCommand(): Command {
           requestBody.ids = ids;
         }
 
-        const response = await verboseTime("Batch deleting bookmarks", () =>
+        const response = await withProgress("Batch deleting bookmarks", () =>
           client.raindrop.removeRaindrops(collectionId, options.search, requestBody)
         );
 

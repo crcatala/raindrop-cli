@@ -11,7 +11,8 @@ import {
 } from "../config.js";
 import { getClient, resetClient } from "../client.js";
 import { outputData, outputMessage, outputError } from "../utils/output-streams.js";
-import { verbose, verboseTime, debug } from "../utils/debug.js";
+import { verbose, debug } from "../utils/debug.js";
+import { withProgress } from "../utils/progress.js";
 
 /**
  * Prompt for input. Using readline avoids token appearing in shell history
@@ -47,7 +48,7 @@ async function validateToken(
 
   try {
     const client = getClient();
-    const response = await verboseTime("Calling Raindrop API", () => client.user.getCurrentUser());
+    const response = await withProgress("Calling Raindrop API", () => client.user.getCurrentUser());
     const user = response.data.user;
     debug("API response received", { userId: user?._id, email: user?.email });
     return {
@@ -147,7 +148,7 @@ export function createAuthCommand(): Command {
       // Try to validate and get user info
       try {
         const client = getClient();
-        const response = await verboseTime("Fetching user info", () =>
+        const response = await withProgress("Fetching user info", () =>
           client.user.getCurrentUser()
         );
         const user = response.data.user;

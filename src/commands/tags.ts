@@ -3,7 +3,8 @@ import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { handleError } from "../utils/errors.js";
-import { verbose, verboseTime, debug } from "../utils/debug.js";
+import { verbose, debug } from "../utils/debug.js";
+import { withProgress } from "../utils/progress.js";
 import { outputError, outputMessage } from "../utils/output-streams.js";
 import type { GlobalOptions } from "../types/index.js";
 
@@ -34,7 +35,7 @@ export function createTagsCommand(): Command {
         verbose(`Fetching tags from collection ${collectionId}`);
 
         const client = getClient();
-        const response = await verboseTime("Fetching tags", () =>
+        const response = await withProgress("Fetching tags", () =>
           client.tag.getTagsInCollection(collectionId)
         );
 
@@ -83,7 +84,7 @@ export function createTagsCommand(): Command {
         verbose(`Renaming tag "${oldTag}" to "${newTag}" in collection ${collectionId}`);
 
         const client = getClient();
-        const response = await verboseTime("Renaming tag", () =>
+        const response = await withProgress("Renaming tag", () =>
           client.tag.renameOrMergeTags(collectionId, {
             replace: newTag,
             tags: [oldTag],
@@ -130,7 +131,7 @@ export function createTagsCommand(): Command {
         verbose(`Deleting tag "${tag}" from collection ${collectionId}`);
 
         const client = getClient();
-        const response = await verboseTime("Deleting tag", () =>
+        const response = await withProgress("Deleting tag", () =>
           client.tag.removeTagsFromCollection(collectionId, {
             tags: [tag],
           })
