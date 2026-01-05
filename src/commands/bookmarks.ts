@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
-import { handleError } from "../utils/errors.js";
+import { handleError, UsageError } from "../utils/errors.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import { confirmAction } from "../utils/prompt.js";
@@ -222,11 +222,12 @@ function formatBookmarkDetail(item: {
 }
 
 export function createBookmarksCommand(): Command {
-  const bookmarks = new Command("bookmarks").description("Manage bookmarks").action(function (
-    this: Command
-  ) {
-    this.help();
-  });
+  const bookmarks = new Command("bookmarks")
+    .description("Manage bookmarks")
+    .exitOverride()
+    .action(function (this: Command) {
+      this.help();
+    });
 
   // delete command
   bookmarks
@@ -241,7 +242,7 @@ export function createBookmarksCommand(): Command {
         const id = parseInt(idArg, 10);
 
         if (isNaN(id) || id <= 0) {
-          throw new Error("Invalid bookmark ID. Must be a positive integer.");
+          throw new UsageError(`Invalid bookmark ID: "${idArg}". Use a positive number.`);
         }
 
         const permanent = !!options.permanent;
@@ -341,32 +342,32 @@ export function createBookmarksCommand(): Command {
 
         // Validate limit
         if (isNaN(limit) || limit < 1 || limit > 50) {
-          throw new Error("Limit must be between 1 and 50");
+          throw new UsageError(`Invalid limit: "${options.limit}". Use a number between 1 and 50.`);
         }
 
         // Validate page
         if (isNaN(page) || page < 0) {
-          throw new Error("Page must be a non-negative number");
+          throw new UsageError(`Invalid page: "${options.page}". Use a non-negative number.`);
         }
 
         // Validate sort
         if (!VALID_SORT_OPTIONS.includes(sort)) {
-          throw new Error(
-            `Invalid sort option: "${sort}". Valid options: ${VALID_SORT_OPTIONS.join(", ")}`
+          throw new UsageError(
+            `Invalid sort option: "${sort}". Use one of: ${VALID_SORT_OPTIONS.join(", ")}.`
           );
         }
 
         // Validate type if provided
         if (options.type && !VALID_TYPES.includes(options.type)) {
-          throw new Error(
-            `Invalid type: "${options.type}". Valid types: ${VALID_TYPES.join(", ")}`
+          throw new UsageError(
+            `Invalid type: "${options.type}". Use one of: ${VALID_TYPES.join(", ")}.`
           );
         }
 
         // Validate created date format if provided
         if (options.created && !/^\d{4}-\d{2}(-\d{2})?$/.test(options.created)) {
-          throw new Error(
-            `Invalid date format: "${options.created}". Use YYYY-MM or YYYY-MM-DD format`
+          throw new UsageError(
+            `Invalid date format: "${options.created}". Use YYYY-MM or YYYY-MM-DD.`
           );
         }
 
@@ -439,7 +440,7 @@ export function createBookmarksCommand(): Command {
         // Parse and validate bookmark ID
         const id = parseInt(idArg, 10);
         if (isNaN(id) || id < 1) {
-          throw new Error("Invalid bookmark ID: must be a positive number");
+          throw new UsageError(`Invalid bookmark ID: "${idArg}". Use a positive number.`);
         }
 
         debug("Get bookmark options", { id });
@@ -498,13 +499,13 @@ export function createBookmarksCommand(): Command {
         try {
           const parsedUrl = new URL(url);
           if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-            throw new Error("Invalid URL: must use http:// or https:// protocol");
+            throw new UsageError(`Invalid URL: "${url}". Use http:// or https://.`);
           }
         } catch (e) {
-          if (e instanceof Error && e.message.includes("protocol")) {
-            throw e; // Re-throw our protocol error
+          if (e instanceof UsageError) {
+            throw e;
           }
-          throw new Error("Invalid URL: must be a valid URL with http:// or https:// protocol");
+          throw new UsageError(`Invalid URL: "${url}". Use http:// or https://.`);
         }
 
         // Parse collection ID
@@ -633,12 +634,12 @@ export function createBookmarksCommand(): Command {
         // Parse and validate bookmark ID
         const id = parseInt(idArg, 10);
         if (isNaN(id) || id < 1) {
-          throw new Error("Invalid bookmark ID: must be a positive number");
+          throw new UsageError(`Invalid bookmark ID: "${idArg}". Use a positive number.`);
         }
 
         // Validate that --tags is not combined with --add-tags or --remove-tags
         if (options.tags !== undefined && (options.addTags || options.removeTags)) {
-          throw new Error(
+          throw new UsageError(
             "Cannot combine --tags with --add-tags or --remove-tags. " +
               "Use --tags to replace all tags, or --add-tags/--remove-tags for incremental changes."
           );
@@ -656,7 +657,7 @@ export function createBookmarksCommand(): Command {
           options.important !== undefined;
 
         if (!hasUpdates) {
-          throw new Error(
+          throw new UsageError(
             "No fields to update. Use --title, --excerpt, --note, --tags, --add-tags, " +
               "--remove-tags, --collection, --important, or --no-important to specify changes."
           );
@@ -667,7 +668,8 @@ export function createBookmarksCommand(): Command {
           options.collection !== undefined ? parseCollectionId(options.collection) : undefined;
 
         // Parse tags options (parseTags returns undefined for empty results)
-        const replaceTags = parseTags(options.tags);
+        const replaceTags =
+          options.tags !== undefined ? (parseTags(options.tags) ?? []) : undefined;
         const addTags = parseTags(options.addTags);
         const removeTags = parseTags(options.removeTags);
 
@@ -756,7 +758,7 @@ export function createBookmarksCommand(): Command {
         const item = response.data.item;
 
         if (!item) {
-          throw new Error("Update failed: no item returned from API");
+          throw new Error("Update failed. Try again later.");
         }
 
         debug("API response", {

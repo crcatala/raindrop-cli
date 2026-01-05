@@ -1,5 +1,9 @@
 import { describe, test, expect } from "bun:test";
 import { runCli, runCliExpectSuccess, parseJsonOutput } from "../test-utils/index.js";
+import { AUTH_CLI_TIMEOUT_MS, AUTH_TEST_TIMEOUT_MS } from "../test-utils/timeouts.js";
+
+const runCliBase = runCli;
+const runCliExpectSuccessBase = runCliExpectSuccess;
 
 /**
  * Tests for the highlights command.
@@ -48,7 +52,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "list", "--collection", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
 
@@ -56,32 +60,36 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "list", "--limit", "0"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Limit must be between 1 and 50");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid limit");
+      expect(result.stderr).toContain("1 and 50");
     });
 
     test("rejects invalid limit (too high)", async () => {
       const result = await runCli(["highlights", "list", "--limit", "100"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Limit must be between 1 and 50");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid limit");
+      expect(result.stderr).toContain("1 and 50");
     });
 
     test("rejects invalid limit (not a number)", async () => {
       const result = await runCli(["highlights", "list", "--limit", "abc"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Limit must be between 1 and 50");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid limit");
+      expect(result.stderr).toContain("1 and 50");
     });
 
     test("rejects negative page number", async () => {
       const result = await runCli(["highlights", "list", "--page", "-1"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Page must be a non-negative number");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid page");
+      expect(result.stderr).toContain("non-negative");
     });
   });
 
@@ -90,8 +98,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "get"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      // Commander may exit with 1 or 2 depending on error handling
-      expect(result.exitCode).toBeGreaterThan(0);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("bookmark-id");
     });
 
@@ -99,7 +106,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "get", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -107,7 +114,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "get", "0"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -115,7 +122,7 @@ describe("highlights command", () => {
       const result = await runCli(["highlights", "get", "-5"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
   });
@@ -127,8 +134,19 @@ describe("highlights command", () => {
  */
 describe("highlights command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
 
-  const testWithAuth = hasToken ? test : test.skip;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
+
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   testWithAuth("list returns highlights as JSON", async () => {
     const result = await runCliExpectSuccess(["highlights", "list"]);
@@ -206,10 +224,11 @@ describe("highlights command - with auth", () => {
     expect(result.exitCode).toBe(0);
     // Plain format should have styled dividers between items (if there are items)
     if (result.stdout.trim().length > 0) {
-      // Either has dividers or is empty
+      // Either has dividers or is empty/no-results
       const hasDividers = result.stdout.includes("───");
       const isEmpty = result.stdout.trim() === "";
-      expect(hasDividers || isEmpty).toBe(true);
+      const hasEmptyMessage = result.stdout.includes("No results found");
+      expect(hasDividers || isEmpty || hasEmptyMessage).toBe(true);
     }
   });
 });

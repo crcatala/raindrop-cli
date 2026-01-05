@@ -1,3 +1,5 @@
+import { UsageError } from "./errors.js";
+
 /**
  * Shared utilities for collection ID parsing and special collections.
  */
@@ -31,8 +33,8 @@ export function parseCollectionId(value: string | undefined): number {
   // Parse as number
   const num = parseInt(value, 10);
   if (isNaN(num)) {
-    throw new Error(
-      `Invalid collection ID: "${value}". Use a number or one of: all, unsorted, trash`
+    throw new UsageError(
+      `Invalid collection ID: "${value}". Use a number, one of: all, unsorted, trash, or run \`rdcli collections list\` for IDs.`
     );
   }
   return num;

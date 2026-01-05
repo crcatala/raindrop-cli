@@ -5,9 +5,9 @@ import { createCollectionsCommand } from "./commands/collections.js";
 import { createHighlightsCommand } from "./commands/highlights.js";
 import { createTagsCommand } from "./commands/tags.js";
 import { createFiltersCommand } from "./commands/filters.js";
-import { outputError } from "./utils/output-streams.js";
 import { setNoColorFlag } from "./utils/tty.js";
 import { setDebugEnabled, setVerboseEnabled } from "./utils/debug.js";
+import { outputError } from "./utils/output-streams.js";
 
 program
   .name("rdcli")
@@ -22,6 +22,9 @@ program
   .option("-v, --verbose", "show operational details (API calls, timing)")
   .option("-d, --debug", "show debug info (stack traces, internal state)")
   .option("--no-color", "disable colored output")
+  .configureOutput({
+    outputError: () => {},
+  })
   .exitOverride()
   .configureOutput({
     // Suppress Commander's own error output since we handle errors ourselves
@@ -68,21 +71,9 @@ try {
     ) {
       process.exit(0);
     }
-    // Usage errors should exit with code 2 (per clig.dev conventions)
-    const usageErrors = [
-      "commander.unknownCommand",
-      "commander.unknownOption",
-      "commander.missingArgument",
-      "commander.invalidArgument",
-      "commander.missingMandatoryOptionValue",
-      "commander.optionMissingArgument",
-      "commander.excessArguments",
-      "commander.conflictingOption",
-    ];
-    if (usageErrors.includes(err.code)) {
-      outputError(err.message);
-      process.exit(2);
-    }
+    // Commander errors are usage errors (per clig.dev conventions)
+    outputError(err.message);
+    process.exit(2);
   }
   throw err;
 }

@@ -1,5 +1,9 @@
 import { describe, test, expect } from "bun:test";
 import { runCli, runCliExpectSuccess, parseJsonOutput } from "../test-utils/index.js";
+import { AUTH_CLI_TIMEOUT_MS, AUTH_TEST_TIMEOUT_MS } from "../test-utils/timeouts.js";
+
+const runCliBase = runCli;
+const runCliExpectSuccessBase = runCliExpectSuccess;
 
 /**
  * Tests for the bookmarks command.
@@ -85,7 +89,7 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "get", "abc"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -93,7 +97,7 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "get", "-1"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -101,7 +105,7 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "get", "0"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -109,7 +113,7 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "get"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       // Commander shows missing argument error
       expect(result.stderr).toContain("missing required argument");
     });
@@ -120,23 +124,25 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "list", "--limit", "100"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Limit must be between 1 and 50");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid limit");
+      expect(result.stderr).toContain("1 and 50");
     });
 
     test("rejects invalid limit (too low)", async () => {
       const result = await runCli(["bookmarks", "list", "--limit", "0"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Limit must be between 1 and 50");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid limit");
+      expect(result.stderr).toContain("1 and 50");
     });
 
     test("rejects invalid sort option", async () => {
       const result = await runCli(["bookmarks", "list", "--sort", "invalid"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid sort option");
     });
 
@@ -144,7 +150,7 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "list", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
 
@@ -152,15 +158,16 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "list", "--page", "-1"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Page must be a non-negative number");
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid page");
+      expect(result.stderr).toContain("non-negative");
     });
 
     test("rejects invalid type option", async () => {
       const result = await runCli(["bookmarks", "list", "--type", "invalid"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid type");
       expect(result.stderr).toContain("article");
     });
@@ -169,7 +176,7 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "list", "--created", "yesterday"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid date format");
       expect(result.stderr).toContain("YYYY-MM");
     });
@@ -178,7 +185,7 @@ describe("bookmarks command", () => {
       const result = await runCli(["bookmarks", "list", "--created", "2025-1"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid date format");
     });
 
@@ -206,8 +213,19 @@ describe("bookmarks command", () => {
  */
 describe("bookmarks command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
 
-  const testWithAuth = hasToken ? test : test.skip;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
+
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   testWithAuth("list returns bookmarks as JSON", async () => {
     const result = await runCliExpectSuccess(["bookmarks", "list", "--limit", "2"]);
@@ -575,7 +593,7 @@ describe("bookmarks delete command", () => {
       const result = await runCli(["bookmarks", "delete"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).not.toBe(0);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("error: missing required argument 'id'");
     });
 
@@ -583,14 +601,14 @@ describe("bookmarks delete command", () => {
       const result = await runCli(["bookmarks", "delete", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).not.toBe(0);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
     test("rejects invalid bookmark ID (zero)", async () => {
       const result = await runCli(["bookmarks", "delete", "0"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).not.toBe(0);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -598,7 +616,7 @@ describe("bookmarks delete command", () => {
       const result = await runCli(["bookmarks", "delete", "-1"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).not.toBe(0);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
   });
@@ -640,7 +658,7 @@ describe("bookmarks add command", () => {
       const result = await runCli(["bookmarks", "add", "example.com"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid URL");
     });
 
@@ -648,7 +666,7 @@ describe("bookmarks add command", () => {
       const result = await runCli(["bookmarks", "add", "ftp://example.com"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid URL");
     });
 
@@ -656,7 +674,7 @@ describe("bookmarks add command", () => {
       const result = await runCli(["bookmarks", "add", "https://"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid URL");
     });
 
@@ -664,7 +682,7 @@ describe("bookmarks add command", () => {
       const result = await runCli(["bookmarks", "add", "https://[invalid"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid URL");
     });
 
@@ -675,7 +693,7 @@ describe("bookmarks add command", () => {
           env: { RAINDROP_TOKEN: "fake-token" },
         }
       );
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
   });
@@ -698,7 +716,18 @@ describe("bookmarks add command", () => {
  */
 describe("bookmarks add command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const testWithAuth = hasToken ? test : test.skip;
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
+
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   // Helper to delete a bookmark (cleanup)
   async function deleteBookmark(id: number): Promise<void> {
@@ -848,7 +877,7 @@ describe("bookmarks update command", () => {
       const result = await runCli(["bookmarks", "update"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).not.toBe(0);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("missing required argument");
     });
 
@@ -856,7 +885,7 @@ describe("bookmarks update command", () => {
       const result = await runCli(["bookmarks", "update", "abc", "--title", "Test"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -864,7 +893,7 @@ describe("bookmarks update command", () => {
       const result = await runCli(["bookmarks", "update", "0", "--title", "Test"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -872,7 +901,7 @@ describe("bookmarks update command", () => {
       const result = await runCli(["bookmarks", "update", "-1", "--title", "Test"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid bookmark ID");
     });
 
@@ -880,7 +909,7 @@ describe("bookmarks update command", () => {
       const result = await runCli(["bookmarks", "update", "12345"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("No fields to update");
     });
 
@@ -891,7 +920,7 @@ describe("bookmarks update command", () => {
           env: { RAINDROP_TOKEN: "fake-token" },
         }
       );
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Cannot combine --tags with --add-tags or --remove-tags");
     });
 
@@ -902,7 +931,7 @@ describe("bookmarks update command", () => {
           env: { RAINDROP_TOKEN: "fake-token" },
         }
       );
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Cannot combine --tags with --add-tags or --remove-tags");
     });
 
@@ -910,7 +939,7 @@ describe("bookmarks update command", () => {
       const result = await runCli(["bookmarks", "update", "12345", "--collection", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
   });
@@ -933,7 +962,18 @@ describe("bookmarks update command", () => {
  */
 describe("bookmarks update command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const testWithAuth = hasToken ? test : test.skip;
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
+
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   // Helper to create a test bookmark
   async function createTestBookmark(suffix: string = ""): Promise<{ id: number; url: string }> {

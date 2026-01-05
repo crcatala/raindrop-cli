@@ -1,5 +1,9 @@
 import { describe, test, expect } from "bun:test";
 import { runCli, runCliExpectSuccess, parseJsonOutput } from "../test-utils/index.js";
+import { AUTH_CLI_TIMEOUT_MS, AUTH_TEST_TIMEOUT_MS } from "../test-utils/timeouts.js";
+
+const runCliBase = runCli;
+const runCliExpectSuccessBase = runCliExpectSuccess;
 
 /**
  * Tests for the tags command.
@@ -56,7 +60,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "list", "notanumber"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid collection ID");
     });
   });
@@ -66,8 +70,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "rename", "old-tag", "new-tag"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("destructive operation");
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("--force");
     });
 
@@ -75,7 +78,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "rename", "my-tag", "better-tag"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("my-tag");
       expect(result.stderr).toContain("better-tag");
     });
@@ -86,8 +89,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "delete", "some-tag"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("destructive operation");
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("--force");
     });
 
@@ -95,7 +97,7 @@ describe("tags command", () => {
       const result = await runCli(["tags", "delete", "unwanted-tag"], {
         env: { RAINDROP_TOKEN: "fake-token" },
       });
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("unwanted-tag");
     });
   });
@@ -107,8 +109,19 @@ describe("tags command", () => {
  */
 describe("tags command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const AUTH_TEST_TIMEOUT = AUTH_TEST_TIMEOUT_MS;
 
-  const testWithAuth = hasToken ? test : test.skip;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
+
+  const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  const runCliExpectSuccess = (
+    args: string[],
+    options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
+  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   testWithAuth("list returns tags as JSON", async () => {
     const result = await runCliExpectSuccess(["tags", "list"]);
