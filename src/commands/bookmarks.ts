@@ -997,7 +997,7 @@ export function createBookmarksCommand(): Command {
             requestBody.collection = { $id: moveToCollectionId };
           }
 
-          const response = await verboseTime("Batch updating bookmarks", () =>
+          const response = await withProgress("Batch updating bookmarks", () =>
             client.raindrop.updateRaindrops(collectionId, requestBody)
           );
 
@@ -1104,7 +1104,7 @@ export function createBookmarksCommand(): Command {
           requestBody.ids = ids;
         }
 
-        const response = await verboseTime("Batch deleting bookmarks", () =>
+        const response = await withProgress("Batch deleting bookmarks", () =>
           client.raindrop.removeRaindrops(collectionId, options.search, requestBody)
         );
 
