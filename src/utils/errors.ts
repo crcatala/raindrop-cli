@@ -54,14 +54,10 @@ export class RateLimitError extends RaindropCliError {
   ) {
     const seconds = Math.max(0, resetTime - Math.floor(Date.now() / 1000));
     const wait = formatSeconds(seconds);
-    super(
-      `Rate limited by Raindrop API. Wait ${wait} before retrying.`,
-      "RATE_LIMITED",
-      {
-        limit,
-        reset: resetTime,
-      }
-    );
+    super(`Rate limited by Raindrop API. Wait ${wait} before retrying.`, "RATE_LIMITED", {
+      limit,
+      reset: resetTime,
+    });
     this.name = "RateLimitError";
   }
 }

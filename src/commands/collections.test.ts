@@ -91,7 +91,10 @@ describe("collections command", () => {
  */
 describe("collections command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const testWithAuth = hasToken ? test : test.skip;
+  const AUTH_TEST_TIMEOUT = 20000;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
 
   testWithAuth("list returns collections as JSON", async () => {
     const result = await runCliExpectSuccess(["collections", "list"]);

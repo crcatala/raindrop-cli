@@ -209,8 +209,11 @@ describe("bookmarks command", () => {
  */
 describe("bookmarks command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const AUTH_TEST_TIMEOUT = 20000;
 
-  const testWithAuth = hasToken ? test : test.skip;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
 
   testWithAuth("list returns bookmarks as JSON", async () => {
     const result = await runCliExpectSuccess(["bookmarks", "list", "--limit", "2"]);
@@ -701,7 +704,10 @@ describe("bookmarks add command", () => {
  */
 describe("bookmarks add command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const testWithAuth = hasToken ? test : test.skip;
+  const AUTH_TEST_TIMEOUT = 20000;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
 
   // Helper to delete a bookmark (cleanup)
   async function deleteBookmark(id: number): Promise<void> {
@@ -936,7 +942,10 @@ describe("bookmarks update command", () => {
  */
 describe("bookmarks update command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
-  const testWithAuth = hasToken ? test : test.skip;
+  const AUTH_TEST_TIMEOUT = 20000;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
 
   // Helper to create a test bookmark
   async function createTestBookmark(suffix: string = ""): Promise<{ id: number; url: string }> {

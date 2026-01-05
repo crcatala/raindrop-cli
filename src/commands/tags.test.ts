@@ -105,8 +105,11 @@ describe("tags command", () => {
  */
 describe("tags command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const AUTH_TEST_TIMEOUT = 20000;
 
-  const testWithAuth = hasToken ? test : test.skip;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
 
   testWithAuth("list returns tags as JSON", async () => {
     const result = await runCliExpectSuccess(["tags", "list"]);

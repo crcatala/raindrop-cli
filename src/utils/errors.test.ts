@@ -203,12 +203,16 @@ describe("handleError", () => {
 
   test("handles unknown error type", () => {
     expect(() => handleError("string error")).toThrow("process.exit called");
-    expect(stderrSpy).toHaveBeenCalledWith("An unexpected error occurred. Run with --debug for details.\n");
+    expect(stderrSpy).toHaveBeenCalledWith(
+      "An unexpected error occurred. Run with --debug for details.\n"
+    );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   test("handles null/undefined error", () => {
     expect(() => handleError(null)).toThrow("process.exit called");
-    expect(stderrSpy).toHaveBeenCalledWith("An unexpected error occurred. Run with --debug for details.\n");
+    expect(stderrSpy).toHaveBeenCalledWith(
+      "An unexpected error occurred. Run with --debug for details.\n"
+    );
   });
 });

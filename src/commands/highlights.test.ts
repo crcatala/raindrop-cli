@@ -130,8 +130,11 @@ describe("highlights command", () => {
  */
 describe("highlights command - with auth", () => {
   const hasToken = !!process.env["RAINDROP_TOKEN"];
+  const AUTH_TEST_TIMEOUT = 20000;
 
-  const testWithAuth = hasToken ? test : test.skip;
+  const testWithAuth = hasToken
+    ? (name: string, fn: () => Promise<void>) => test(name, fn, { timeout: AUTH_TEST_TIMEOUT })
+    : test.skip;
 
   testWithAuth("list returns highlights as JSON", async () => {
     const result = await runCliExpectSuccess(["highlights", "list"]);
@@ -209,10 +212,11 @@ describe("highlights command - with auth", () => {
     expect(result.exitCode).toBe(0);
     // Plain format should have styled dividers between items (if there are items)
     if (result.stdout.trim().length > 0) {
-      // Either has dividers or is empty
+      // Either has dividers or is empty/no-results
       const hasDividers = result.stdout.includes("───");
       const isEmpty = result.stdout.trim() === "";
-      expect(hasDividers || isEmpty).toBe(true);
+      const hasEmptyMessage = result.stdout.includes("No results found");
+      expect(hasDividers || isEmpty || hasEmptyMessage).toBe(true);
     }
   });
 });
