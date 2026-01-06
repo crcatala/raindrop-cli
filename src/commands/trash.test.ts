@@ -1,86 +1,60 @@
 import { describe, test, expect } from "bun:test";
-import { runCli, runCliExpectSuccess } from "../test-utils/index.js";
+import { createTrashCommand } from "./trash.js";
 
 /**
- * Tests for the trash command.
+ * Unit tests for the trash command.
  *
- * Integration tests that run the CLI as a subprocess.
- * Some tests require a valid RAINDROP_TOKEN environment variable.
+ * These tests run in-process without spawning subprocesses (~1ms vs ~200ms each).
+ * They test command structure, help text, and options/arguments.
+ *
+ * For subprocess integration tests, see trash.integration.test.ts.
  */
 
-describe("trash command", () => {
-  describe("help", () => {
-    test("trash --help shows command description", async () => {
-      const result = await runCliExpectSuccess(["trash", "--help"]);
-      expect(result.stdout).toContain("Manage trash collection");
-      expect(result.stdout).toContain("empty");
+describe("trash command structure", () => {
+  const trash = createTrashCommand();
+
+  describe("command hierarchy", () => {
+    test("has correct name and description", () => {
+      expect(trash.name()).toBe("trash");
+      expect(trash.description()).toContain("Manage trash");
     });
 
-    test("trash empty --help shows usage", async () => {
-      const result = await runCliExpectSuccess(["trash", "empty", "--help"]);
-      expect(result.stdout).toContain("Permanently delete all items in trash");
-      expect(result.stdout).toContain("--force");
-      expect(result.stdout).toContain("--dry-run");
-    });
-  });
-
-  describe("empty command - requires --force", () => {
-    test("fails without --force flag", async () => {
-      const result = await runCli(["trash", "empty"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("--force");
-    });
-
-    test("shows warning about permanent deletion", async () => {
-      const result = await runCli(["trash", "empty"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("permanently delete");
-      expect(result.stderr).toContain("cannot be undone");
+    test("has empty subcommand", () => {
+      const empty = trash.commands.find((c) => c.name() === "empty");
+      expect(empty).toBeDefined();
+      expect(empty?.description()).toContain("Permanently delete all items in trash");
     });
   });
 
-  describe("empty command - dry-run", () => {
-    test("dry-run with --quiet outputs just the count", async () => {
-      // Note: This test requires auth since dry-run fetches trash stats
-      // Skip if no token available
-      if (!process.env.RAINDROP_TOKEN) {
-        return;
-      }
-      const result = await runCli(["trash", "empty", "--dry-run", "--quiet"]);
-      expect(result.exitCode).toBe(0);
-      // Output should be just a number
-      expect(result.stdout.trim()).toMatch(/^\d+$/);
+  describe("help text", () => {
+    test("trash --help shows command description", () => {
+      const help = trash.helpInformation();
+      expect(help).toContain("Manage trash");
+      expect(help).toContain("empty");
+    });
+
+    test("trash empty --help shows usage", () => {
+      const empty = trash.commands.find((c) => c.name() === "empty");
+      const help = empty?.helpInformation() ?? "";
+      expect(help).toContain("Permanently delete all items in trash");
+      expect(help).toContain("--force");
+      expect(help).toContain("--dry-run");
     });
   });
 
-  describe("empty command - without auth", () => {
-    test("fails gracefully without token", async () => {
-      const result = await runCli(["trash", "empty", "--force"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
-      expect(result.exitCode).toBe(1);
-      // Should fail with auth error
-      const hasAuthError =
-        result.stderr.includes("No API token") ||
-        result.stderr.includes("401") ||
-        result.stderr.includes("Unauthorized");
-      expect(hasAuthError).toBe(true);
+  describe("empty command options", () => {
+    const empty = trash.commands.find((c) => c.name() === "empty");
+
+    test("has --force option", () => {
+      const opt = empty?.options.find((o) => o.long === "--force");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-f");
     });
 
-    test("dry-run fails gracefully without token", async () => {
-      const result = await runCli(["trash", "empty", "--dry-run"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
-      expect(result.exitCode).toBe(1);
-      const hasAuthError =
-        result.stderr.includes("No API token") ||
-        result.stderr.includes("401") ||
-        result.stderr.includes("Unauthorized");
-      expect(hasAuthError).toBe(true);
+    test("has --dry-run option", () => {
+      const opt = empty?.options.find((o) => o.long === "--dry-run");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-n");
     });
   });
 });

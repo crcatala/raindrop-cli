@@ -25,7 +25,10 @@ describe("tags CLI integration", () => {
       env: { RAINDROP_TOKEN: "" },
     });
     expect(result.exitCode).toBe(1);
-    const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
+    const hasAuthError =
+      result.stderr.includes("No API token") ||
+      result.stderr.includes("401") ||
+      result.stderr.includes("Unauthorized");
     expect(hasAuthError).toBe(true);
   });
 
