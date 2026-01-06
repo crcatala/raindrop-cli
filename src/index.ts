@@ -71,6 +71,7 @@ try {
 } catch (err) {
   if (err instanceof CommanderError) {
     // Commander already output the error/help, just exit with appropriate code
+    // (see docs/commander-best-practices.md for why we don't re-output errors)
     const isHelpOrVersion =
       err.code === "commander.help" ||
       err.code === "commander.helpDisplayed" ||
