@@ -17,7 +17,7 @@ const FAVORITES_COLUMNS: ColumnConfig[] = [
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
   { key: "tags", header: "Tags", width: 20 },
-  { key: "favorite", header: "❤️ Fav", width: 8 },
+  { key: "favorite", header: "Fav", width: 8 },
   { key: "created", header: "Created", width: 12 },
   { key: "_id", header: "ID", width: 12 },
 ];

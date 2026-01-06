@@ -21,7 +21,7 @@ const BOOKMARK_COLUMNS: ColumnConfig[] = [
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
   { key: "tags", header: "Tags", width: 20 },
-  { key: "favorite", header: "❤️ Fav", width: 8 },
+  { key: "favorite", header: "Fav", width: 8 },
   { key: "created", header: "Created", width: 12 },
   { key: "_id", header: "ID", width: 12 },
 ];
@@ -38,7 +38,7 @@ const BOOKMARK_DETAIL_COLUMNS: ColumnConfig[] = [
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
   { key: "tags", header: "Tags", width: 30 },
-  { key: "favorite", header: "❤️ Fav", width: 8 },
+  { key: "favorite", header: "Fav", width: 8 },
   { key: "type", header: "Type", width: 12 },
   { key: "domain", header: "Domain", width: 30 },
   { key: "collectionId", header: "Collection", width: 12 },
