@@ -87,6 +87,7 @@ export function createFiltersCommand(): Command {
   const filters = new Command("filters")
     .description("Discover available filters")
     .exitOverride()
+    .configureOutput({ outputError: () => {} })
     .action(function (this: Command) {
       this.help();
     });

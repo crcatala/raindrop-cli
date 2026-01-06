@@ -225,6 +225,7 @@ export function createBookmarksCommand(): Command {
   const bookmarks = new Command("bookmarks")
     .description("Manage bookmarks")
     .exitOverride()
+    .configureOutput({ outputError: () => {} })
     .action(function (this: Command) {
       this.help();
     });
