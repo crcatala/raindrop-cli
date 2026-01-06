@@ -7,7 +7,7 @@ import { createTagsCommand } from "./commands/tags.js";
 import { createFiltersCommand } from "./commands/filters.js";
 import { createTrashCommand } from "./commands/trash.js";
 import { setNoColorFlag } from "./utils/tty.js";
-import { setDebugEnabled, setVerboseEnabled } from "./utils/debug.js";
+import { setDebugEnabled, setVerboseEnabled, debug } from "./utils/debug.js";
 import { outputError } from "./utils/output-streams.js";
 import { setTimeoutSeconds, validateTimeout, DEFAULT_TIMEOUT_SECONDS } from "./utils/timeout.js";
 
@@ -59,8 +59,7 @@ program
 
 // Register commands
 program.addCommand(createAuthCommand());
-const bookmarksCommand = createBookmarksCommand();
-program.addCommand(bookmarksCommand);
+program.addCommand(createBookmarksCommand());
 program.addCommand(createCollectionsCommand());
 program.addCommand(createHighlightsCommand());
 program.addCommand(createTagsCommand());
@@ -84,9 +83,18 @@ function createRootBookmarkShortcut(
     .passThroughOptions()
     .helpOption(false) // Disable help to pass through to bookmarks command
     .action(async () => {
-      // Find the position of the subcommand in argv
-      const cmdIndex = process.argv.findIndex((arg) => [subcommandName, ...aliases].includes(arg));
-      if (cmdIndex === -1) return;
+      // Find the command at the expected position (index 2: ['node', 'rdcli', '<cmd>', ...])
+      // We check explicitly at index 2 to avoid matching command names in argument values
+      const cmdIndex = process.argv.findIndex(
+        (arg, index) => index === 2 && [subcommandName, ...aliases].includes(arg)
+      );
+      if (cmdIndex === -1) {
+        debug("Root shortcut: command not found at expected position", {
+          subcommandName,
+          argv: process.argv,
+        });
+        return;
+      }
 
       // Build new argv with 'bookmarks' inserted before the subcommand
       // Also normalize alias to canonical name
