@@ -55,4 +55,46 @@ describe("tags CLI integration", () => {
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain("--force");
   });
+
+  test("rename without --force in non-interactive mode shows helpful message", async () => {
+    const result = await runCli(["tags", "rename", "old", "new"], {
+      env: { RAINDROP_TOKEN: "fake-token" },
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain("non-interactive");
+    expect(result.stderr).toContain("--force");
+  });
+
+  test("delete without --force in non-interactive mode shows helpful message", async () => {
+    const result = await runCli(["tags", "delete", "some-tag"], {
+      env: { RAINDROP_TOKEN: "fake-token" },
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain("non-interactive");
+    expect(result.stderr).toContain("--force");
+  });
+
+  test("rename with --force bypasses prompt (proceeds to API call)", async () => {
+    const result = await runCli(["tags", "rename", "old", "new", "--force"], {
+      env: { RAINDROP_TOKEN: "fake-token" },
+    });
+    // With fake token, should fail with auth error (not prompt error)
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).not.toContain("--force");
+    // Should get auth error since it proceeded past the prompt
+    const hasAuthError = result.stderr.includes("Unauthorized") || result.stderr.includes("401");
+    expect(hasAuthError).toBe(true);
+  });
+
+  test("delete with --force bypasses prompt (proceeds to API call)", async () => {
+    const result = await runCli(["tags", "delete", "some-tag", "--force"], {
+      env: { RAINDROP_TOKEN: "fake-token" },
+    });
+    // With fake token, should fail with auth error (not prompt error)
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).not.toContain("--force");
+    // Should get auth error since it proceeded past the prompt
+    const hasAuthError = result.stderr.includes("Unauthorized") || result.stderr.includes("401");
+    expect(hasAuthError).toBe(true);
+  });
 });

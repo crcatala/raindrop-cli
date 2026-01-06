@@ -3,11 +3,12 @@ import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { addOutputOptions } from "../utils/command-options.js";
-import { handleError, UsageError } from "../utils/errors.js";
+import { handleError } from "../utils/errors.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import { outputData, outputError, outputMessage } from "../utils/output-streams.js";
 import { getColors } from "../utils/colors.js";
+import { confirmAction } from "../utils/prompt.js";
 import type { GlobalOptions } from "../types/index.js";
 
 /**
@@ -128,11 +129,14 @@ Examples:
       try {
         const collectionId = parseCollectionId(options.collection);
 
+        // Confirm action unless --force is used
         if (!options.force) {
-          throw new UsageError(
-            `This will rename tag "${oldTag}" to "${newTag}" in collection ${collectionId}. ` +
-              "Re-run with --force to confirm."
-          );
+          const message = `This will rename tag "${oldTag}" to "${newTag}" in collection ${collectionId}. Continue?`;
+          const confirmed = await confirmAction(message);
+          if (!confirmed) {
+            outputMessage("Operation cancelled.");
+            return;
+          }
         }
 
         debug("Rename tag options", { oldTag, newTag, collectionId });
@@ -182,11 +186,14 @@ Examples:
       try {
         const collectionId = parseCollectionId(options.collection);
 
+        // Confirm action unless --force is used
         if (!options.force) {
-          throw new UsageError(
-            `This will remove tag "${tag}" from all bookmarks in collection ${collectionId}. ` +
-              "Re-run with --force to confirm."
-          );
+          const message = `This will remove tag "${tag}" from all bookmarks in collection ${collectionId}. Continue?`;
+          const confirmed = await confirmAction(message);
+          if (!confirmed) {
+            outputMessage("Operation cancelled.");
+            return;
+          }
         }
 
         debug("Delete tag options", { tag, collectionId });

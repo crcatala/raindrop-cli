@@ -1,5 +1,7 @@
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { isStdinTTY, confirmAction, NonInteractiveError } from "./prompt.js";
+import { UsageError } from "./errors.js";
+import readline from "node:readline";
 
 describe("isStdinTTY", () => {
   let originalIsTTY: boolean | undefined;
@@ -59,6 +61,99 @@ describe("confirmAction", () => {
 
     await expect(confirmAction("Are you sure?")).rejects.toThrow(NonInteractiveError);
   });
+
+  describe("with mock readline", () => {
+    function createMockReadline(answer: string | null) {
+      const closeHandlers: Array<() => void> = [];
+      let questionCallback: ((answer: string) => void) | null = null;
+
+      const mockRl = {
+        on: (event: string, handler: () => void) => {
+          if (event === "close") {
+            closeHandlers.push(handler);
+          }
+          return mockRl;
+        },
+        question: (_prompt: string, callback: (answer: string) => void) => {
+          questionCallback = callback;
+          // Simulate async response
+          setTimeout(() => {
+            if (answer !== null && questionCallback) {
+              questionCallback(answer);
+            } else {
+              // Simulate EOF (Ctrl+D) - just trigger close without answering
+              closeHandlers.forEach((h) => h());
+            }
+          }, 0);
+        },
+        close: () => {
+          closeHandlers.forEach((h) => h());
+        },
+      };
+
+      return mockRl as unknown as readline.Interface;
+    }
+
+    test("returns true when user enters 'y'", async () => {
+      const mockRl = createMockReadline("y");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(true);
+    });
+
+    test("returns true when user enters 'Y'", async () => {
+      const mockRl = createMockReadline("Y");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(true);
+    });
+
+    test("returns true when user enters 'yes'", async () => {
+      const mockRl = createMockReadline("yes");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(true);
+    });
+
+    test("returns true when user enters 'YES'", async () => {
+      const mockRl = createMockReadline("YES");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(true);
+    });
+
+    test("returns true when user enters '  y  ' (with whitespace)", async () => {
+      const mockRl = createMockReadline("  y  ");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(true);
+    });
+
+    test("returns false when user enters 'n'", async () => {
+      const mockRl = createMockReadline("n");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(false);
+    });
+
+    test("returns false when user enters 'no'", async () => {
+      const mockRl = createMockReadline("no");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(false);
+    });
+
+    test("returns false when user enters empty string", async () => {
+      const mockRl = createMockReadline("");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(false);
+    });
+
+    test("returns false when user enters random text", async () => {
+      const mockRl = createMockReadline("maybe");
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(false);
+    });
+
+    test("returns false on EOF (Ctrl+D)", async () => {
+      const mockRl = createMockReadline(null); // null simulates EOF
+      const result = await confirmAction("Continue?", { rl: mockRl, skipTTYCheck: true });
+      expect(result).toBe(false);
+    });
+  });
 });
 
 describe("NonInteractiveError", () => {
@@ -75,5 +170,15 @@ describe("NonInteractiveError", () => {
   test("is instanceof Error", () => {
     const error = new NonInteractiveError("test message");
     expect(error instanceof Error).toBe(true);
+  });
+
+  test("extends UsageError", () => {
+    const error = new NonInteractiveError("test message");
+    expect(error instanceof UsageError).toBe(true);
+  });
+
+  test("has exitCode 2 (same as UsageError)", () => {
+    const error = new NonInteractiveError("test message");
+    expect(error.exitCode).toBe(2);
   });
 });
