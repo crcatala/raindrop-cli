@@ -46,6 +46,7 @@ jobs:
        contains(github.event.comment.body, '/run-live-tests'))
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       checks: write
       pull-requests: write
 
