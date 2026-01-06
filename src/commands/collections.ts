@@ -211,7 +211,8 @@ export function createCollectionsCommand(): Command {
   // list command - hierarchical tree view
   collections
     .command("list")
-    .description("List all collections")
+    .alias("ls")
+    .description("List all collections (alias: ls)")
     .option("--flat", "Show flat list instead of tree")
     .addHelpText(
       "after",
@@ -322,19 +323,20 @@ Examples:
       }
     });
 
-  // create command - create new collection
+  // add command - create new collection
   collections
-    .command("create")
-    .description("Create a new collection")
+    .command("add")
+    .aliases(["new", "create"])
+    .description("Create a new collection (aliases: new, create)")
     .argument("<name>", "Collection name")
     .option("-p, --parent <id>", "Parent collection ID for creating nested collections")
     .addHelpText(
       "after",
       `
 Examples:
-  rdcli collections create "My Collection"           # Create root collection
-  rdcli collections create "Sub" --parent 12345      # Create nested collection
-  rdcli collections create "Work" -f json            # Output as JSON`
+  rdcli collections add "My Collection"              # Create root collection
+  rdcli collections add "Sub" --parent 12345         # Create nested collection
+  rdcli collections add "Work" -f json               # Output as JSON`
     )
     .action(async function (this: Command, name: string, options: { parent?: string }) {
       // Track parentId for use in error handling
@@ -394,7 +396,8 @@ Examples:
   // delete command - delete collection
   collections
     .command("delete")
-    .description("Delete a collection")
+    .alias("rm")
+    .description("Delete a collection (alias: rm)")
     .argument("<collection-id>", "Collection ID to delete")
     .option("-f, --force", "Skip confirmation prompt")
     .addHelpText(

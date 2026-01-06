@@ -27,7 +27,8 @@ export function createTagsCommand(): Command {
   // list command
   tags
     .command("list")
-    .description("List tags with bookmark counts")
+    .alias("ls")
+    .description("List tags with bookmark counts (alias: ls)")
     .argument("[collection]", "Collection ID or name (all, unsorted, trash). Default: all")
     .addHelpText(
       "after",
@@ -126,7 +127,8 @@ Examples:
   // delete command
   tags
     .command("delete")
-    .description("Remove a tag from all bookmarks in collection")
+    .alias("rm")
+    .description("Remove a tag from all bookmarks in collection (alias: rm)")
     .argument("<tag>", "Tag name to remove")
     .option("-c, --collection <id>", "Collection ID or name (all, unsorted, trash). Default: all")
     .option("-f, --force", "Confirm this destructive operation")

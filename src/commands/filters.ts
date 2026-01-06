@@ -94,7 +94,8 @@ export function createFiltersCommand(): Command {
   // list command
   filters
     .command("list")
-    .description("List available filters for a collection")
+    .alias("ls")
+    .description("List available filters for a collection (alias: ls)")
     .argument("[collection]", "Collection ID or name (all, unsorted, trash). Default: all")
     .addHelpText(
       "after",

@@ -232,7 +232,8 @@ export function createBookmarksCommand(): Command {
   // delete command
   bookmarks
     .command("delete")
-    .description("Delete a bookmark")
+    .alias("rm")
+    .description("Delete a bookmark (alias: rm)")
     .argument("<id>", "Bookmark ID")
     .option("-p, --permanent", "Skip trash and delete permanently")
     .option("-f, --force", "Skip confirmation prompt")
@@ -345,7 +346,8 @@ Examples:
   // list command
   bookmarks
     .command("list")
-    .description("List bookmarks from a collection")
+    .alias("ls")
+    .description("List bookmarks from a collection (alias: ls)")
     .argument("[collection-id]", "Collection ID or name (all, unsorted, trash). Default: all")
     .option("-l, --limit <number>", "Maximum number of bookmarks to return", "25")
     .option("-p, --page <number>", "Page number (0-indexed)", "0")
@@ -547,7 +549,8 @@ Examples:
   // add command - create a new bookmark
   bookmarks
     .command("add")
-    .description("Add a new bookmark")
+    .aliases(["new", "create"])
+    .description("Add a new bookmark (aliases: new, create)")
     .argument("<url>", "URL to bookmark")
     .option("-t, --title <title>", "Bookmark title (auto-detected if --parse is used)")
     .option("-e, --excerpt <excerpt>", "Short description/excerpt")
@@ -1256,8 +1259,9 @@ Examples:
   // batch-delete command - delete multiple bookmarks at once
   bookmarks
     .command("batch-delete")
+    .alias("batch-rm")
     .description(
-      "Delete multiple bookmarks at once. Provide IDs via --ids, stdin, or use --collection to delete all in a collection."
+      "Delete multiple bookmarks at once (alias: batch-rm). Provide IDs via --ids, stdin, or use --collection to delete all in a collection."
     )
     .option(
       "--ids <ids>",
