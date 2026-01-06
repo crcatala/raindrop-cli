@@ -488,18 +488,18 @@ Examples:
       }
     });
 
-  // get command - fetch a single bookmark by ID
+  // show command - fetch a single bookmark by ID
   bookmarks
-    .command("get")
-    .description("Get a single bookmark by ID")
+    .command("show")
+    .description("Show a single bookmark by ID")
     .argument("<id>", "Bookmark ID")
     .addHelpText(
       "after",
       `
 Examples:
-  rdcli bookmarks get 12345                   # Get bookmark details
-  rdcli bookmarks get 12345 -f json           # Output as JSON
-  rdcli bookmarks get 12345 -q                # Output just the ID`
+  rdcli bookmarks show 12345                  # Show bookmark details
+  rdcli bookmarks show 12345 -f json          # Output as JSON
+  rdcli bookmarks show 12345 -q               # Output just the ID`
     )
     .action(async function (this: Command, idArg: string) {
       try {

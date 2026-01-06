@@ -33,7 +33,7 @@ describe("bookmarks CLI integration", () => {
   });
 
   test("validation errors exit with code 2 - invalid bookmark ID", async () => {
-    const result = await runCli(["bookmarks", "get", "abc"], {
+    const result = await runCli(["bookmarks", "show", "abc"], {
       env: { RAINDROP_TOKEN: "fake-token" },
     });
     expect(result.exitCode).toBe(2);

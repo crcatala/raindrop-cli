@@ -294,7 +294,7 @@ describe("bookmarks command - with auth", () => {
     }
 
     const bookmarkId = listData[0]!._id;
-    const result = await runCliExpectSuccess(["bookmarks", "get", String(bookmarkId)]);
+    const result = await runCliExpectSuccess(["bookmarks", "show", String(bookmarkId)]);
     const data = parseJsonOutput<{
       _id: number;
       title: string;
@@ -319,7 +319,7 @@ describe("bookmarks command - with auth", () => {
     }
 
     const bookmarkId = listData[0]!._id;
-    const result = await runCliExpectSuccess(["bookmarks", "get", String(bookmarkId)]);
+    const result = await runCliExpectSuccess(["bookmarks", "show", String(bookmarkId)]);
     const data = parseJsonOutput<{
       _id: number;
       title: string;
@@ -351,7 +351,7 @@ describe("bookmarks command - with auth", () => {
     }
 
     const bookmarkId = listData[0]!._id;
-    const result = await runCliExpectSuccess(["bookmarks", "get", String(bookmarkId), "-q"]);
+    const result = await runCliExpectSuccess(["bookmarks", "show", String(bookmarkId), "-q"]);
 
     // Should output just the ID
     expect(result.stdout.trim()).toBe(String(bookmarkId));
@@ -366,7 +366,7 @@ describe("bookmarks command - with auth", () => {
     }
 
     const bookmarkId = listData[0]!._id;
-    const result = await runCli(["bookmarks", "get", String(bookmarkId), "--format", "plain"]);
+    const result = await runCli(["bookmarks", "show", String(bookmarkId), "--format", "plain"]);
 
     expect(result.exitCode).toBe(0);
     // Plain format should include metadata fields
@@ -383,7 +383,7 @@ describe("bookmarks command - with auth", () => {
     }
 
     const bookmarkId = listData[0]!._id;
-    const result = await runCli(["bookmarks", "get", String(bookmarkId), "--format", "table"]);
+    const result = await runCli(["bookmarks", "show", String(bookmarkId), "--format", "table"]);
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("ID");
@@ -392,7 +392,7 @@ describe("bookmarks command - with auth", () => {
 
   testWithAuth("get returns 404 for non-existent bookmark", async () => {
     // Use a very large ID that's unlikely to exist
-    const result = await runCli(["bookmarks", "get", "999999999"]);
+    const result = await runCli(["bookmarks", "show", "999999999"]);
 
     expect(result.exitCode).toBe(1);
     // Should return a 404 or "not found" error
@@ -936,12 +936,12 @@ describe("bookmarks batch commands - with auth", () => {
       expect(data.modified).toBe(2);
 
       // Verify the tags were added
-      const verify1 = await runCliExpectSuccess(["bookmarks", "get", String(bookmark1.id)]);
+      const verify1 = await runCliExpectSuccess(["bookmarks", "show", String(bookmark1.id)]);
       const verify1Data = parseJsonOutput<{ tags: string }>(verify1);
       expect(verify1Data.tags).toContain(`${TEST_TAG_PREFIX}batch-added`);
       expect(verify1Data.tags).toContain(`${TEST_TAG_PREFIX}auto`);
 
-      const verify2 = await runCliExpectSuccess(["bookmarks", "get", String(bookmark2.id)]);
+      const verify2 = await runCliExpectSuccess(["bookmarks", "show", String(bookmark2.id)]);
       const verify2Data = parseJsonOutput<{ tags: string }>(verify2);
       expect(verify2Data.tags).toContain(`${TEST_TAG_PREFIX}batch-added`);
     } finally {
@@ -971,7 +971,7 @@ describe("bookmarks batch commands - with auth", () => {
       expect(data.modified).toBe(2);
 
       // Verify the tags were removed
-      const verify1 = await runCliExpectSuccess(["bookmarks", "get", String(bookmark1.id)]);
+      const verify1 = await runCliExpectSuccess(["bookmarks", "show", String(bookmark1.id)]);
       const verify1Data = parseJsonOutput<{ tags: string }>(verify1);
       expect(verify1Data.tags).not.toContain(`${TEST_TAG_PREFIX}auto`);
     } finally {
@@ -1006,7 +1006,7 @@ describe("bookmarks batch commands - with auth", () => {
       expect(data.modified).toBe(2);
 
       // Verify the tags were added (batch API adds, doesn't replace)
-      const verify1 = await runCliExpectSuccess(["bookmarks", "get", String(bookmark1.id)]);
+      const verify1 = await runCliExpectSuccess(["bookmarks", "show", String(bookmark1.id)]);
       const verify1Data = parseJsonOutput<{ tags: string }>(verify1);
       expect(verify1Data.tags).toContain(`${TEST_TAG_PREFIX}new-batch-tag`);
       // Original tags are preserved with batch API

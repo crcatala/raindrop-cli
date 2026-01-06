@@ -26,10 +26,10 @@ describe("highlights command structure", () => {
       expect(list?.description()).toContain("List highlights");
     });
 
-    test("has get subcommand", () => {
-      const get = highlights.commands.find((c) => c.name() === "get");
-      expect(get).toBeDefined();
-      expect(get?.description()).toContain("Get highlights");
+    test("has show subcommand", () => {
+      const show = highlights.commands.find((c) => c.name() === "show");
+      expect(show).toBeDefined();
+      expect(show?.description()).toContain("Show highlights");
     });
   });
 
@@ -38,7 +38,7 @@ describe("highlights command structure", () => {
       const help = highlights.helpInformation();
       expect(help).toContain("View highlights");
       expect(help).toContain("list");
-      expect(help).toContain("get");
+      expect(help).toContain("show");
     });
 
     test("highlights list --help shows usage", () => {
@@ -50,10 +50,10 @@ describe("highlights command structure", () => {
       expect(help).toContain("--page");
     });
 
-    test("highlights get --help shows usage", () => {
-      const get = highlights.commands.find((c) => c.name() === "get");
-      const help = get?.helpInformation() ?? "";
-      expect(help).toContain("Get highlights for a specific bookmark");
+    test("highlights show --help shows usage", () => {
+      const show = highlights.commands.find((c) => c.name() === "show");
+      const help = show?.helpInformation() ?? "";
+      expect(help).toContain("Show highlights for a specific bookmark");
       expect(help).toContain("bookmark-id");
     });
   });
@@ -80,12 +80,12 @@ describe("highlights command structure", () => {
     });
   });
 
-  describe("get command arguments", () => {
-    const get = highlights.commands.find((c) => c.name() === "get");
+  describe("show command arguments", () => {
+    const show = highlights.commands.find((c) => c.name() === "show");
 
     test("requires bookmark-id argument", () => {
       // Commander stores arguments in _args array
-      const args = get?.registeredArguments ?? [];
+      const args = show?.registeredArguments ?? [];
       expect(args.length).toBe(1);
       expect(args[0]?.name()).toBe("bookmark-id");
       expect(args[0]?.required).toBe(true);
