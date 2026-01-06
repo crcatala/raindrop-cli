@@ -51,6 +51,77 @@ try {
 }
 ```
 
+## Global Options on Subcommands
+
+### The Problem
+
+Commander.js global options (defined on `program`) don't work when placed **after** subcommand names:
+
+```bash
+# ❌ FAILS - "unknown option '-q'"
+rdcli bookmarks list -q
+
+# ✅ Works - but awkward for users
+rdcli -q bookmarks list
+```
+
+This happens because `optsWithGlobals()` only **accesses** already-parsed options—it doesn't make Commander recognize them during parsing.
+
+### The Solution
+
+Explicitly define global options on each subcommand that uses them. Use a helper to avoid repetition:
+
+```typescript
+// utils/command-options.ts
+import { Command } from "commander";
+
+export function addOutputOptions(cmd: Command): Command {
+  return cmd
+    .option("--format <format>", "output format (json, table, tsv)")
+    .option("-q, --quiet", "minimal output (just IDs)")
+    .option("-v, --verbose", "show operational details")
+    .option("-d, --debug", "show debug info");
+}
+```
+
+Apply it to subcommands:
+
+```typescript
+// commands/bookmarks.ts
+addOutputOptions(
+  bookmarks
+    .command("list")
+    .alias("ls")
+    .description("List bookmarks")
+    .option("-l, --limit <number>", "Max results", "25")
+).addHelpText("after", `...`)
+ .action(async function () {
+   const globalOpts = this.optsWithGlobals(); // Still works!
+   // ...
+ });
+```
+
+### Why Not `.allowUnknownOption()`?
+
+You might think `.allowUnknownOption()` solves this, but it has a critical flaw: **typos are silently ignored**:
+
+```bash
+# With .allowUnknownOption() - no error, just ignored!
+rdcli bookmarks list --formatt json  # typo in "format"
+```
+
+Explicitly defining options gives you proper validation while allowing flexible option placement.
+
+### Key Points
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| Define on each subcommand | Typos caught, user-friendly | More verbose |
+| Require options before subcommand | Less code | Awkward UX |
+| `.allowUnknownOption()` | Simple | Typos silently ignored |
+
+**Recommendation**: Define global options on subcommands for the best user experience.
+
 ## Settings Inheritance
 
 ### The Gotcha

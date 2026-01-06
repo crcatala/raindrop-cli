@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
+import { addOutputOptions } from "../utils/command-options.js";
 import { handleError } from "../utils/errors.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
@@ -92,11 +93,13 @@ export function createFiltersCommand(): Command {
     });
 
   // list command
-  filters
-    .command("list")
-    .alias("ls")
-    .description("List available filters for a collection (alias: ls)")
-    .argument("[collection]", "Collection ID or name (all, unsorted, trash). Default: all")
+  addOutputOptions(
+    filters
+      .command("list")
+      .alias("ls")
+      .description("List available filters for a collection (alias: ls)")
+      .argument("[collection]", "Collection ID or name (all, unsorted, trash). Default: all")
+  )
     .addHelpText(
       "after",
       `

@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
+import { addOutputOptions } from "../utils/command-options.js";
 import { handleError, UsageError } from "../utils/errors.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
@@ -25,11 +26,13 @@ export function createTagsCommand(): Command {
     });
 
   // list command
-  tags
-    .command("list")
-    .alias("ls")
-    .description("List tags with bookmark counts (alias: ls)")
-    .argument("[collection]", "Collection ID or name (all, unsorted, trash). Default: all")
+  addOutputOptions(
+    tags
+      .command("list")
+      .alias("ls")
+      .description("List tags with bookmark counts (alias: ls)")
+      .argument("[collection]", "Collection ID or name (all, unsorted, trash). Default: all")
+  )
     .addHelpText(
       "after",
       `

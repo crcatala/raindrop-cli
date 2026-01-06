@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { ApiError, handleError, UsageError } from "../utils/errors.js";
+import { addOutputOptions } from "../utils/command-options.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import { getColors } from "../utils/colors.js";
@@ -209,11 +210,13 @@ export function createCollectionsCommand(): Command {
     });
 
   // list command - hierarchical tree view
-  collections
-    .command("list")
-    .alias("ls")
-    .description("List all collections (alias: ls)")
-    .option("--flat", "Show flat list instead of tree")
+  addOutputOptions(
+    collections
+      .command("list")
+      .alias("ls")
+      .description("List all collections (alias: ls)")
+      .option("--flat", "Show flat list instead of tree")
+  )
     .addHelpText(
       "after",
       `
@@ -281,10 +284,12 @@ Examples:
     });
 
   // show command - collection details
-  collections
-    .command("show")
-    .description("Show collection details")
-    .argument("<collection-id>", "Collection ID")
+  addOutputOptions(
+    collections
+      .command("show")
+      .description("Show collection details")
+      .argument("<collection-id>", "Collection ID")
+  )
     .addHelpText(
       "after",
       `
@@ -454,9 +459,7 @@ Examples:
     });
 
   // stats command - system collection stats
-  collections
-    .command("stats")
-    .description("Show system collection statistics")
+  addOutputOptions(collections.command("stats").description("Show system collection statistics"))
     .addHelpText(
       "after",
       `

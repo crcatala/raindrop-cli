@@ -95,8 +95,10 @@ describe("tags command - with auth", () => {
     const result = await runCli(["tags", "list", "--format", "plain"]);
 
     expect(result.exitCode).toBe(0);
-    // Plain format should have styled dividers between items
-    if (result.stdout.trim().length > 0) {
+    // Plain format should have styled dividers between items (only if 2+ items)
+    // Count items by looking for the 🏷️ emoji which appears once per tag
+    const itemCount = (result.stdout.match(/🏷️/g) || []).length;
+    if (itemCount >= 2) {
       expect(result.stdout).toContain("───");
     }
   });
