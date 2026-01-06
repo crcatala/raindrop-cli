@@ -6,6 +6,7 @@
  * - Data formats (JSON/TSV) should output clean structured data (not visual characters)
  */
 
+import Table from "cli-table3";
 import type { OutputFormat } from "../types/index.js";
 import type { TreeNode, TreeItem } from "../utils/tree.js";
 import { getColors } from "../utils/colors.js";
@@ -88,6 +89,45 @@ function renderTreeTerminal<T extends TreeItem>(nodes: TreeNode<T>[], icon: stri
 }
 
 /**
+ * Render tree as a table with headers.
+ * The Collection column contains tree structure, ID and Items are separate columns.
+ */
+function renderTreeTable<T extends TreeItem>(nodes: TreeNode<T>[], icon: string = "📂"): string {
+  const c = getColors();
+
+  const table = new Table({
+    head: ["Collection", "ID", "Items"],
+    colWidths: [50, 12, 8],
+  });
+
+  function render(nodes: TreeNode<T>[], prefix: string, isRoot: boolean): void {
+    nodes.forEach((node, i) => {
+      const isLast = i === nodes.length - 1;
+
+      // Determine the branch character
+      let branch = "";
+      if (!isRoot) {
+        branch = isLast ? "└── " : "├── ";
+      }
+
+      // Build the tree cell content
+      const treeCell = `${prefix}${branch}${icon} ${c.bold(node.item.title)}`;
+
+      table.push([treeCell, String(node.item._id), String(node.item.count)]);
+
+      // Process children with updated prefix
+      if (node.children.length > 0) {
+        const childPrefix = isRoot ? "" : prefix + (isLast ? "    " : "│   ");
+        render(node.children, childPrefix, false);
+      }
+    });
+  }
+
+  render(nodes, "", true);
+  return table.toString();
+}
+
+/**
  * Format tree data as TSV.
  */
 function formatTreeTsv(data: TreeDataRow[]): string {
@@ -144,10 +184,15 @@ export function outputTree<T extends TreeItem>(
       break;
     }
 
-    case "plain":
-    case "table": {
-      // Both use compact tree view for hierarchical data
+    case "plain": {
+      // Compact tree view
       outputData(renderTreeTerminal(tree));
+      break;
+    }
+
+    case "table": {
+      // Table with headers and tree structure in first column
+      outputData(renderTreeTable(tree));
       break;
     }
 

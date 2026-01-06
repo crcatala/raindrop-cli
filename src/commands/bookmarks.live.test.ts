@@ -817,8 +817,8 @@ describe("bookmarks update command - with auth", () => {
     }
   });
 
-  testWithAuth("unmark as important with --no-important", async () => {
-    const { id } = await createTestBookmark("-no-important");
+  testWithAuth("unmark as important with --important false", async () => {
+    const { id } = await createTestBookmark("-unimportant");
 
     try {
       // First mark as important
@@ -829,7 +829,8 @@ describe("bookmarks update command - with auth", () => {
         "bookmarks",
         "update",
         String(id),
-        "--no-important",
+        "--important",
+        "false",
       ]);
       expect(result.exitCode).toBe(0);
     } finally {
