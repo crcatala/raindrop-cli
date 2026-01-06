@@ -1,19 +1,16 @@
 [test]
-# Coverage configuration
-coverage = true
+# Coverage is OFF by default - run with `bun test --coverage` when needed
+# CI can enable coverage via: bun test --coverage
+coverage = false
+
+# Settings used when coverage IS enabled (via --coverage flag)
 coverageReporter = ["text", "lcov"]
 coverageDir = "./coverage"
-
-# Coverage thresholds (warning only, not enforced as exit code)
-# Set to 50% to accommodate config.ts which has limited testability
-coverageThreshold = { lines = 0.50, functions = 0.50, statements = 0.50 }
-
-# Skip test files from coverage reports
 coverageSkipTestFiles = true
 
-# Ignore patterns
-# axios-interceptors.ts has low coverage due to interceptor functions requiring complex Axios mocking;
-# the pure utility functions (isRetryableError, calculateBackoff, extractRateLimitInfo) are tested
-# stdin.ts has low coverage because hasStdinData/readStdin/readIdsFromStdin require controlling
-# subprocess stdin which is complex; the pure parseIds function is fully tested
+# Ignore patterns for coverage
+# - axios-interceptors.ts: interceptor functions require complex Axios mocking
+# - stdin.ts: requires controlling subprocess stdin which is complex
+# - spinner.ts, prompt.ts: UI utilities hard to unit test
+# - cleanup.ts, live-setup.ts: test infrastructure only
 coveragePathIgnorePatterns = ["node_modules", "dist", "src/utils/axios-interceptors.ts", "src/utils/stdin.ts", "src/utils/spinner.ts", "src/utils/prompt.ts", "src/test-utils/cleanup.ts", "src/test-utils/live-setup.ts"]

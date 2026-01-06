@@ -59,7 +59,7 @@ jobs:
         run: bun install
 
       - name: Run tests with coverage
-        run: bun test --coverage
+        run: bun run test:verbose -- --coverage
 
       - name: Build
         run: bun run build
