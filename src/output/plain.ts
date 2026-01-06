@@ -210,7 +210,8 @@ export function formatPlain<T>(data: T, columns: ColumnConfig[]): string {
       const isBlock = isBlockField(col.key);
 
       // Style the label (icon + bold header)
-      const label = `${icon} ${c.bold(paddedHeader)}`;
+      // Only add space after icon if icon is present
+      const label = icon ? `${icon} ${c.bold(paddedHeader)}` : c.bold(paddedHeader);
 
       if (rawValue === null) {
         // Empty value - show placeholder inline
