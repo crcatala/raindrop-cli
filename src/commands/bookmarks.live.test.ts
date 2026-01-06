@@ -185,8 +185,12 @@ describe("bookmarks command - with auth", () => {
     expect(result.stdout).toContain("🔖"); // ID
     expect(result.stdout).toContain("📝"); // Excerpt
     expect(result.stdout).toContain("💬"); // Note
-    // Styled separator between items
-    expect(result.stdout).toContain("───");
+    // Styled separator between items (only if there are 2+ items)
+    // Count items by looking for the ID emoji which appears once per item
+    const itemCount = (result.stdout.match(/🔖/g) || []).length;
+    if (itemCount >= 2) {
+      expect(result.stdout).toContain("───");
+    }
     // Title and URL should be present (as content, not labels)
     expect(result.stdout).toContain("https://");
   });
