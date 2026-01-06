@@ -105,7 +105,7 @@ function formatApiErrorMessage(error: ApiError): string {
   }
 
   if (status === 401) {
-    return "Unauthorized by Raindrop API. Run `rdcli auth set-token` or set `RAINDROP_TOKEN`.";
+    return "Unauthorized by Raindrop API. Run `rd auth set-token` or set `RAINDROP_TOKEN`.";
   }
   if (status === 403) {
     return "Forbidden by Raindrop API. Check your token permissions and try again.";

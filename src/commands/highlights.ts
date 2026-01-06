@@ -71,10 +71,10 @@ export function createHighlightsCommand(): Command {
       "after",
       `
 Examples:
-  rdcli highlights list                       # List all highlights
-  rdcli highlights list -c 12345              # List highlights in collection
-  rdcli highlights list --limit 50            # Limit results
-  rdcli highlights list -f json               # Output as JSON`
+  rd highlights list                       # List all highlights
+  rd highlights list -c 12345              # List highlights in collection
+  rd highlights list --limit 50            # Limit results
+  rd highlights list -f json               # Output as JSON`
     )
     .action(async function (
       this: Command,
@@ -138,8 +138,8 @@ Examples:
       "after",
       `
 Examples:
-  rdcli highlights show 12345                 # Show highlights for bookmark
-  rdcli highlights show 12345 -f json         # Output as JSON`
+  rd highlights show 12345                 # Show highlights for bookmark
+  rd highlights show 12345 -f json         # Output as JSON`
     )
     .action(async function (this: Command, bookmarkIdArg: string) {
       try {

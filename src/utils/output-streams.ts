@@ -5,7 +5,7 @@
  * - stdout: primary output, machine-readable data
  * - stderr: log messages, errors, warnings, progress
  *
- * This enables proper piping (e.g., `rdcli raindrops list | jq`).
+ * This enables proper piping (e.g., `rd raindrops list | jq`).
  */
 
 /**

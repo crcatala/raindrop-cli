@@ -37,10 +37,10 @@ export function createTagsCommand(): Command {
       "after",
       `
 Examples:
-  rdcli tags list                             # List all tags with counts
-  rdcli tags list 12345                       # List tags in collection
-  rdcli tags list -f json                     # Output as JSON
-  rdcli tags list -q                          # Output just tag names`
+  rd tags list                             # List all tags with counts
+  rd tags list 12345                       # List tags in collection
+  rd tags list -f json                     # Output as JSON
+  rd tags list -q                          # Output just tag names`
     )
     .action(async function (this: Command, collectionArg: string | undefined) {
       try {
@@ -83,9 +83,9 @@ Examples:
       "after",
       `
 Examples:
-  rdcli tags rename "old-tag" "new-tag" -f    # Rename tag globally
-  rdcli tags rename "typo" "fixed" -c 12345 -f  # Rename in collection
-  rdcli tags rename "js" "javascript" -f      # Merges if "javascript" exists`
+  rd tags rename "old-tag" "new-tag" -f    # Rename tag globally
+  rd tags rename "typo" "fixed" -c 12345 -f  # Rename in collection
+  rd tags rename "js" "javascript" -f      # Merges if "javascript" exists`
     )
     .action(async function (
       this: Command,
@@ -139,8 +139,8 @@ Examples:
       "after",
       `
 Examples:
-  rdcli tags delete "unused-tag" -f           # Remove tag from all bookmarks
-  rdcli tags delete "temp" -c 12345 -f        # Remove tag in specific collection`
+  rd tags delete "unused-tag" -f           # Remove tag from all bookmarks
+  rd tags delete "temp" -c 12345 -f        # Remove tag in specific collection`
     )
     .action(async function (
       this: Command,

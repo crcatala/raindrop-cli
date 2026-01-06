@@ -88,8 +88,8 @@ export function createAuthCommand(): Command {
       "after",
       `
 Examples:
-  rdcli auth set-token                        # Prompt for token (validates)
-  rdcli auth set-token --no-validate          # Save without validation
+  rd auth set-token                        # Prompt for token (validates)
+  rd auth set-token --no-validate          # Save without validation
 
 Get your token from: https://app.raindrop.io/settings/integrations`
     )
@@ -137,8 +137,8 @@ Get your token from: https://app.raindrop.io/settings/integrations`
       "after",
       `
 Examples:
-  rdcli auth status                           # Check authentication status
-  rdcli auth status --json                    # Output as JSON for scripts`
+  rd auth status                           # Check authentication status
+  rd auth status --json                    # Output as JSON for scripts`
     )
     .action(async (options) => {
       verbose("Checking authentication status");
@@ -154,7 +154,7 @@ Examples:
           outputMessage("Not authenticated.");
           outputMessage("");
           outputMessage("To authenticate, either:");
-          outputMessage("  1. Run: rdcli auth set-token");
+          outputMessage("  1. Run: rd auth set-token");
           outputMessage("  2. Set RAINDROP_TOKEN environment variable");
           outputMessage("");
           outputMessage("Get your token from: https://app.raindrop.io/settings/integrations");
@@ -219,7 +219,7 @@ Examples:
             `  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`
           );
           outputMessage("");
-          outputMessage("Run 'rdcli auth set-token' to set a new token.");
+          outputMessage("Run 'rd auth set-token' to set a new token.");
         }
         process.exit(1);
       }
@@ -233,7 +233,7 @@ Examples:
       "after",
       `
 Examples:
-  rdcli auth clear                            # Remove saved token`
+  rd auth clear                            # Remove saved token`
     )
     .action(() => {
       const hadToken = !!getStoredToken();

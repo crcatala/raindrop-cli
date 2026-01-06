@@ -34,7 +34,7 @@ export function parseCollectionId(value: string | undefined): number {
   const num = parseInt(value, 10);
   if (isNaN(num)) {
     throw new UsageError(
-      `Invalid collection ID: "${value}". Use a number, one of: all, unsorted, trash, or run \`rdcli collections list\` for IDs.`
+      `Invalid collection ID: "${value}". Use a number, one of: all, unsorted, trash, or run \`rd collections list\` for IDs.`
     );
   }
   return num;

@@ -122,6 +122,6 @@ describe("collections command - with auth", () => {
     ]);
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain("Parent collection 999999999 not found");
-    expect(result.stderr).toContain("rdcli collections list");
+    expect(result.stderr).toContain("rd collections list");
   });
 });

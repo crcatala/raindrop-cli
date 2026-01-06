@@ -25,6 +25,6 @@
 - 1 for runtime or API errors.
 
 ## Examples
-- Invalid collection ID: "abc". Use `rdcli collections list` to see available IDs.
+- Invalid collection ID: "abc". Use `rd collections list` to see available IDs.
 - Can't connect to Raindrop API. Check your internet connection or try again later.
 - Rate limited by Raindrop API. Wait 60 seconds before retrying.

@@ -245,10 +245,10 @@ export function createBookmarksCommand(): Command {
       "after",
       `
 Examples:
-  rdcli bookmarks delete 12345                # Move bookmark to trash
-  rdcli bookmarks delete 12345 -P             # Delete permanently (skip trash)
-  rdcli bookmarks delete 12345 --force        # Skip confirmation prompt
-  rdcli bookmarks delete 12345 --dry-run      # Preview what would be deleted`
+  rd bookmarks delete 12345                # Move bookmark to trash
+  rd bookmarks delete 12345 -P             # Delete permanently (skip trash)
+  rd bookmarks delete 12345 --force        # Skip confirmation prompt
+  rd bookmarks delete 12345 --dry-run      # Preview what would be deleted`
     )
     .action(async function (this: Command, idArg: string, options) {
       try {
@@ -384,17 +384,17 @@ Examples:
       "after",
       `
 Examples:
-  rdcli bookmarks list                        # List all bookmarks
-  rdcli bookmarks list 12345                  # List bookmarks in collection
-  rdcli bookmarks list unsorted               # List unsorted bookmarks
-  rdcli bookmarks list --limit 50             # Limit results
-  rdcli bookmarks list --tag javascript       # Filter by tag
-  rdcli bookmarks list --type article         # Filter by type
-  rdcli bookmarks list --domain github.com    # Filter by domain
-  rdcli bookmarks list --favorites            # Show only favorites
-  rdcli bookmarks list -s "#cli"              # Raw search query
-  rdcli bookmarks list -s "type:article #dev"    # Multiple filters
-  rdcli bookmarks list --format json | jq '.[].title'  # Pipe JSON to jq`
+  rd bookmarks list                        # List all bookmarks
+  rd bookmarks list 12345                  # List bookmarks in collection
+  rd bookmarks list unsorted               # List unsorted bookmarks
+  rd bookmarks list --limit 50             # Limit results
+  rd bookmarks list --tag javascript       # Filter by tag
+  rd bookmarks list --type article         # Filter by type
+  rd bookmarks list --domain github.com    # Filter by domain
+  rd bookmarks list --favorites            # Show only favorites
+  rd bookmarks list -s "#cli"              # Raw search query
+  rd bookmarks list -s "type:article #dev"    # Multiple filters
+  rd bookmarks list --format json | jq '.[].title'  # Pipe JSON to jq`
     )
     .action(async function (this: Command, collectionIdArg: string | undefined, options) {
       try {
@@ -506,9 +506,9 @@ Examples:
       "after",
       `
 Examples:
-  rdcli bookmarks show 12345                  # Show bookmark details
-  rdcli bookmarks show 12345 --format json    # Output as JSON
-  rdcli bookmarks show 12345 -q               # Output just the ID`
+  rd bookmarks show 12345                  # Show bookmark details
+  rd bookmarks show 12345 --format json    # Output as JSON
+  rd bookmarks show 12345 -q               # Output just the ID`
     )
     .action(async function (this: Command, idArg: string) {
       try {
@@ -575,12 +575,12 @@ Examples:
       "after",
       `
 Examples:
-  rdcli bookmarks add https://example.com                     # Add bookmark
-  rdcli bookmarks add https://example.com --parse             # Auto-parse title/excerpt
-  rdcli bookmarks add https://example.com -t "My Title"       # Set custom title
-  rdcli bookmarks add https://example.com --tags "dev,read"   # Add with tags
-  rdcli bookmarks add https://example.com -c 12345            # Add to collection
-  rdcli bookmarks add https://example.com -n "Check later"    # Add with note`
+  rd bookmarks add https://example.com                     # Add bookmark
+  rd bookmarks add https://example.com --parse             # Auto-parse title/excerpt
+  rd bookmarks add https://example.com -t "My Title"       # Set custom title
+  rd bookmarks add https://example.com --tags "dev,read"   # Add with tags
+  rd bookmarks add https://example.com -c 12345            # Add to collection
+  rd bookmarks add https://example.com -n "Check later"    # Add with note`
     )
     .action(async function (this: Command, url: string, options) {
       try {
@@ -725,13 +725,13 @@ Examples:
       "after",
       `
 Examples:
-  rdcli bookmarks update 12345 -t "New Title"     # Update title
-  rdcli bookmarks update 12345 --tags "a,b,c"     # Replace all tags
-  rdcli bookmarks update 12345 --add-tags "new"   # Add tags to existing
-  rdcli bookmarks update 12345 --remove-tags "old"  # Remove specific tags
-  rdcli bookmarks update 12345 -c 67890           # Move to collection
-  rdcli bookmarks update 12345 --important        # Mark as favorite
-  rdcli bookmarks update 12345 --dry-run          # Preview changes`
+  rd bookmarks update 12345 -t "New Title"     # Update title
+  rd bookmarks update 12345 --tags "a,b,c"     # Replace all tags
+  rd bookmarks update 12345 --add-tags "new"   # Add tags to existing
+  rd bookmarks update 12345 --remove-tags "old"  # Remove specific tags
+  rd bookmarks update 12345 -c 67890           # Move to collection
+  rd bookmarks update 12345 --important        # Mark as favorite
+  rd bookmarks update 12345 --dry-run          # Preview changes`
     )
     .action(async function (this: Command, idArg: string, options) {
       try {
@@ -993,11 +993,11 @@ Examples:
       "after",
       `
 Examples:
-  rdcli bookmarks batch-update --ids 1,2,3 --add-tags "review"   # Add tag to specific IDs
-  rdcli bookmarks batch-update -c 12345 --important -f           # Mark all in collection as favorite
-  rdcli bookmarks batch-update --ids 1,2 --move-to 67890         # Move bookmarks to collection
-  echo "1\\n2\\n3" | rdcli bookmarks batch-update --add-tags "x"  # Pipe IDs from stdin
-  rdcli bookmarks list -q | rdcli bookmarks batch-update --add-tags "bulk"  # Chain commands`
+  rd bookmarks batch-update --ids 1,2,3 --add-tags "review"   # Add tag to specific IDs
+  rd bookmarks batch-update -c 12345 --important -f           # Mark all in collection as favorite
+  rd bookmarks batch-update --ids 1,2 --move-to 67890         # Move bookmarks to collection
+  echo "1\\n2\\n3" | rd bookmarks batch-update --add-tags "x"  # Pipe IDs from stdin
+  rd bookmarks list -q | rd bookmarks batch-update --add-tags "bulk"  # Chain commands`
     )
     .action(async function (this: Command, options) {
       try {
@@ -1293,11 +1293,11 @@ Examples:
       "after",
       `
 Examples:
-  rdcli bookmarks batch-delete --ids 1,2,3 -f         # Delete specific bookmarks
-  rdcli bookmarks batch-delete -c 12345 -f            # Delete all in collection
-  rdcli bookmarks batch-delete -c 12345 -s "old" -f   # Delete matching search
-  echo "1\\n2\\n3" | rdcli bookmarks batch-delete -f   # Pipe IDs from stdin
-  rdcli bookmarks batch-delete --ids 1,2 --dry-run    # Preview what would be deleted`
+  rd bookmarks batch-delete --ids 1,2,3 -f         # Delete specific bookmarks
+  rd bookmarks batch-delete -c 12345 -f            # Delete all in collection
+  rd bookmarks batch-delete -c 12345 -s "old" -f   # Delete matching search
+  echo "1\\n2\\n3" | rd bookmarks batch-delete -f   # Pipe IDs from stdin
+  rd bookmarks batch-delete --ids 1,2 --dry-run    # Preview what would be deleted`
     )
     .action(async function (this: Command, options) {
       try {
