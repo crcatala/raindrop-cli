@@ -18,7 +18,7 @@ program
   .enablePositionalOptions()
   .addHelpText("after", "\nReport issues: https://github.com/crcatala/raindrop-cli-spike/issues")
   .option(
-    "-f, --format <format>",
+    "--format <format>",
     "output format (json, table, tsv); defaults to table for terminal, json when piped"
   )
   .option("-q, --quiet", "minimal output (just IDs)")
@@ -26,7 +26,7 @@ program
   .option("-d, --debug", "show debug info (stack traces, internal state)")
   .option("--no-color", "disable colored output")
   .option(
-    "--timeout <seconds>",
+    "-t, --timeout <seconds>",
     `request timeout in seconds (default: ${DEFAULT_TIMEOUT_SECONDS}, env: RDCLI_TIMEOUT)`
   )
   .exitOverride()

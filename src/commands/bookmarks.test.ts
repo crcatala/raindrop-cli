@@ -313,10 +313,10 @@ describe("bookmarks command structure", () => {
       expect(args[0]?.required).toBe(true);
     });
 
-    test("has --permanent option", () => {
+    test("has --permanent option with uppercase short flag", () => {
       const opt = del?.options.find((o) => o.long === "--permanent");
       expect(opt).toBeDefined();
-      expect(opt?.short).toBe("-p");
+      expect(opt?.short).toBe("-P"); // Uppercase to signal dangerous operation
     });
 
     test("has --force option", () => {
