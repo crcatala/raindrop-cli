@@ -17,7 +17,12 @@ A TypeScript CLI for Raindrop.io built on `@lasuillard/raindrop-client` and `com
 npm install -g raindrop-cli
 ```
 
-This installs `rd` as the primary command. An `rdcli` alias is also available if `rd` conflicts with another tool on your system (e.g., Windows cmd.exe's built-in `rd` command).
+This installs `rd` as the primary command. An `rdcli` alias is also available if `rd` conflicts with another tool on your system:
+
+- **Windows cmd.exe/PowerShell**: `rd` is a built-in command (remove directory)
+- **oh-my-zsh**: `rd` is aliased to `rmdir` in the core library
+
+To use `rd` with oh-my-zsh, add `unalias rd` to your `~/.zshrc` after oh-my-zsh is sourced, or use `rdcli` instead.
 
 ## Configuration
 
