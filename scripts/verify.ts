@@ -38,14 +38,13 @@ interface CheckResult {
   status?: string;
 }
 
-// Use test:all for pre-push verification (includes live tests with throttling)
-// Live tests skip automatically when RAINDROP_TOKEN is not set
+// Run only unit tests (excludes *.live.test.ts files)
+// Live tests are run separately via CI workflow or `bun run test:live`
 const checks: CheckConfig[] = [
   {
     name: "Tests",
-    command: ["bun", "test", "src", "--bail", "--only-failures"],
+    command: ["bash", "scripts/test-unit.sh", "--bail", "--only-failures"],
     verboseHint: "bun run test:verbose",
-    env: { RDCLI_API_DELAY_MS: "250" }, // Throttle live tests to avoid rate limits
   },
   {
     name: "Lint",
