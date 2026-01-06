@@ -1,4 +1,7 @@
 [test]
+# Default timeout for tests and hooks (in milliseconds)
+timeout = 15000
+
 # Coverage is OFF by default - run with `bun test --coverage` when needed
 # CI can enable coverage via: bun test --coverage
 coverage = false
