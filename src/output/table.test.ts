@@ -91,4 +91,24 @@ describe("formatTable", () => {
 
     expect(result).toContain('{"key":"value"}');
   });
+
+  test("accepts style option in column config", () => {
+    // Note: Actual ANSI styling only applies in TTY environments.
+    // In non-TTY (like tests), getColors() returns no-op functions.
+    // This test verifies the style option is accepted without errors.
+    const columns: ColumnConfig[] = [{ header: "Name", key: "name", style: "bold" }];
+    const data = { name: "Test" };
+    const result = formatTable(data, columns);
+
+    // Value should be present regardless of styling
+    expect(result).toContain("Test");
+  });
+
+  test("style none does not cause errors", () => {
+    const columns: ColumnConfig[] = [{ header: "Name", key: "name", style: "none" }];
+    const data = { name: "Test" };
+    const result = formatTable(data, columns);
+
+    expect(result).toContain("Test");
+  });
 });

@@ -13,12 +13,20 @@ export interface OutputOptions {
   debug: boolean;
 }
 
+/**
+ * Style hints for terminal formatters (plain, table).
+ * These are ignored by data formats (json, tsv).
+ */
+export type ColumnStyle = "bold" | "dim" | "cyan" | "none";
+
 export interface ColumnConfig {
   key: string;
   header: string;
   width?: number;
   /** If true, display prominently without label (for title/URL in plain format) */
   prominent?: boolean;
+  /** Style hint for terminal formatters. Ignored by json/tsv. Default: none */
+  style?: ColumnStyle;
 }
 
 export function output<T>(data: T, columns: ColumnConfig[], options: OutputOptions): void {

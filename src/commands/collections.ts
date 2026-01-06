@@ -6,13 +6,16 @@ import { addOutputOptions } from "../utils/command-options.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import { getColors } from "../utils/colors.js";
+import { buildTree, renderTree, type TreeItem } from "../utils/tree.js";
 import type { GlobalOptions } from "../types/index.js";
 
 /**
  * Column configuration for collection list output.
+ * The "tree" field contains tree structure characters but NO styling.
+ * The "bold" style hint tells terminal formatters to style this column.
  */
 const LIST_COLUMNS: ColumnConfig[] = [
-  { key: "tree", header: "Collection", width: 50, prominent: true },
+  { key: "tree", header: "Collection", width: 50, prominent: true, style: "bold" },
   { key: "_id", header: "ID", width: 10 },
   { key: "count", header: "Items", width: 8 },
 ];
@@ -51,114 +54,13 @@ const SYSTEM_COLLECTION_IDS: Record<number, string> = {
 
 /**
  * Represents a collection with optional parent reference.
+ * Extends TreeItem for compatibility with tree utilities.
  */
-interface CollectionItem {
-  _id: number;
-  title: string;
-  count: number;
-  parent?: { $id: number } | null;
+interface CollectionItem extends TreeItem {
   description?: string;
   public?: boolean;
   created?: string;
   lastUpdate?: string;
-}
-
-/**
- * Tree node for hierarchical display.
- */
-interface TreeNode {
-  collection: CollectionItem;
-  children: TreeNode[];
-}
-
-/**
- * Build a tree structure from flat collection lists.
- */
-function buildTree(
-  rootCollections: CollectionItem[],
-  childCollections: CollectionItem[]
-): TreeNode[] {
-  // Create a map of all collections by ID
-  const allCollections = [...rootCollections, ...childCollections];
-  const collectionMap = new Map<number, CollectionItem>();
-  for (const col of allCollections) {
-    collectionMap.set(col._id, col);
-  }
-
-  // Create tree nodes for all collections
-  const nodeMap = new Map<number, TreeNode>();
-  for (const col of allCollections) {
-    nodeMap.set(col._id, { collection: col, children: [] });
-  }
-
-  // Build the tree by linking children to parents
-  const roots: TreeNode[] = [];
-
-  for (const col of allCollections) {
-    const node = nodeMap.get(col._id)!;
-    const parentId = col.parent?.$id;
-
-    if (parentId !== undefined && nodeMap.has(parentId)) {
-      // Has a valid parent - add as child
-      nodeMap.get(parentId)!.children.push(node);
-    } else {
-      // No parent or parent not found - it's a root
-      roots.push(node);
-    }
-  }
-
-  // Sort children at each level by title
-  function sortChildren(nodes: TreeNode[]): void {
-    nodes.sort((a, b) => a.collection.title.localeCompare(b.collection.title));
-    for (const node of nodes) {
-      sortChildren(node.children);
-    }
-  }
-
-  sortChildren(roots);
-  return roots;
-}
-
-/**
- * Render tree nodes as formatted strings with tree characters.
- */
-function renderTree(
-  nodes: TreeNode[],
-  prefix: string = "",
-  isRoot: boolean = true
-): Array<{ tree: string; _id: number; count: number }> {
-  const result: Array<{ tree: string; _id: number; count: number }> = [];
-  const c = getColors();
-
-  nodes.forEach((node, i) => {
-    const isLast = i === nodes.length - 1;
-
-    // Determine the branch character
-    let branch = "";
-    if (!isRoot) {
-      branch = isLast ? "└── " : "├── ";
-    }
-
-    // Format the collection line
-    const icon = "📂";
-    const title = node.collection.title;
-    const treeLine = `${prefix}${branch}${icon} ${c.bold(title)}`;
-
-    result.push({
-      tree: treeLine,
-      _id: node.collection._id,
-      count: node.collection.count,
-    });
-
-    // Process children with updated prefix
-    if (node.children.length > 0) {
-      const childPrefix = isRoot ? "" : prefix + (isLast ? "    " : "│   ");
-      const childResults = renderTree(node.children, childPrefix, false);
-      result.push(...childResults);
-    }
-  });
-
-  return result;
 }
 
 /**
