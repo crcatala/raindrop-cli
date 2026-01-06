@@ -3,6 +3,7 @@ import { OUTPUT_FORMATS } from "./types/index.js";
 import { createAuthCommand } from "./commands/auth.js";
 import { createBookmarksCommand } from "./commands/bookmarks.js";
 import { createCollectionsCommand } from "./commands/collections.js";
+import { createFavoritesCommand } from "./commands/favorites.js";
 import { createHighlightsCommand } from "./commands/highlights.js";
 import { createTagsCommand } from "./commands/tags.js";
 import { createFiltersCommand } from "./commands/filters.js";
@@ -64,6 +65,7 @@ program
 program.addCommand(createAuthCommand());
 program.addCommand(createBookmarksCommand());
 program.addCommand(createCollectionsCommand());
+program.addCommand(createFavoritesCommand());
 program.addCommand(createHighlightsCommand());
 program.addCommand(createTagsCommand());
 program.addCommand(createFiltersCommand());

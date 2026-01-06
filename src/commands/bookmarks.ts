@@ -21,6 +21,7 @@ const BOOKMARK_COLUMNS: ColumnConfig[] = [
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
   { key: "tags", header: "Tags", width: 20 },
+  { key: "favorite", header: "Fav", width: 3 },
   { key: "created", header: "Created", width: 12 },
   { key: "_id", header: "ID", width: 12 },
 ];
@@ -37,6 +38,7 @@ const BOOKMARK_DETAIL_COLUMNS: ColumnConfig[] = [
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
   { key: "tags", header: "Tags", width: 30 },
+  { key: "favorite", header: "Favorite", width: 8 },
   { key: "type", header: "Type", width: 12 },
   { key: "domain", header: "Domain", width: 30 },
   { key: "collectionId", header: "Collection", width: 12 },
@@ -79,6 +81,27 @@ function parseTags(tagsString: string | undefined): string[] | undefined {
     .map((t) => t.trim())
     .filter((t) => t.length > 0);
   return tags.length > 0 ? tags : undefined;
+}
+
+/**
+ * Parse an optional boolean argument for flags like --favorite [bool].
+ * Returns true if no value provided, parses "true"/"false" strings otherwise.
+ */
+function parseOptionalBoolean(value: string | boolean | undefined): boolean {
+  if (value === undefined || value === true || value === "") {
+    return true;
+  }
+  if (value === false) {
+    return false;
+  }
+  const lower = String(value).toLowerCase();
+  if (lower === "true" || lower === "1" || lower === "yes") {
+    return true;
+  }
+  if (lower === "false" || lower === "0" || lower === "no") {
+    return false;
+  }
+  throw new UsageError(`Invalid boolean value: "${value}". Use true/false, yes/no, or 1/0.`);
 }
 
 /**
@@ -150,12 +173,14 @@ function formatBookmarkItem(item: {
   note: string;
   highlights: Array<{ text: string; note: string }>;
   lastUpdate: string;
+  important?: boolean;
 }) {
   return {
     _id: item._id,
     title: item.title,
     link: item.link,
     tags: item.tags.join(", "),
+    favorite: item.important ? "❤️" : "",
     created: item.created.split("T")[0], // Just the date part
     excerpt: item.excerpt,
     domain: item.domain,
@@ -164,6 +189,7 @@ function formatBookmarkItem(item: {
     note: item.note,
     highlights: item.highlights,
     lastUpdate: item.lastUpdate,
+    important: item.important ?? false,
   };
 }
 
@@ -204,12 +230,14 @@ function formatBookmarkDetail(item: {
   note: string;
   highlights: Highlight[];
   lastUpdate: string;
+  important?: boolean;
 }) {
   return {
     _id: item._id,
     title: item.title,
     link: item.link,
     tags: item.tags.join(", "),
+    favorite: item.important ? "Yes" : "No",
     created: item.created.split("T")[0],
     lastUpdate: item.lastUpdate.split("T")[0],
     excerpt: item.excerpt,
@@ -219,6 +247,7 @@ function formatBookmarkDetail(item: {
     note: item.note,
     highlights: item.highlights,
     highlightsFormatted: formatHighlightsForDisplay(item.highlights),
+    important: item.important ?? false,
   };
 }
 
@@ -570,6 +599,8 @@ Examples:
         "unsorted"
       )
       .option("-p, --parse", "Auto-parse URL to extract title, excerpt, and metadata")
+      .option("-i, --important [bool]", "Mark as important/favorite (default: true)")
+      .option("-f, --favorite [bool]", "Mark as favorite (default: true)")
   )
     .addHelpText(
       "after",
@@ -580,7 +611,8 @@ Examples:
   rd bookmarks add https://example.com -t "My Title"       # Set custom title
   rd bookmarks add https://example.com --tags "dev,read"   # Add with tags
   rd bookmarks add https://example.com -c 12345            # Add to collection
-  rd bookmarks add https://example.com -n "Check later"    # Add with note`
+  rd bookmarks add https://example.com -n "Check later"    # Add with note
+  rd bookmarks add https://example.com --favorite          # Add as favorite`
     )
     .action(async function (this: Command, url: string, options) {
       try {
@@ -605,6 +637,15 @@ Examples:
         // Parse tags from comma-separated string
         const tags = parseTags(options.tags);
 
+        // Handle --important and --favorite (they're aliases, both accept optional bool)
+        // Only set if one of the flags was actually provided
+        let isImportant: boolean | undefined;
+        if (options.important !== undefined) {
+          isImportant = parseOptionalBoolean(options.important);
+        } else if (options.favorite !== undefined) {
+          isImportant = parseOptionalBoolean(options.favorite);
+        }
+
         debug("Add bookmark options", {
           url,
           title: options.title,
@@ -613,6 +654,7 @@ Examples:
           tags,
           collectionId,
           parse: !!options.parse,
+          important: isImportant,
         });
 
         verbose(`Adding bookmark: ${url}`);
@@ -652,6 +694,10 @@ Examples:
           requestBody.pleaseParse = {};
         }
 
+        if (isImportant !== undefined) {
+          requestBody.important = isImportant;
+        }
+
         // Cast through unknown because the API accepts fields (like 'note') that aren't
         // in the generated TypeScript types
         const response = await withProgress("Creating bookmark", () =>
@@ -684,6 +730,7 @@ Examples:
           note: item.note || "",
           highlights: [],
           lastUpdate: item.lastUpdate || item.created,
+          important: (item as { important?: boolean }).important,
         });
 
         // Output the result
@@ -717,8 +764,8 @@ Examples:
       .option("--add-tags <tags>", "Add comma-separated tags to existing tags")
       .option("--remove-tags <tags>", "Remove comma-separated tags from existing tags")
       .option("-c, --collection <id>", "Move to collection (ID or name: all, unsorted, trash)")
-      .option("-i, --important", "Mark as important/favorite")
-      .option("-I, --no-important", "Remove important/favorite flag")
+      .option("-i, --important [bool]", "Set important/favorite status (default: true)")
+      .option("-f, --favorite [bool]", "Set favorite status (default: true)")
       .option("--dry-run", "Show what would be updated without actually updating")
   )
     .addHelpText(
@@ -730,7 +777,8 @@ Examples:
   rd bookmarks update 12345 --add-tags "new"   # Add tags to existing
   rd bookmarks update 12345 --remove-tags "old"  # Remove specific tags
   rd bookmarks update 12345 -c 67890           # Move to collection
-  rd bookmarks update 12345 --important        # Mark as favorite
+  rd bookmarks update 12345 --favorite         # Mark as favorite
+  rd bookmarks update 12345 --favorite false   # Remove favorite
   rd bookmarks update 12345 --dry-run          # Preview changes`
     )
     .action(async function (this: Command, idArg: string, options) {
@@ -751,6 +799,14 @@ Examples:
           );
         }
 
+        // Resolve --important/--favorite (they're aliases, both accept optional bool)
+        let resolvedImportant: boolean | undefined;
+        if (options.important !== undefined) {
+          resolvedImportant = parseOptionalBoolean(options.important);
+        } else if (options.favorite !== undefined) {
+          resolvedImportant = parseOptionalBoolean(options.favorite);
+        }
+
         // Check if any update fields were provided
         const hasUpdates =
           options.title !== undefined ||
@@ -760,12 +816,12 @@ Examples:
           options.addTags !== undefined ||
           options.removeTags !== undefined ||
           options.collection !== undefined ||
-          options.important !== undefined;
+          resolvedImportant !== undefined;
 
         if (!hasUpdates) {
           throw new UsageError(
             "No fields to update. Use --title, --excerpt, --note, --tags, --add-tags, " +
-              "--remove-tags, --collection, --important, or --no-important to specify changes."
+              "--remove-tags, --collection, or --favorite to specify changes."
           );
         }
 
@@ -788,7 +844,7 @@ Examples:
           addTags,
           removeTags,
           collectionId,
-          important: options.important,
+          important: resolvedImportant,
         });
 
         const client = getClient();
@@ -851,8 +907,8 @@ Examples:
           requestBody.collection = { $id: collectionId };
         }
 
-        if (options.important !== undefined) {
-          requestBody.important = options.important;
+        if (resolvedImportant !== undefined) {
+          requestBody.important = resolvedImportant;
         }
 
         // Handle dry-run mode
@@ -887,9 +943,9 @@ Examples:
           if (collectionId !== undefined) {
             changes.push(`collection: ${currentItem.collection?.$id ?? -1} → ${collectionId}`);
           }
-          if (options.important !== undefined) {
+          if (resolvedImportant !== undefined) {
             const currentImportant = (currentItem as { important?: boolean }).important ?? false;
-            changes.push(`important: ${currentImportant} → ${options.important}`);
+            changes.push(`important: ${currentImportant} → ${resolvedImportant}`);
           }
 
           if (globalOpts.format === "json") {
@@ -951,6 +1007,7 @@ Examples:
           note: item.note || "",
           highlights: item.highlights || [],
           lastUpdate: item.lastUpdate || item.created,
+          important: (item as { important?: boolean }).important,
         });
 
         // Output the result
@@ -983,10 +1040,10 @@ Examples:
       .option("--add-tags <tags>", "Add comma-separated tags to existing tags")
       .option("--remove-tags <tags>", "Remove comma-separated tags from existing tags")
       .option("--tags <tags>", "Set tags (comma-separated). Note: batch API adds to existing tags")
-      .option("-i, --important", "Mark as important/favorite")
-      .option("-I, --no-important", "Remove important/favorite flag")
+      .option("-i, --important [bool]", "Set important/favorite status (default: true)")
+      .option("-f, --favorite [bool]", "Set favorite status (default: true)")
       .option("--move-to <collection>", "Move bookmarks to a different collection")
-      .option("-f, --force", "Skip confirmation prompt")
+      .option("--force", "Skip confirmation prompt")
       .option("-n, --dry-run", "Show what would be updated without actually updating")
   )
     .addHelpText(
@@ -994,7 +1051,8 @@ Examples:
       `
 Examples:
   rd bookmarks batch-update --ids 1,2,3 --add-tags "review"   # Add tag to specific IDs
-  rd bookmarks batch-update -c 12345 --important -f           # Mark all in collection as favorite
+  rd bookmarks batch-update -c 12345 --favorite --force       # Mark all in collection as favorite
+  rd bookmarks batch-update --ids 1,2,3 --favorite false      # Remove favorite from specific IDs
   rd bookmarks batch-update --ids 1,2 --move-to 67890         # Move bookmarks to collection
   echo "1\\n2\\n3" | rd bookmarks batch-update --add-tags "x"  # Pipe IDs from stdin
   rd bookmarks list -q | rd bookmarks batch-update --add-tags "bulk"  # Chain commands`
@@ -1025,14 +1083,22 @@ Examples:
         const collectionId =
           options.collection !== undefined ? parseCollectionId(options.collection) : 0; // 0 = all collections
 
+        // Resolve --important/--favorite (they're aliases, both accept optional bool)
+        let resolvedImportant: boolean | undefined;
+        if (options.important !== undefined) {
+          resolvedImportant = parseOptionalBoolean(options.important);
+        } else if (options.favorite !== undefined) {
+          resolvedImportant = parseOptionalBoolean(options.favorite);
+        }
+
         // Validate that we have something to update
         const hasTagChanges = options.addTags || options.removeTags || options.tags !== undefined;
-        const hasImportantChange = options.important !== undefined;
+        const hasImportantChange = resolvedImportant !== undefined;
         const hasMoveOperation = options.moveTo !== undefined;
 
         if (!hasTagChanges && !hasImportantChange && !hasMoveOperation) {
           throw new Error(
-            "No updates specified. Use --add-tags, --remove-tags, --tags, --important, --no-important, or --move-to."
+            "No updates specified. Use --add-tags, --remove-tags, --tags, --favorite, or --move-to."
           );
         }
 
@@ -1059,7 +1125,7 @@ Examples:
           replaceTags,
           addTags,
           removeTags,
-          important: options.important,
+          important: resolvedImportant,
           moveToCollectionId,
         });
 
@@ -1080,8 +1146,8 @@ Examples:
         if (addTags) updateParts.push(`add tags: ${addTags.join(", ")}`);
         if (removeTags) updateParts.push(`remove tags: ${removeTags.join(", ")}`);
         if (replaceTags) updateParts.push(`set tags: ${replaceTags.join(", ")}`);
-        if (options.important === true) updateParts.push("mark as important");
-        if (options.important === false) updateParts.push("remove important flag");
+        if (resolvedImportant === true) updateParts.push("mark as favorite");
+        if (resolvedImportant === false) updateParts.push("remove favorite");
         if (moveToCollectionId !== undefined)
           updateParts.push(`move to collection ${options.moveTo}`);
 
@@ -1195,8 +1261,8 @@ Examples:
 
               // Build update request
               const updateBody: Record<string, unknown> = { tags: finalTags };
-              if (options.important !== undefined) {
-                updateBody.important = options.important;
+              if (resolvedImportant !== undefined) {
+                updateBody.important = resolvedImportant;
               }
               if (moveToCollectionId !== undefined) {
                 updateBody.collection = { $id: moveToCollectionId };
@@ -1239,8 +1305,8 @@ Examples:
             requestBody.tags = replaceTags;
           }
 
-          if (options.important !== undefined) {
-            requestBody.important = options.important;
+          if (resolvedImportant !== undefined) {
+            requestBody.important = resolvedImportant;
           }
 
           if (moveToCollectionId !== undefined) {

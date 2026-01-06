@@ -165,7 +165,7 @@ describe("bookmarks command structure", () => {
       expect(help).toContain("--remove-tags");
       expect(help).toContain("--collection");
       expect(help).toContain("--important");
-      expect(help).toContain("--no-important");
+      expect(help).toContain("--favorite");
       expect(help).toContain("--dry-run");
     });
 
@@ -187,7 +187,7 @@ describe("bookmarks command structure", () => {
       expect(help).toContain("--remove-tags");
       expect(help).toContain("--tags");
       expect(help).toContain("--important");
-      expect(help).toContain("--no-important");
+      expect(help).toContain("--favorite");
       expect(help).toContain("--move-to");
       expect(help).toContain("--force");
       expect(help).toContain("stdin");
@@ -302,11 +302,11 @@ describe("bookmarks command structure", () => {
       expect(removeTags).toBeDefined();
     });
 
-    test("has --important and --no-important options", () => {
+    test("has --important and --favorite options", () => {
       const important = update?.options.find((o) => o.long === "--important");
-      const noImportant = update?.options.find((o) => o.long === "--no-important");
+      const favorite = update?.options.find((o) => o.long === "--favorite");
       expect(important).toBeDefined();
-      expect(noImportant).toBeDefined();
+      expect(favorite).toBeDefined();
     });
   });
 
@@ -355,7 +355,7 @@ describe("bookmarks command structure", () => {
     test("has --force option", () => {
       const opt = batchUpdate?.options.find((o) => o.long === "--force");
       expect(opt).toBeDefined();
-      expect(opt?.short).toBe("-f");
+      // Note: -f is now used for --favorite
     });
   });
 
