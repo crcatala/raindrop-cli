@@ -177,6 +177,15 @@ describe("CLI integration", () => {
       expect(result.exitCode).toBe(0);
     });
 
+    test("--format does not have -f shorthand (reserved for --force)", async () => {
+      // -f should be unrecognized at global level since it's reserved for --force on subcommands
+      const result = await runCli(["-f", "json", "auth", "status"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      expect(result.stderr).toContain("unknown option");
+      expect(result.stderr).toContain("-f");
+    });
+
     test("--json flag is recognized", async () => {
       const result = await runCli(["auth", "status", "--json"], {
         env: { RAINDROP_TOKEN: "" },
@@ -184,6 +193,27 @@ describe("CLI integration", () => {
       // Should not error due to unrecognized flag
       // Exit code may be non-zero due to no auth, but that's OK
       expect(result.stderr).not.toContain("unknown option");
+    });
+  });
+
+  describe("timeout flag", () => {
+    test("--timeout is accepted as global option", async () => {
+      const result = await runCli(["--timeout", "60", "--help"]);
+      expect(result.exitCode).toBe(0);
+    });
+
+    test("-t shorthand works for --timeout", async () => {
+      const result = await runCli(["-t", "60", "--help"]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain("unknown option");
+    });
+
+    test("-t validates timeout value", async () => {
+      const result = await runCli(["-t", "invalid", "auth", "status"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain("Invalid timeout");
     });
   });
 

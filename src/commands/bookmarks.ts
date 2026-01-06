@@ -235,7 +235,7 @@ export function createBookmarksCommand(): Command {
     .alias("rm")
     .description("Delete a bookmark (alias: rm)")
     .argument("<id>", "Bookmark ID")
-    .option("-p, --permanent", "Skip trash and delete permanently")
+    .option("-P, --permanent", "Skip trash and delete permanently (uppercase: dangerous)")
     .option("-f, --force", "Skip confirmation prompt")
     .option("-n, --dry-run", "Show what would be deleted without actually deleting")
     .addHelpText(
@@ -243,7 +243,7 @@ export function createBookmarksCommand(): Command {
       `
 Examples:
   rdcli bookmarks delete 12345                # Move bookmark to trash
-  rdcli bookmarks delete 12345 --permanent    # Delete permanently (skip trash)
+  rdcli bookmarks delete 12345 -P             # Delete permanently (skip trash)
   rdcli bookmarks delete 12345 --force        # Skip confirmation prompt
   rdcli bookmarks delete 12345 --dry-run      # Preview what would be deleted`
     )
@@ -352,12 +352,12 @@ Examples:
     .option("-l, --limit <number>", "Maximum number of bookmarks to return", "25")
     .option("-p, --page <number>", "Page number (0-indexed)", "0")
     .option(
-      "-s, --sort <field>",
+      "--sort <field>",
       "Sort field: created, title, domain, lastUpdate, sort. Prefix with - for descending",
       "-created"
     )
     .option(
-      "--search <query>",
+      "-s, --search <query>",
       `Search query (raw Raindrop syntax). Examples:
                     "type:article"       Filter by type
                     "#javascript"        Filter by tag
@@ -387,9 +387,9 @@ Examples:
   rdcli bookmarks list --type article         # Filter by type
   rdcli bookmarks list --domain github.com    # Filter by domain
   rdcli bookmarks list --favorites            # Show only favorites
-  rdcli bookmarks list --search "#cli"        # Raw search query
-  rdcli bookmarks list --search "type:article #dev"  # Multiple filters
-  rdcli bookmarks list -f json | jq '.[].title'   # Pipe JSON to jq`
+  rdcli bookmarks list -s "#cli"              # Raw search query
+  rdcli bookmarks list -s "type:article #dev"    # Multiple filters
+  rdcli bookmarks list --format json | jq '.[].title'  # Pipe JSON to jq`
     )
     .action(async function (this: Command, collectionIdArg: string | undefined, options) {
       try {
@@ -500,7 +500,7 @@ Examples:
       `
 Examples:
   rdcli bookmarks show 12345                  # Show bookmark details
-  rdcli bookmarks show 12345 -f json          # Output as JSON
+  rdcli bookmarks show 12345 --format json    # Output as JSON
   rdcli bookmarks show 12345 -q               # Output just the ID`
     )
     .action(async function (this: Command, idArg: string) {
@@ -1271,7 +1271,7 @@ Examples:
       "-c, --collection <id>",
       "Collection ID or name. When used without --ids, deletes ALL bookmarks in the collection."
     )
-    .option("--search <query>", "Search query to filter bookmarks (used with --collection)")
+    .option("-s, --search <query>", "Search query to filter bookmarks (used with --collection)")
     .option("-f, --force", "Skip confirmation prompt")
     .option("-n, --dry-run", "Show what would be deleted without actually deleting")
     .addHelpText(
@@ -1280,7 +1280,7 @@ Examples:
 Examples:
   rdcli bookmarks batch-delete --ids 1,2,3 -f         # Delete specific bookmarks
   rdcli bookmarks batch-delete -c 12345 -f            # Delete all in collection
-  rdcli bookmarks batch-delete -c 12345 --search "old" -f   # Delete matching search
+  rdcli bookmarks batch-delete -c 12345 -s "old" -f   # Delete matching search
   echo "1\\n2\\n3" | rdcli bookmarks batch-delete -f   # Pipe IDs from stdin
   rdcli bookmarks batch-delete --ids 1,2 --dry-run    # Preview what would be deleted`
     )

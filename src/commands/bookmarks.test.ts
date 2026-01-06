@@ -223,10 +223,17 @@ describe("bookmarks command structure", () => {
       expect(opt?.defaultValue).toBe("0");
     });
 
-    test("has --sort option with default", () => {
+    test("has --sort option with default but no short flag", () => {
       const opt = list?.options.find((o) => o.long === "--sort");
       expect(opt).toBeDefined();
       expect(opt?.defaultValue).toBe("-created");
+      expect(opt?.short).toBeUndefined(); // -s is reserved for --search
+    });
+
+    test("has --search option with -s short flag", () => {
+      const opt = list?.options.find((o) => o.long === "--search");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-s");
     });
 
     test("has optional collection-id argument", () => {
@@ -313,10 +320,10 @@ describe("bookmarks command structure", () => {
       expect(args[0]?.required).toBe(true);
     });
 
-    test("has --permanent option", () => {
+    test("has --permanent option with uppercase short flag", () => {
       const opt = del?.options.find((o) => o.long === "--permanent");
       expect(opt).toBeDefined();
-      expect(opt?.short).toBe("-p");
+      expect(opt?.short).toBe("-P"); // Uppercase to signal dangerous operation
     });
 
     test("has --force option", () => {
@@ -360,9 +367,10 @@ describe("bookmarks command structure", () => {
       expect(opt).toBeDefined();
     });
 
-    test("has --search option", () => {
+    test("has --search option with -s short flag", () => {
       const opt = batchDelete?.options.find((o) => o.long === "--search");
       expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-s");
     });
 
     test("has --force option", () => {
