@@ -29,12 +29,13 @@ program
     `request timeout in seconds (default: ${DEFAULT_TIMEOUT_SECONDS}, env: RDCLI_TIMEOUT)`
   )
   .configureOutput({
-    // Suppress Commander's error formatting since we handle errors ourselves.
-    // Note: We do NOT suppress writeErr because Commander uses it for help output
-    // when no subcommand is provided (calls help({ error: true })).
     outputError: () => {},
   })
   .exitOverride()
+  .configureOutput({
+    // Suppress Commander's own error output since we handle errors ourselves
+    writeErr: () => {},
+  })
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
 
@@ -72,8 +73,11 @@ program.addCommand(createFiltersCommand());
 program.addCommand(createTrashCommand());
 
 try {
-  // Commander automatically shows help when no subcommand is provided
   program.parse();
+  // If we get here with no subcommand, show help
+  if (process.argv.length <= 2) {
+    program.help();
+  }
 } catch (err) {
   if (err instanceof CommanderError) {
     // Help/version display should exit cleanly
