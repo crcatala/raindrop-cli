@@ -19,5 +19,6 @@ export function addOutputOptions(cmd: Command): Command {
     .option("--json", "shorthand for --format json")
     .option("-q, --quiet", "minimal output (just IDs)")
     .option("-v, --verbose", "show operational details")
-    .option("-d, --debug", "show debug info");
+    .option("-d, --debug", "show debug info")
+    .option("--no-color", "disable colored output");
 }
