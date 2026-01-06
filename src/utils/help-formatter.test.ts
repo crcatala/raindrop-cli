@@ -27,6 +27,49 @@ describe("StyledHelp", () => {
     setNoColorFlag(false);
   });
 
+  describe("styleUsage", () => {
+    test("styles command names cyan", () => {
+      const result = help.styleUsage("rd bookmarks list");
+      expect(result).toContain("\x1b[36m"); // cyan
+      expect(result).toContain("rd");
+      expect(result).toContain("bookmarks");
+      expect(result).toContain("list");
+    });
+
+    test("styles [options] dim", () => {
+      const result = help.styleUsage("rd [options] [command]");
+      // [options] should be dim
+      expect(result).toContain("\x1b[2m"); // dim
+      expect(result).toContain("[options]");
+      // [command] should be dim
+      expect(result).toContain("[command]");
+    });
+
+    test("styles optional arguments dim", () => {
+      const result = help.styleUsage("rd bookmarks list [collection-id]");
+      expect(result).toContain("\x1b[2m"); // dim for [collection-id]
+      expect(result).toContain("[collection-id]");
+    });
+
+    test("styles required arguments dim", () => {
+      const result = help.styleUsage("rd bookmarks show <id>");
+      expect(result).toContain("\x1b[2m"); // dim for <id>
+      expect(result).toContain("<id>");
+    });
+
+    test("handles command aliases", () => {
+      const result = help.styleUsage("rd bookmarks list|ls [options]");
+      expect(result).toContain("\x1b[36m"); // cyan for list|ls
+      expect(result).toContain("list|ls");
+    });
+
+    test("returns plain text when colors disabled", () => {
+      setNoColorFlag(true);
+      const result = help.styleUsage("rd [options] [command]");
+      expect(result).toBe("rd [options] [command]");
+    });
+  });
+
   describe("styleTitle", () => {
     test("makes section headers bold", () => {
       const result = help.styleTitle("Options:");

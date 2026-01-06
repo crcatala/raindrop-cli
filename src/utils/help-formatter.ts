@@ -29,9 +29,33 @@ export class StyledHelp extends Help {
 
   /**
    * Style the usage string (the part after "Usage:")
+   * e.g., "rd bookmarks list|ls [options] [collection-id]"
    */
   styleUsage(str: string): string {
-    return str; // Keep default, individual parts are styled separately
+    // Split into parts and style each appropriately
+    return str
+      .split(" ")
+      .map((part) => {
+        // [options] - dim since it's a placeholder
+        if (part === "[options]") {
+          return colors.dim(part);
+        }
+        // [command] - dim since it's a placeholder
+        if (part === "[command]") {
+          return colors.dim(part);
+        }
+        // Other bracketed args like [collection-id] - dim
+        if (part.startsWith("[") && part.endsWith("]")) {
+          return colors.dim(part);
+        }
+        // Required args like <id> - dim
+        if (part.startsWith("<") && part.endsWith(">")) {
+          return colors.dim(part);
+        }
+        // Command names (including aliases like list|ls) - cyan
+        return colors.cyan(part);
+      })
+      .join(" ");
   }
 
   /**
