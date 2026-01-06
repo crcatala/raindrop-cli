@@ -37,6 +37,63 @@ describe("CLI integration", () => {
     });
   });
 
+  describe("no arguments", () => {
+    test("shows help when invoked with no arguments", async () => {
+      const result = await runCli([]);
+
+      // Should show help (Commander outputs to stderr when no subcommand provided)
+      expect(result.stderr).toContain("Usage:");
+      expect(result.stderr).toContain("rdcli");
+      expect(result.stderr).toContain("Commands:");
+    });
+
+    test("exits with 0 when showing help for no arguments", async () => {
+      const result = await runCli([]);
+
+      // Help display should exit cleanly
+      expect(result.exitCode).toBe(0);
+    });
+  });
+
+  describe("unknown commands and error messages", () => {
+    test("unknown command shows single error message (no duplicates)", async () => {
+      const result = await runCli(["not-a-command"]);
+
+      expect(result.exitCode).toBe(2);
+      // Count occurrences of the error message
+      const errorMatches = result.stderr.match(/error:.*unknown command/gi) || [];
+      expect(errorMatches.length).toBe(1);
+    });
+
+    test("unknown command shows suggestion when similar command exists", async () => {
+      const result = await runCli(["bookmkarks"]); // typo
+
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Did you mean");
+      expect(result.stderr).toContain("bookmarks");
+    });
+
+    test("unknown subcommand shows single error message (no duplicates)", async () => {
+      const result = await runCli(["bookmarks", "not-a-subcommand"]);
+
+      expect(result.exitCode).toBe(2);
+      // Count occurrences of error messages
+      const errorMatches = result.stderr.match(/error:/gi) || [];
+      expect(errorMatches.length).toBe(1);
+    });
+
+    test("excess arguments shows single error message (no duplicates)", async () => {
+      const result = await runCli(["bookmarks", "unexpected-arg"]);
+
+      expect(result.exitCode).toBe(2);
+      // Should show error about too many arguments or unknown command
+      expect(result.stderr).toContain("error:");
+      // Count occurrences - should be exactly 1
+      const errorMatches = result.stderr.match(/error:/gi) || [];
+      expect(errorMatches.length).toBe(1);
+    });
+  });
+
   describe("version command", () => {
     test("--version outputs version to stdout", async () => {
       const result = await runCli(["--version"]);
