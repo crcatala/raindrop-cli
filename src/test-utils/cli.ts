@@ -18,6 +18,8 @@ export interface CliOptions {
   cwd?: string;
   /** Timeout in milliseconds (default: 10000) */
   timeout?: number;
+  /** Input to send to stdin */
+  stdin?: string;
 }
 
 /**
@@ -31,11 +33,12 @@ export interface CliOptions {
  * ```
  */
 export async function runCli(args: string[], options: CliOptions = {}): Promise<CliResult> {
-  const { env = {}, cwd, timeout = 10000 } = options;
+  const { env = {}, cwd, timeout = 10000, stdin } = options;
 
   const proc = Bun.spawn(["bun", "src/index.ts", ...args], {
     stdout: "pipe",
     stderr: "pipe",
+    stdin: stdin !== undefined ? new Blob([stdin]) : undefined,
     cwd: cwd ?? import.meta.dir.replace("/src/test-utils", ""),
     env: {
       ...process.env,
