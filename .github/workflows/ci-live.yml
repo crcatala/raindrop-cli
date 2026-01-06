@@ -1,0 +1,150 @@
+name: Live Tests
+
+on:
+  pull_request:
+    branches: [main]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: 'Run in verbose mode'
+        type: boolean
+        default: false
+
+jobs:
+  # Shows as a neutral check on PRs with instructions
+  live-tests-info:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    steps:
+      - name: Create informational check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Live API Tests',
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'completed',
+              conclusion: 'neutral',
+              output: {
+                title: 'Comment /run-live-tests to trigger',
+                summary: 'Live API tests are available on-demand. Add a comment with `/run-live-tests` to run them against this PR.'
+              }
+            });
+
+  # Runs when someone comments /run-live-tests on a PR
+  live-tests:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '/run-live-tests'))
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Get PR info
+        if: github.event_name == 'issue_comment'
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            core.setOutput('ref', pr.data.head.ref);
+            core.setOutput('sha', pr.data.head.sha);
+
+      - name: Create pending check
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Live API Tests',
+              head_sha: '${{ steps.pr.outputs.sha }}',
+              status: 'in_progress',
+              output: {
+                title: 'Running live tests...',
+                summary: 'Live API tests are currently running.'
+              }
+            });
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'issue_comment' && steps.pr.outputs.ref || github.ref }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run live tests
+        id: tests
+        env:
+          RAINDROP_TOKEN: ${{ secrets.RAINDROP_TOKEN }}
+          RDCLI_API_DELAY_MS: "250"
+        run: bun run test:live
+
+      - name: Update check (success)
+        if: github.event_name == 'issue_comment' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Live API Tests',
+              head_sha: '${{ steps.pr.outputs.sha }}',
+              status: 'completed',
+              conclusion: 'success',
+              output: {
+                title: 'All live tests passed',
+                summary: 'Live API tests completed successfully.'
+              }
+            });
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✅ Live tests passed!'
+            });
+
+      - name: Update check (failure)
+        if: github.event_name == 'issue_comment' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Live API Tests',
+              head_sha: '${{ steps.pr.outputs.sha }}',
+              status: 'completed',
+              conclusion: 'failure',
+              output: {
+                title: 'Live tests failed',
+                summary: 'Some live API tests failed. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+              }
+            });
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ Live tests failed. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+            });
