@@ -1,4 +1,5 @@
-import { program, Command, CommanderError } from "commander";
+import { program, Command, CommanderError, Option } from "commander";
+import { OUTPUT_FORMATS } from "./types/index.js";
 import { createAuthCommand } from "./commands/auth.js";
 import { createBookmarksCommand } from "./commands/bookmarks.js";
 import { createCollectionsCommand } from "./commands/collections.js";
@@ -17,9 +18,11 @@ program
   .version("0.1.0")
   .enablePositionalOptions()
   .addHelpText("after", "\nReport issues: https://github.com/crcatala/raindrop-cli-spike/issues")
-  .option(
-    "--format <format>",
-    "output format (json, table, tsv); defaults to table for terminal, json when piped"
+  .addOption(
+    new Option(
+      "--format <format>",
+      "output format; defaults to table for terminal, json when piped"
+    ).choices(OUTPUT_FORMATS)
   )
   .option("-q, --quiet", "minimal output (just IDs)")
   .option("-v, --verbose", "show operational details (API calls, timing)")

@@ -194,6 +194,43 @@ describe("CLI integration", () => {
       // Exit code may be non-zero due to no auth, but that's OK
       expect(result.stderr).not.toContain("unknown option");
     });
+
+    test("invalid --format value shows error with allowed choices", async () => {
+      const result = await runCli(["--format", "invalid", "auth", "status"]);
+
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("invalid");
+      expect(result.stderr).toContain("Allowed choices");
+      expect(result.stderr).toContain("json");
+      expect(result.stderr).toContain("table");
+      expect(result.stderr).toContain("tsv");
+      expect(result.stderr).toContain("plain");
+    });
+
+    test("invalid --format on subcommand shows error", async () => {
+      const result = await runCli(["bookmarks", "list", "--format", "xml"]);
+
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("xml");
+      expect(result.stderr).toContain("Allowed choices");
+    });
+
+    test("all valid format values are accepted", async () => {
+      for (const format of ["json", "table", "tsv", "plain"]) {
+        const result = await runCli(["--format", format, "--help"]);
+        expect(result.exitCode).toBe(0);
+        expect(result.stderr).not.toContain("invalid");
+      }
+    });
+
+    test("help text shows valid format choices", async () => {
+      const result = await runCliExpectSuccess(["--help"]);
+
+      expect(result.stdout).toContain("--format");
+      expect(result.stdout).toContain("choices:");
+      expect(result.stdout).toContain("json");
+      expect(result.stdout).toContain("table");
+    });
   });
 
   describe("timeout flag", () => {

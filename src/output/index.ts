@@ -57,5 +57,11 @@ export function output<T>(data: T, columns: ColumnConfig[], options: OutputOptio
     case "tsv":
       outputData(formatTsv(data, columns));
       break;
+    default: {
+      // This shouldn't be reached if Commander validation is working,
+      // but provides a safety net and satisfies exhaustiveness checking
+      const _exhaustive: never = format;
+      throw new Error(`Unknown output format: ${_exhaustive}`);
+    }
   }
 }
