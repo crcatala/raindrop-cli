@@ -21,7 +21,7 @@ const BOOKMARK_COLUMNS: ColumnConfig[] = [
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
   { key: "tags", header: "Tags", width: 20 },
-  { key: "favorite", header: "Fav", width: 3 },
+  { key: "favorite", header: "❤️ Fav", width: 8 },
   { key: "created", header: "Created", width: 12 },
   { key: "_id", header: "ID", width: 12 },
 ];
@@ -38,7 +38,7 @@ const BOOKMARK_DETAIL_COLUMNS: ColumnConfig[] = [
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
   { key: "tags", header: "Tags", width: 30 },
-  { key: "favorite", header: "Favorite", width: 8 },
+  { key: "favorite", header: "❤️ Fav", width: 8 },
   { key: "type", header: "Type", width: 12 },
   { key: "domain", header: "Domain", width: 30 },
   { key: "collectionId", header: "Collection", width: 12 },
@@ -131,7 +131,7 @@ function buildSearchQuery(options: FilterOptions): string | undefined {
   if (options.type) parts.push(`type:${options.type}`);
   if (options.tag) parts.push(`#${options.tag}`);
   if (options.domain) parts.push(`domain:${options.domain}`);
-  if (options.favorites) parts.push(`❤️`);
+  if (options.favorites) parts.push(`❤️️`);
   if (options.withNotes) parts.push(`note:true`);
   if (options.withHighlights) parts.push(`highlights:true`);
   if (options.withoutTags) parts.push(`notag:true`);
@@ -180,7 +180,7 @@ function formatBookmarkItem(item: {
     title: item.title,
     link: item.link,
     tags: item.tags.join(", "),
-    favorite: item.important ? "❤️" : "",
+    favorite: item.important ? "true" : "false",
     created: item.created.split("T")[0], // Just the date part
     excerpt: item.excerpt,
     domain: item.domain,
@@ -237,7 +237,7 @@ function formatBookmarkDetail(item: {
     title: item.title,
     link: item.link,
     tags: item.tags.join(", "),
-    favorite: item.important ? "Yes" : "No",
+    favorite: item.important ? "true" : "false",
     created: item.created.split("T")[0],
     lastUpdate: item.lastUpdate.split("T")[0],
     excerpt: item.excerpt,

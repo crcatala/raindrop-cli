@@ -142,8 +142,9 @@ To add or remove favorites:
           );
         }
 
-        // Build search query: always include ❤️ for favorites, optionally add user search
-        const search = options.search ? `❤️ ${options.search}` : "❤️";
+        // Build search query: always include ❤️️ for favorites, optionally add user search
+        // Note: The extra variation selector (️) matches the web UI's search behavior
+        const search = options.search ? `❤️️ ${options.search}` : "❤️️";
 
         debug("List favorites options", {
           collectionId,
