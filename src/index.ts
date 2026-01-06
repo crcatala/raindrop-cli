@@ -64,8 +64,9 @@ program
 
     // Normalize --json flag: if --json is set but --format isn't, set format to json
     // --format takes precedence over --json when both are specified
+    // Note: must use setOptionValue() because opts() returns a copy
     if (opts.json && !opts.format) {
-      opts.format = "json";
+      thisCommand.setOptionValue("format", "json");
     }
   });
 
