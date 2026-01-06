@@ -1,100 +1,147 @@
 import { describe, test, expect } from "bun:test";
-import { runCli, runCliExpectSuccess } from "../test-utils/index.js";
+import { createCollectionsCommand } from "./collections.js";
 
 /**
  * Unit tests for the collections command.
  *
- * These tests do NOT require authentication and test:
- * - Help output
- * - Argument validation
- * - Error handling for missing auth
+ * These tests run in-process without spawning subprocesses (~1ms vs ~200ms each).
+ * They test command structure, help text, and options/arguments.
  *
- * For live API tests, see collections.live.test.ts
+ * For validation tests, see src/utils/validation.test.ts.
+ * For subprocess integration tests, see collections.integration.test.ts.
+ * For live API tests, see collections.live.test.ts.
  */
 
-describe("collections command", () => {
-  describe("help", () => {
-    test("collections --help shows command description", async () => {
-      const result = await runCliExpectSuccess(["collections", "--help"]);
-      expect(result.stdout).toContain("Manage collections");
-      expect(result.stdout).toContain("list");
-      expect(result.stdout).toContain("show");
-      expect(result.stdout).toContain("create");
-      expect(result.stdout).toContain("delete");
-      expect(result.stdout).toContain("stats");
+describe("collections command structure", () => {
+  const collections = createCollectionsCommand();
+
+  describe("command hierarchy", () => {
+    test("has correct name and description", () => {
+      expect(collections.name()).toBe("collections");
+      expect(collections.description()).toContain("Manage collections");
     });
 
-    test("collections list --help shows options", async () => {
-      const result = await runCliExpectSuccess(["collections", "list", "--help"]);
-      expect(result.stdout).toContain("--flat");
+    test("has list subcommand", () => {
+      const list = collections.commands.find((c) => c.name() === "list");
+      expect(list).toBeDefined();
+      expect(list?.description()).toContain("List all collections");
     });
 
-    test("collections show --help shows arguments", async () => {
-      const result = await runCliExpectSuccess(["collections", "show", "--help"]);
-      expect(result.stdout).toContain("collection-id");
+    test("has show subcommand", () => {
+      const show = collections.commands.find((c) => c.name() === "show");
+      expect(show).toBeDefined();
+      expect(show?.description()).toContain("Show collection details");
     });
 
-    test("collections create --help shows arguments and options", async () => {
-      const result = await runCliExpectSuccess(["collections", "create", "--help"]);
-      expect(result.stdout).toContain("name");
-      expect(result.stdout).toContain("--parent");
-      expect(result.stdout).toContain("-p");
+    test("has create subcommand", () => {
+      const create = collections.commands.find((c) => c.name() === "create");
+      expect(create).toBeDefined();
+      expect(create?.description()).toContain("Create a new collection");
     });
 
-    test("collections delete --help shows options", async () => {
-      const result = await runCliExpectSuccess(["collections", "delete", "--help"]);
-      expect(result.stdout).toContain("collection-id");
-      expect(result.stdout).toContain("--force");
+    test("has delete subcommand", () => {
+      const del = collections.commands.find((c) => c.name() === "delete");
+      expect(del).toBeDefined();
+      expect(del?.description()).toContain("Delete a collection");
     });
-  });
 
-  describe("list command - without auth", () => {
-    test("fails gracefully without token", async () => {
-      const result = await runCli(["collections", "list"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
-      expect(result.exitCode).toBe(1);
-      // Should fail with either no token error or 401 from API
-      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
-      expect(hasAuthError).toBe(true);
+    test("has stats subcommand", () => {
+      const stats = collections.commands.find((c) => c.name() === "stats");
+      expect(stats).toBeDefined();
+      expect(stats?.description()).toContain("Show system collection statistics");
     });
   });
 
-  describe("show command - validation", () => {
-    test("rejects invalid collection ID", async () => {
-      const result = await runCli(["collections", "show", "notanumber"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid collection ID");
+  describe("help text", () => {
+    test("collections --help shows command description", () => {
+      const help = collections.helpInformation();
+      expect(help).toContain("Manage collections");
+      expect(help).toContain("list");
+      expect(help).toContain("show");
+      expect(help).toContain("create");
+      expect(help).toContain("delete");
+      expect(help).toContain("stats");
+    });
+
+    test("collections list --help shows options", () => {
+      const list = collections.commands.find((c) => c.name() === "list");
+      const help = list?.helpInformation() ?? "";
+      expect(help).toContain("--flat");
+    });
+
+    test("collections show --help shows arguments", () => {
+      const show = collections.commands.find((c) => c.name() === "show");
+      const help = show?.helpInformation() ?? "";
+      expect(help).toContain("collection-id");
+    });
+
+    test("collections create --help shows arguments and options", () => {
+      const create = collections.commands.find((c) => c.name() === "create");
+      const help = create?.helpInformation() ?? "";
+      expect(help).toContain("name");
+      expect(help).toContain("--parent");
+      expect(help).toContain("-p");
+    });
+
+    test("collections delete --help shows options", () => {
+      const del = collections.commands.find((c) => c.name() === "delete");
+      const help = del?.helpInformation() ?? "";
+      expect(help).toContain("collection-id");
+      expect(help).toContain("--force");
     });
   });
 
-  describe("create command - validation", () => {
-    test("rejects empty name", async () => {
-      const result = await runCli(["collections", "create", "   "], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Collection name cannot be empty");
-    });
+  describe("list command options", () => {
+    const list = collections.commands.find((c) => c.name() === "list");
 
-    test("rejects invalid parent ID", async () => {
-      const result = await runCli(["collections", "create", "Test", "--parent", "notanumber"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid collection ID");
+    test("has --flat option", () => {
+      const opt = list?.options.find((o) => o.long === "--flat");
+      expect(opt).toBeDefined();
     });
   });
 
-  describe("delete command - validation", () => {
-    test("rejects invalid collection ID", async () => {
-      const result = await runCli(["collections", "delete", "notanumber"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid collection ID");
+  describe("show command arguments", () => {
+    const show = collections.commands.find((c) => c.name() === "show");
+
+    test("requires collection-id argument", () => {
+      const args = show?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("collection-id");
+      expect(args[0]?.required).toBe(true);
+    });
+  });
+
+  describe("create command arguments and options", () => {
+    const create = collections.commands.find((c) => c.name() === "create");
+
+    test("requires name argument", () => {
+      const args = create?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("name");
+      expect(args[0]?.required).toBe(true);
+    });
+
+    test("has --parent option", () => {
+      const opt = create?.options.find((o) => o.long === "--parent");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-p");
+    });
+  });
+
+  describe("delete command arguments and options", () => {
+    const del = collections.commands.find((c) => c.name() === "delete");
+
+    test("requires collection-id argument", () => {
+      const args = del?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("collection-id");
+      expect(args[0]?.required).toBe(true);
+    });
+
+    test("has --force option", () => {
+      const opt = del?.options.find((o) => o.long === "--force");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-f");
     });
   });
 });

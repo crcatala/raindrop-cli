@@ -1,527 +1,351 @@
 import { describe, test, expect } from "bun:test";
-import { runCli, runCliExpectSuccess } from "../test-utils/index.js";
+import { createBookmarksCommand } from "./bookmarks.js";
 
 /**
  * Unit tests for the bookmarks command.
  *
- * These tests do NOT require authentication and test:
- * - Help output
- * - Argument validation
- * - Error handling for missing auth
+ * These tests run in-process without spawning subprocesses (~1ms vs ~200ms each).
+ * They test command structure, help text, and options/arguments.
  *
- * For live API tests, see bookmarks.live.test.ts
+ * For validation tests, see src/utils/validation.test.ts.
+ * For subprocess integration tests, see bookmarks.integration.test.ts.
+ * For live API tests, see bookmarks.live.test.ts.
  */
 
-describe("bookmarks command", () => {
-  describe("help", () => {
-    test("bookmarks --help shows command description", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "--help"]);
-      expect(result.stdout).toContain("Manage bookmarks");
-      expect(result.stdout).toContain("list");
-      expect(result.stdout).toContain("get");
+describe("bookmarks command structure", () => {
+  const bookmarks = createBookmarksCommand();
+
+  describe("command hierarchy", () => {
+    test("has correct name and description", () => {
+      expect(bookmarks.name()).toBe("bookmarks");
+      expect(bookmarks.description()).toContain("Manage bookmarks");
     });
 
-    test("bookmarks get --help shows usage", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "get", "--help"]);
-      expect(result.stdout).toContain("Get a single bookmark by ID");
-      expect(result.stdout).toContain("<id>");
+    test("has list subcommand", () => {
+      const list = bookmarks.commands.find((c) => c.name() === "list");
+      expect(list).toBeDefined();
+      expect(list?.description()).toContain("List bookmarks");
     });
 
-    test("bookmarks list --help shows all options", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "list", "--help"]);
-      expect(result.stdout).toContain("--limit");
-      expect(result.stdout).toContain("--page");
-      expect(result.stdout).toContain("--sort");
-      expect(result.stdout).toContain("--search");
-      expect(result.stdout).toContain("collection-id");
+    test("has get subcommand", () => {
+      const get = bookmarks.commands.find((c) => c.name() === "get");
+      expect(get).toBeDefined();
+      expect(get?.description()).toContain("Get a single bookmark");
     });
 
-    test("bookmarks list --help shows search examples and doc link", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "list", "--help"]);
-      // Check for search examples
-      expect(result.stdout).toContain("type:article");
-      expect(result.stdout).toContain("#javascript");
-      expect(result.stdout).toContain("domain:github.com");
-      // Check for documentation link
-      expect(result.stdout).toContain("help.raindrop.io/using-search");
+    test("has add subcommand", () => {
+      const add = bookmarks.commands.find((c) => c.name() === "add");
+      expect(add).toBeDefined();
+      expect(add?.description()).toContain("Add a new bookmark");
     });
 
-    test("bookmarks list --help shows convenience filter flags", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "list", "--help"]);
-      expect(result.stdout).toContain("--type");
-      expect(result.stdout).toContain("--tag");
-      expect(result.stdout).toContain("--domain");
-      expect(result.stdout).toContain("--favorites");
-      expect(result.stdout).toContain("--with-notes");
-      expect(result.stdout).toContain("--with-highlights");
-      expect(result.stdout).toContain("--without-tags");
-      expect(result.stdout).toContain("--has-reminder");
-      expect(result.stdout).toContain("--broken");
-      expect(result.stdout).toContain("--created");
+    test("has update subcommand", () => {
+      const update = bookmarks.commands.find((c) => c.name() === "update");
+      expect(update).toBeDefined();
+      expect(update?.description()).toContain("Update an existing bookmark");
+    });
+
+    test("has delete subcommand", () => {
+      const del = bookmarks.commands.find((c) => c.name() === "delete");
+      expect(del).toBeDefined();
+      expect(del?.description()).toContain("Delete a bookmark");
+    });
+
+    test("has batch-update subcommand", () => {
+      const batchUpdate = bookmarks.commands.find((c) => c.name() === "batch-update");
+      expect(batchUpdate).toBeDefined();
+      expect(batchUpdate?.description()).toContain("Update multiple bookmarks");
+    });
+
+    test("has batch-delete subcommand", () => {
+      const batchDelete = bookmarks.commands.find((c) => c.name() === "batch-delete");
+      expect(batchDelete).toBeDefined();
+      expect(batchDelete?.description()).toContain("Delete multiple bookmarks");
     });
   });
 
-  describe("list command - without auth", () => {
-    test("fails gracefully without token", async () => {
-      const result = await runCli(["bookmarks", "list"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
-      expect(result.exitCode).toBe(1);
-      // Should fail with either no token error or 401 from API
-      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
-      expect(hasAuthError).toBe(true);
+  describe("help text", () => {
+    test("bookmarks --help shows command description", () => {
+      const help = bookmarks.helpInformation();
+      expect(help).toContain("Manage bookmarks");
+      expect(help).toContain("list");
+      expect(help).toContain("get");
+      expect(help).toContain("add");
+      expect(help).toContain("update");
+      expect(help).toContain("delete");
+    });
+
+    test("bookmarks list --help shows options", () => {
+      const list = bookmarks.commands.find((c) => c.name() === "list");
+      const help = list?.helpInformation() ?? "";
+      expect(help).toContain("--limit");
+      expect(help).toContain("--page");
+      expect(help).toContain("--sort");
+      expect(help).toContain("--search");
+      expect(help).toContain("collection-id");
+    });
+
+    test("bookmarks list --help shows convenience filter flags", () => {
+      const list = bookmarks.commands.find((c) => c.name() === "list");
+      const help = list?.helpInformation() ?? "";
+      expect(help).toContain("--type");
+      expect(help).toContain("--tag");
+      expect(help).toContain("--domain");
+      expect(help).toContain("--favorites");
+      expect(help).toContain("--with-notes");
+      expect(help).toContain("--with-highlights");
+      expect(help).toContain("--without-tags");
+      expect(help).toContain("--has-reminder");
+      expect(help).toContain("--broken");
+      expect(help).toContain("--created");
+    });
+
+    test("bookmarks list --help shows search examples and doc link", () => {
+      const list = bookmarks.commands.find((c) => c.name() === "list");
+      const help = list?.helpInformation() ?? "";
+      expect(help).toContain("type:article");
+      expect(help).toContain("#javascript");
+      expect(help).toContain("domain:github.com");
+      expect(help).toContain("help.raindrop.io/using-search");
+    });
+
+    test("bookmarks get --help shows usage", () => {
+      const get = bookmarks.commands.find((c) => c.name() === "get");
+      const help = get?.helpInformation() ?? "";
+      expect(help).toContain("Get a single bookmark by ID");
+      expect(help).toContain("<id>");
+    });
+
+    test("bookmarks add --help shows usage", () => {
+      const add = bookmarks.commands.find((c) => c.name() === "add");
+      const help = add?.helpInformation() ?? "";
+      expect(help).toContain("Add a new bookmark");
+      expect(help).toContain("<url>");
+      expect(help).toContain("--title");
+      expect(help).toContain("--excerpt");
+      expect(help).toContain("--note");
+      expect(help).toContain("--tags");
+      expect(help).toContain("--collection");
+      expect(help).toContain("--parse");
+    });
+
+    test("bookmarks update --help shows usage", () => {
+      const update = bookmarks.commands.find((c) => c.name() === "update");
+      const help = update?.helpInformation() ?? "";
+      expect(help).toContain("Update an existing bookmark");
+      expect(help).toContain("<id>");
+      expect(help).toContain("--title");
+      expect(help).toContain("--excerpt");
+      expect(help).toContain("--note");
+      expect(help).toContain("--tags");
+      expect(help).toContain("--add-tags");
+      expect(help).toContain("--remove-tags");
+      expect(help).toContain("--collection");
+      expect(help).toContain("--important");
+      expect(help).toContain("--no-important");
+      expect(help).toContain("--dry-run");
+    });
+
+    test("bookmarks delete --help shows options", () => {
+      const del = bookmarks.commands.find((c) => c.name() === "delete");
+      const help = del?.helpInformation() ?? "";
+      expect(help).toContain("--permanent");
+      expect(help).toContain("--force");
+      expect(help).toContain("--dry-run");
+      expect(help).toContain("-n");
+    });
+
+    test("bookmarks batch-update --help shows all options", () => {
+      const batchUpdate = bookmarks.commands.find((c) => c.name() === "batch-update");
+      const help = batchUpdate?.helpInformation() ?? "";
+      expect(help).toContain("--ids");
+      expect(help).toContain("--collection");
+      expect(help).toContain("--add-tags");
+      expect(help).toContain("--remove-tags");
+      expect(help).toContain("--tags");
+      expect(help).toContain("--important");
+      expect(help).toContain("--no-important");
+      expect(help).toContain("--move-to");
+      expect(help).toContain("--force");
+      expect(help).toContain("stdin");
+      expect(help).toContain("--dry-run");
+      expect(help).toContain("-n");
+    });
+
+    test("bookmarks batch-delete --help shows all options", () => {
+      const batchDelete = bookmarks.commands.find((c) => c.name() === "batch-delete");
+      const help = batchDelete?.helpInformation() ?? "";
+      expect(help).toContain("--ids");
+      expect(help).toContain("--collection");
+      expect(help).toContain("--search");
+      expect(help).toContain("--force");
+      expect(help).toContain("stdin");
+      expect(help).toContain("--dry-run");
+      expect(help).toContain("-n");
     });
   });
 
-  describe("get command - without auth", () => {
-    test("fails gracefully without token", async () => {
-      const result = await runCli(["bookmarks", "get", "12345"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
-      expect(result.exitCode).toBe(1);
-      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
-      expect(hasAuthError).toBe(true);
+  describe("list command options", () => {
+    const list = bookmarks.commands.find((c) => c.name() === "list");
+
+    test("has --limit option with default", () => {
+      const opt = list?.options.find((o) => o.long === "--limit");
+      expect(opt).toBeDefined();
+      expect(opt?.defaultValue).toBe("25");
+    });
+
+    test("has --page option with default", () => {
+      const opt = list?.options.find((o) => o.long === "--page");
+      expect(opt).toBeDefined();
+      expect(opt?.defaultValue).toBe("0");
+    });
+
+    test("has --sort option with default", () => {
+      const opt = list?.options.find((o) => o.long === "--sort");
+      expect(opt).toBeDefined();
+      expect(opt?.defaultValue).toBe("-created");
+    });
+
+    test("has optional collection-id argument", () => {
+      const args = list?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("collection-id");
+      expect(args[0]?.required).toBe(false);
     });
   });
 
-  describe("get command - validation", () => {
-    test("rejects non-numeric ID", async () => {
-      const result = await runCli(["bookmarks", "get", "abc"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
-    });
+  describe("get command arguments", () => {
+    const get = bookmarks.commands.find((c) => c.name() === "get");
 
-    test("rejects negative ID", async () => {
-      const result = await runCli(["bookmarks", "get", "-1"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
-    });
-
-    test("rejects zero ID", async () => {
-      const result = await runCli(["bookmarks", "get", "0"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
-    });
-
-    test("requires ID argument", async () => {
-      const result = await runCli(["bookmarks", "get"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      // Commander shows missing argument error
-      expect(result.stderr).toContain("missing required argument");
+    test("requires id argument", () => {
+      const args = get?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("id");
+      expect(args[0]?.required).toBe(true);
     });
   });
 
-  describe("list command - validation", () => {
-    test("rejects invalid limit (too high)", async () => {
-      const result = await runCli(["bookmarks", "list", "--limit", "100"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid limit");
-      expect(result.stderr).toContain("1 and 50");
+  describe("add command arguments and options", () => {
+    const add = bookmarks.commands.find((c) => c.name() === "add");
+
+    test("requires url argument", () => {
+      const args = add?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("url");
+      expect(args[0]?.required).toBe(true);
     });
 
-    test("rejects invalid limit (too low)", async () => {
-      const result = await runCli(["bookmarks", "list", "--limit", "0"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid limit");
-      expect(result.stderr).toContain("1 and 50");
+    test("has --title option", () => {
+      const opt = add?.options.find((o) => o.long === "--title");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-t");
     });
 
-    test("rejects invalid sort option", async () => {
-      const result = await runCli(["bookmarks", "list", "--sort", "invalid"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid sort option");
+    test("has --collection option with default", () => {
+      const opt = add?.options.find((o) => o.long === "--collection");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-c");
+      expect(opt?.defaultValue).toBe("unsorted");
     });
 
-    test("rejects invalid collection ID", async () => {
-      const result = await runCli(["bookmarks", "list", "notanumber"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid collection ID");
-    });
-
-    test("rejects negative page number", async () => {
-      const result = await runCli(["bookmarks", "list", "--page", "-1"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid page");
-      expect(result.stderr).toContain("non-negative");
-    });
-
-    test("rejects invalid type option", async () => {
-      const result = await runCli(["bookmarks", "list", "--type", "invalid"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid type");
-      expect(result.stderr).toContain("article");
-    });
-
-    test("rejects invalid created date format", async () => {
-      const result = await runCli(["bookmarks", "list", "--created", "yesterday"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid date format");
-      expect(result.stderr).toContain("YYYY-MM");
-    });
-
-    test("rejects malformed created date", async () => {
-      const result = await runCli(["bookmarks", "list", "--created", "2025-1"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid date format");
-    });
-
-    test("accepts valid YYYY-MM date format", async () => {
-      // This will fail auth but validates the date format is accepted
-      const result = await runCli(["bookmarks", "list", "--created", "2025-01"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      // Should not fail on date validation (will fail on auth instead)
-      expect(result.stderr).not.toContain("Invalid date format");
-    });
-
-    test("accepts valid YYYY-MM-DD date format", async () => {
-      const result = await runCli(["bookmarks", "list", "--created", "2025-01-15"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.stderr).not.toContain("Invalid date format");
-    });
-  });
-});
-
-describe("bookmarks delete command", () => {
-  describe("validation", () => {
-    test("rejects missing argument", async () => {
-      const result = await runCli(["bookmarks", "delete"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("error: missing required argument 'id'");
-    });
-
-    test("rejects invalid ID", async () => {
-      const result = await runCli(["bookmarks", "delete", "notanumber"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
-    });
-    test("rejects invalid bookmark ID (zero)", async () => {
-      const result = await runCli(["bookmarks", "delete", "0"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
-    });
-
-    test("rejects invalid bookmark ID (negative)", async () => {
-      const result = await runCli(["bookmarks", "delete", "-1"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
+    test("has --parse option", () => {
+      const opt = add?.options.find((o) => o.long === "--parse");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-p");
     });
   });
 
-  describe("help", () => {
-    test("bookmarks delete --help shows options", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "delete", "--help"]);
-      expect(result.stdout).toContain("--permanent");
-      expect(result.stdout).toContain("--force");
-      expect(result.stdout).toContain("--dry-run");
-      expect(result.stdout).toContain("-n");
-    });
-  });
-});
+  describe("update command arguments and options", () => {
+    const update = bookmarks.commands.find((c) => c.name() === "update");
 
-describe("bookmarks add command", () => {
-  describe("help", () => {
-    test("bookmarks add --help shows usage", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "add", "--help"]);
-      expect(result.stdout).toContain("Add a new bookmark");
-      expect(result.stdout).toContain("<url>");
-      expect(result.stdout).toContain("--title");
-      expect(result.stdout).toContain("--excerpt");
-      expect(result.stdout).toContain("--note");
-      expect(result.stdout).toContain("--tags");
-      expect(result.stdout).toContain("--collection");
-      expect(result.stdout).toContain("--parse");
-    });
-  });
-
-  describe("validation", () => {
-    test("rejects missing URL argument", async () => {
-      const result = await runCli(["bookmarks", "add"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).not.toBe(0);
-      expect(result.stderr).toContain("missing required argument");
+    test("requires id argument", () => {
+      const args = update?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("id");
+      expect(args[0]?.required).toBe(true);
     });
 
-    test("rejects invalid URL (no protocol)", async () => {
-      const result = await runCli(["bookmarks", "add", "example.com"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid URL");
+    test("has --add-tags and --remove-tags options", () => {
+      const addTags = update?.options.find((o) => o.long === "--add-tags");
+      const removeTags = update?.options.find((o) => o.long === "--remove-tags");
+      expect(addTags).toBeDefined();
+      expect(removeTags).toBeDefined();
     });
 
-    test("rejects invalid URL (wrong protocol)", async () => {
-      const result = await runCli(["bookmarks", "add", "ftp://example.com"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid URL");
-    });
-
-    test("rejects malformed URL (empty host)", async () => {
-      const result = await runCli(["bookmarks", "add", "https://"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid URL");
-    });
-
-    test("rejects malformed URL (invalid characters)", async () => {
-      const result = await runCli(["bookmarks", "add", "https://[invalid"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid URL");
-    });
-
-    test("rejects invalid collection ID", async () => {
-      const result = await runCli(
-        ["bookmarks", "add", "https://example.com", "--collection", "notanumber"],
-        {
-          env: { RAINDROP_TOKEN: "fake-token" },
-        }
-      );
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid collection ID");
+    test("has --important and --no-important options", () => {
+      const important = update?.options.find((o) => o.long === "--important");
+      const noImportant = update?.options.find((o) => o.long === "--no-important");
+      expect(important).toBeDefined();
+      expect(noImportant).toBeDefined();
     });
   });
 
-  describe("without auth", () => {
-    test("fails gracefully without token", async () => {
-      const result = await runCli(["bookmarks", "add", "https://example.com"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
-      expect(result.exitCode).toBe(1);
-      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
-      expect(hasAuthError).toBe(true);
-    });
-  });
-});
+  describe("delete command arguments and options", () => {
+    const del = bookmarks.commands.find((c) => c.name() === "delete");
 
-describe("bookmarks update command", () => {
-  describe("help", () => {
-    test("bookmarks update --help shows usage", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "update", "--help"]);
-      expect(result.stdout).toContain("Update an existing bookmark");
-      expect(result.stdout).toContain("<id>");
-      expect(result.stdout).toContain("--title");
-      expect(result.stdout).toContain("--excerpt");
-      expect(result.stdout).toContain("--note");
-      expect(result.stdout).toContain("--tags");
-      expect(result.stdout).toContain("--add-tags");
-      expect(result.stdout).toContain("--remove-tags");
-      expect(result.stdout).toContain("--collection");
-      expect(result.stdout).toContain("--important");
-      expect(result.stdout).toContain("--no-important");
-      expect(result.stdout).toContain("--dry-run");
-    });
-  });
-
-  describe("validation", () => {
-    test("rejects missing ID argument", async () => {
-      const result = await runCli(["bookmarks", "update"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("missing required argument");
+    test("requires id argument", () => {
+      const args = del?.registeredArguments ?? [];
+      expect(args.length).toBe(1);
+      expect(args[0]?.name()).toBe("id");
+      expect(args[0]?.required).toBe(true);
     });
 
-    test("rejects non-numeric ID", async () => {
-      const result = await runCli(["bookmarks", "update", "abc", "--title", "Test"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
+    test("has --permanent option", () => {
+      const opt = del?.options.find((o) => o.long === "--permanent");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-p");
     });
 
-    test("rejects zero ID", async () => {
-      const result = await runCli(["bookmarks", "update", "0", "--title", "Test"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
+    test("has --force option", () => {
+      const opt = del?.options.find((o) => o.long === "--force");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-f");
     });
 
-    test("rejects negative ID", async () => {
-      const result = await runCli(["bookmarks", "update", "-1", "--title", "Test"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid bookmark ID");
-    });
-
-    test("rejects update with no fields specified", async () => {
-      const result = await runCli(["bookmarks", "update", "12345"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("No fields to update");
-    });
-
-    test("rejects combining --tags with --add-tags", async () => {
-      const result = await runCli(
-        ["bookmarks", "update", "12345", "--tags", "new", "--add-tags", "extra"],
-        {
-          env: { RAINDROP_TOKEN: "fake-token" },
-        }
-      );
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Cannot combine --tags with --add-tags or --remove-tags");
-    });
-
-    test("rejects combining --tags with --remove-tags", async () => {
-      const result = await runCli(
-        ["bookmarks", "update", "12345", "--tags", "new", "--remove-tags", "old"],
-        {
-          env: { RAINDROP_TOKEN: "fake-token" },
-        }
-      );
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Cannot combine --tags with --add-tags or --remove-tags");
-    });
-
-    test("rejects invalid collection ID", async () => {
-      const result = await runCli(["bookmarks", "update", "12345", "--collection", "notanumber"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(2);
-      expect(result.stderr).toContain("Invalid collection ID");
+    test("has --dry-run option", () => {
+      const opt = del?.options.find((o) => o.long === "--dry-run");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-n");
     });
   });
 
-  describe("without auth", () => {
-    test("fails gracefully without token", async () => {
-      const result = await runCli(["bookmarks", "update", "12345", "--title", "Test"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
-      expect(result.exitCode).toBe(1);
-      const hasAuthError = result.stderr.includes("No API token") || result.stderr.includes("401");
-      expect(hasAuthError).toBe(true);
+  describe("batch-update command options", () => {
+    const batchUpdate = bookmarks.commands.find((c) => c.name() === "batch-update");
+
+    test("has --ids option", () => {
+      const opt = batchUpdate?.options.find((o) => o.long === "--ids");
+      expect(opt).toBeDefined();
+    });
+
+    test("has --move-to option", () => {
+      const opt = batchUpdate?.options.find((o) => o.long === "--move-to");
+      expect(opt).toBeDefined();
+    });
+
+    test("has --force option", () => {
+      const opt = batchUpdate?.options.find((o) => o.long === "--force");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-f");
     });
   });
-});
 
-/**
- * Tests for batch-update command
- */
-describe("bookmarks batch-update command", () => {
-  describe("help and validation", () => {
-    test("batch-update --help shows all options", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "batch-update", "--help"]);
-      expect(result.stdout).toContain("--ids");
-      expect(result.stdout).toContain("--collection");
-      expect(result.stdout).toContain("--add-tags");
-      expect(result.stdout).toContain("--remove-tags");
-      expect(result.stdout).toContain("--tags");
-      expect(result.stdout).toContain("--important");
-      expect(result.stdout).toContain("--no-important");
-      expect(result.stdout).toContain("--move-to");
-      expect(result.stdout).toContain("--force");
-      expect(result.stdout).toContain("stdin");
-      expect(result.stdout).toContain("--dry-run");
-      expect(result.stdout).toContain("-n");
+  describe("batch-delete command options", () => {
+    const batchDelete = bookmarks.commands.find((c) => c.name() === "batch-delete");
+
+    test("has --ids option", () => {
+      const opt = batchDelete?.options.find((o) => o.long === "--ids");
+      expect(opt).toBeDefined();
     });
 
-    test("batch-update fails without any IDs or collection", async () => {
-      const result = await runCli(["bookmarks", "batch-update", "--add-tags", "test", "--force"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("No bookmarks specified");
+    test("has --search option", () => {
+      const opt = batchDelete?.options.find((o) => o.long === "--search");
+      expect(opt).toBeDefined();
     });
 
-    test("batch-update fails without any update options", async () => {
-      const result = await runCli(["bookmarks", "batch-update", "--ids", "123", "--force"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("No updates specified");
-    });
-
-    test("batch-update rejects combining --tags with --add-tags", async () => {
-      const result = await runCli(
-        ["bookmarks", "batch-update", "--ids", "123", "--tags", "a", "--add-tags", "b", "--force"],
-        { env: { RAINDROP_TOKEN: "fake-token" } }
-      );
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Cannot combine --tags with --add-tags");
-    });
-
-    test("batch-update rejects invalid IDs", async () => {
-      const result = await runCli(
-        ["bookmarks", "batch-update", "--ids", "123,abc,456", "--add-tags", "test", "--force"],
-        { env: { RAINDROP_TOKEN: "fake-token" } }
-      );
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Invalid bookmark IDs: abc");
-    });
-  });
-});
-
-/**
- * Tests for batch-delete command
- */
-describe("bookmarks batch-delete command", () => {
-  describe("help and validation", () => {
-    test("batch-delete --help shows all options", async () => {
-      const result = await runCliExpectSuccess(["bookmarks", "batch-delete", "--help"]);
-      expect(result.stdout).toContain("--ids");
-      expect(result.stdout).toContain("--collection");
-      expect(result.stdout).toContain("--search");
-      expect(result.stdout).toContain("--force");
-      expect(result.stdout).toContain("stdin");
-      expect(result.stdout).toContain("--dry-run");
-      expect(result.stdout).toContain("-n");
-    });
-
-    test("batch-delete fails without any IDs or collection", async () => {
-      const result = await runCli(["bookmarks", "batch-delete", "--force"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("No bookmarks specified");
-    });
-
-    test("batch-delete rejects invalid IDs", async () => {
-      const result = await runCli(["bookmarks", "batch-delete", "--ids", "123,-5,456", "--force"], {
-        env: { RAINDROP_TOKEN: "fake-token" },
-      });
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain("Invalid bookmark IDs: -5");
+    test("has --force option", () => {
+      const opt = batchDelete?.options.find((o) => o.long === "--force");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-f");
     });
   });
 });
