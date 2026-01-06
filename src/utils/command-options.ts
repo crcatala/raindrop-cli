@@ -1,4 +1,5 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
+import { OUTPUT_FORMATS } from "../types/index.js";
 
 /**
  * Add global output options to a subcommand.
@@ -14,7 +15,7 @@ import { Command } from "commander";
  */
 export function addOutputOptions(cmd: Command): Command {
   return cmd
-    .option("--format <format>", "output format (json, table, tsv)")
+    .addOption(new Option("--format <format>", "output format").choices(OUTPUT_FORMATS))
     .option("-q, --quiet", "minimal output (just IDs)")
     .option("-v, --verbose", "show operational details")
     .option("-d, --debug", "show debug info");
