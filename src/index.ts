@@ -25,6 +25,7 @@ program
       "output format; defaults to table for terminal, json when piped"
     ).choices(OUTPUT_FORMATS)
   )
+  .option("--json", "shorthand for --format json")
   .option("-q, --quiet", "minimal output (just IDs)")
   .option("-v, --verbose", "show operational details (API calls, timing)")
   .option("-d, --debug", "show debug info (stack traces, internal state)")
@@ -58,6 +59,12 @@ program
         process.exit(2);
       }
       setTimeoutSeconds(parseInt(opts.timeout, 10));
+    }
+
+    // Normalize --json flag: if --json is set but --format isn't, set format to json
+    // --format takes precedence over --json when both are specified
+    if (opts.json && !opts.format) {
+      opts.format = "json";
     }
   });
 

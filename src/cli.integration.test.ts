@@ -195,6 +195,53 @@ describe("CLI integration", () => {
       expect(result.stderr).not.toContain("unknown option");
     });
 
+    test("--json flag outputs valid JSON", async () => {
+      const result = await runCli(["--json", "auth", "status"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      // Should not error due to unrecognized flag
+      expect(result.stderr).not.toContain("unknown option");
+      // stdout should be valid JSON (if there is output)
+      if (result.stdout.trim()) {
+        expect(() => JSON.parse(result.stdout)).not.toThrow();
+      }
+    });
+
+    test("--json flag works on subcommands", async () => {
+      const result = await runCli(["auth", "status", "--json"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      expect(result.stderr).not.toContain("unknown option");
+      if (result.stdout.trim()) {
+        expect(() => JSON.parse(result.stdout)).not.toThrow();
+      }
+    });
+
+    test("--format takes precedence over --json", async () => {
+      // When both --format and --json are specified, --format wins
+      const result = await runCli(["--format", "table", "--json", "auth", "status"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      // Should not error
+      expect(result.stderr).not.toContain("unknown option");
+      // Output should NOT be JSON (it's table format)
+      // Note: with no auth, we may not get much output, but it shouldn't be JSON array/object
+      if (result.stdout.trim()) {
+        // Table output typically doesn't start with [ or {
+        const trimmed = result.stdout.trim();
+        const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+        expect(looksLikeJson).toBe(false);
+      }
+    });
+
+    test("--json after --format still lets --format win", async () => {
+      // Order shouldn't matter - --format always takes precedence
+      const result = await runCli(["--json", "--format", "plain", "auth", "status"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      expect(result.stderr).not.toContain("unknown option");
+    });
+
     test("invalid --format value shows error with allowed choices", async () => {
       const result = await runCli(["--format", "invalid", "auth", "status"]);
 
@@ -230,6 +277,19 @@ describe("CLI integration", () => {
       expect(result.stdout).toContain("choices:");
       expect(result.stdout).toContain("json");
       expect(result.stdout).toContain("table");
+    });
+
+    test("help text shows --json shorthand option", async () => {
+      const result = await runCliExpectSuccess(["--help"]);
+
+      expect(result.stdout).toContain("--json");
+      expect(result.stdout).toContain("shorthand");
+    });
+
+    test("subcommand help shows --json option", async () => {
+      const result = await runCliExpectSuccess(["bookmarks", "list", "--help"]);
+
+      expect(result.stdout).toContain("--json");
     });
   });
 

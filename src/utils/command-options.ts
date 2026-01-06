@@ -16,6 +16,7 @@ import { OUTPUT_FORMATS } from "../types/index.js";
 export function addOutputOptions(cmd: Command): Command {
   return cmd
     .addOption(new Option("--format <format>", "output format").choices(OUTPUT_FORMATS))
+    .option("--json", "shorthand for --format json")
     .option("-q, --quiet", "minimal output (just IDs)")
     .option("-v, --verbose", "show operational details")
     .option("-d, --debug", "show debug info");
