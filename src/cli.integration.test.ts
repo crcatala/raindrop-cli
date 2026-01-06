@@ -35,6 +35,30 @@ describe("CLI integration", () => {
 
       expect(result.stdout).toContain("auth");
     });
+
+    test("--no-color flag is recognized on root command", async () => {
+      const result = await runCli(["--no-color", "--help"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Usage:");
+      // In non-TTY mode (subprocess), colors are disabled anyway,
+      // but verify the flag doesn't cause an error
+    });
+
+    test("--no-color flag is recognized on subcommands", async () => {
+      const result = await runCli(["bookmarks", "list", "--no-color", "--help"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Usage:");
+      expect(result.stdout).toContain("bookmarks list");
+    });
+
+    test("--no-color flag works at end of command", async () => {
+      const result = await runCli(["bookmarks", "--help", "--no-color"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Usage:");
+    });
   });
 
   describe("no arguments", () => {

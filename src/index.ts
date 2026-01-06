@@ -12,6 +12,7 @@ import { setNoColorFlag } from "./utils/tty.js";
 import { setDebugEnabled, setVerboseEnabled, debug } from "./utils/debug.js";
 import { outputError } from "./utils/output-streams.js";
 import { setTimeoutSeconds, validateTimeout, DEFAULT_TIMEOUT_SECONDS } from "./utils/timeout.js";
+import { configureStyledHelpRecursive } from "./utils/help-formatter.js";
 
 program
   .name("rd")
@@ -279,6 +280,10 @@ program.addCommand(
     "Batch delete bookmarks (shortcut for: bookmarks batch-delete)"
   )
 );
+
+// Configure styled help output (respects NO_COLOR, --no-color, and TTY detection)
+// Must be called after all commands are added so it can recursively configure subcommands
+configureStyledHelpRecursive(program);
 
 try {
   // Commander automatically shows help when no subcommand is provided
