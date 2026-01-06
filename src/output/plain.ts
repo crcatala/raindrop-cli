@@ -1,6 +1,25 @@
-import type { ColumnConfig } from "./index.js";
+import type { ColumnConfig, ColumnStyle } from "./index.js";
 import { getNestedValue } from "./utils.js";
 import { getColors } from "../utils/colors.js";
+
+/**
+ * Apply style to a string value for terminal display.
+ */
+function applyStyle(value: string, style: ColumnStyle | undefined): string {
+  if (!style || style === "none") return value;
+
+  const c = getColors();
+  switch (style) {
+    case "bold":
+      return c.bold(value);
+    case "dim":
+      return c.dim(value);
+    case "cyan":
+      return c.cyan(value);
+    default:
+      return value;
+  }
+}
 
 /**
  * Emoji icons for common field types.
@@ -182,16 +201,14 @@ export function formatPlain<T>(data: T, columns: ColumnConfig[]): string {
     for (const col of prominentCols) {
       const rawValue = formatPlainValue(getNestedValue(item, col.key));
       if (rawValue !== null) {
-        // Title gets bold + word-wrapped, URL gets cyan (no wrap - URLs shouldn't break)
+        // Determine style: use explicit style if set, otherwise infer from field type
         const isUrl =
           col.key.toLowerCase().includes("url") || col.key.toLowerCase().includes("link");
-        if (isUrl) {
-          outputLines.push(c.cyan(rawValue));
-        } else {
-          // Word-wrap title at wider width since it's not indented
-          const wrapped = wordWrap(rawValue, PROMINENT_WRAP_WIDTH);
-          outputLines.push(c.bold(wrapped));
-        }
+        const effectiveStyle = col.style ?? (isUrl ? "cyan" : "bold");
+
+        // Word-wrap non-URL fields at wider width since they're not indented
+        const displayValue = isUrl ? rawValue : wordWrap(rawValue, PROMINENT_WRAP_WIDTH);
+        outputLines.push(applyStyle(displayValue, effectiveStyle));
       }
     }
 

@@ -48,6 +48,32 @@ describe("collections command - with auth", () => {
     }
   });
 
+  testWithAuth("list JSON output contains no ANSI escape codes", async () => {
+    const result = await runCliExpectSuccess(["collections", "list"]);
+
+    // Raw stdout should not contain ANSI escape codes
+    expect(result.stdout).not.toContain("\u001b");
+    expect(result.stdout).not.toContain("\x1b");
+
+    // Parse and verify tree field specifically
+    const data = parseJsonOutput<Array<{ tree?: string }>>(result);
+    for (const item of data) {
+      if (item.tree) {
+        expect(item.tree).not.toContain("\u001b");
+        expect(item.tree).not.toContain("\x1b");
+      }
+    }
+  });
+
+  testWithAuth("list TSV output contains no ANSI escape codes", async () => {
+    const result = await runCli(["collections", "list", "--format", "tsv"]);
+
+    expect(result.exitCode).toBe(0);
+    // Raw stdout should not contain ANSI escape codes
+    expect(result.stdout).not.toContain("\u001b");
+    expect(result.stdout).not.toContain("\x1b");
+  });
+
   testWithAuth("list --flat returns flat structure", async () => {
     const result = await runCliExpectSuccess(["collections", "list", "--flat"]);
     const data = parseJsonOutput<Array<{ _id: number; title: string; count: number }>>(result);

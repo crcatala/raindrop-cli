@@ -50,4 +50,18 @@ describe("formatJson", () => {
   test("formats empty object", () => {
     expect(formatJson({})).toBe("{}");
   });
+
+  test("preserves special characters in strings", () => {
+    // JSON should preserve data as-is, including any special characters
+    // (ANSI codes should never be in the data - styling is applied by terminal formatters)
+    const data = { title: 'Test & <Special> "Chars"' };
+    const result = formatJson(data);
+    expect(result).toContain('Test & <Special> \\"Chars\\"');
+  });
+
+  test("preserves unicode characters", () => {
+    const data = { title: "📂 日本語" };
+    const result = formatJson(data);
+    expect(result).toContain("📂 日本語");
+  });
 });

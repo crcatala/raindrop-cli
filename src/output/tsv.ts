@@ -12,6 +12,7 @@ function formatTsvValue(value: unknown): string {
     return JSON.stringify(value);
   }
   // At this point value is a primitive (string, number, boolean, bigint, symbol)
+  // Data should be clean (no ANSI codes) - styling is applied only by terminal formatters
   const str = String(value as string | number | boolean | bigint | symbol);
   return str.replace(/\t/g, "\\t").replace(/\n/g, "\\n");
 }
