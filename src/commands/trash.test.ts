@@ -24,6 +24,17 @@ describe("trash command structure", () => {
       expect(empty).toBeDefined();
       expect(empty?.description()).toContain("Permanently delete all items in trash");
     });
+
+    test("has list subcommand", () => {
+      const list = trash.commands.find((c) => c.name() === "list");
+      expect(list).toBeDefined();
+      expect(list?.description()).toContain("List items in trash");
+    });
+
+    test("list has ls alias", () => {
+      const list = trash.commands.find((c) => c.name() === "list");
+      expect(list?.aliases()).toContain("ls");
+    });
   });
 
   describe("help text", () => {
@@ -31,6 +42,7 @@ describe("trash command structure", () => {
       const help = trash.helpInformation();
       expect(help).toContain("Manage trash");
       expect(help).toContain("empty");
+      expect(help).toContain("list");
     });
 
     test("trash empty --help shows usage", () => {
@@ -39,6 +51,16 @@ describe("trash command structure", () => {
       expect(help).toContain("Permanently delete all items in trash");
       expect(help).toContain("--force");
       expect(help).toContain("--dry-run");
+    });
+
+    test("trash list --help shows usage", () => {
+      const list = trash.commands.find((c) => c.name() === "list");
+      const help = list?.helpInformation() ?? "";
+      expect(help).toContain("List items in trash");
+      expect(help).toContain("--limit");
+      expect(help).toContain("--page");
+      expect(help).toContain("--sort");
+      expect(help).toContain("--search");
     });
   });
 
@@ -55,6 +77,36 @@ describe("trash command structure", () => {
       const opt = empty?.options.find((o) => o.long === "--dry-run");
       expect(opt).toBeDefined();
       expect(opt?.short).toBe("-n");
+    });
+  });
+
+  describe("list command options", () => {
+    const list = trash.commands.find((c) => c.name() === "list");
+
+    test("has --limit option with default", () => {
+      const opt = list?.options.find((o) => o.long === "--limit");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-l");
+      expect(opt?.defaultValue).toBe("25");
+    });
+
+    test("has --page option with default", () => {
+      const opt = list?.options.find((o) => o.long === "--page");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-p");
+      expect(opt?.defaultValue).toBe("0");
+    });
+
+    test("has --sort option with default", () => {
+      const opt = list?.options.find((o) => o.long === "--sort");
+      expect(opt).toBeDefined();
+      expect(opt?.defaultValue).toBe("-created");
+    });
+
+    test("has --search option with -s short flag", () => {
+      const opt = list?.options.find((o) => o.long === "--search");
+      expect(opt).toBeDefined();
+      expect(opt?.short).toBe("-s");
     });
   });
 });
