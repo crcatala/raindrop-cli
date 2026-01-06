@@ -1,24 +1,14 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
+import { outputTree } from "../output/tree.js";
 import { ApiError, handleError, UsageError } from "../utils/errors.js";
 import { addOutputOptions } from "../utils/command-options.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
 import { getColors } from "../utils/colors.js";
-import { buildTree, renderTree, type TreeItem } from "../utils/tree.js";
+import { buildTree, type TreeItem } from "../utils/tree.js";
 import type { GlobalOptions } from "../types/index.js";
-
-/**
- * Column configuration for collection list output.
- * The "tree" field contains tree structure characters but NO styling.
- * The "bold" style hint tells terminal formatters to style this column.
- */
-const LIST_COLUMNS: ColumnConfig[] = [
-  { key: "tree", header: "Collection", width: 50, prominent: true, style: "bold" },
-  { key: "_id", header: "ID", width: 10 },
-  { key: "count", header: "Items", width: 8 },
-];
 
 /**
  * Column configuration for flat list output.
@@ -169,15 +159,12 @@ Examples:
             debug: globalOpts.debug,
           });
         } else {
-          // Tree output
+          // Tree output - uses specialized tree formatter
           const tree = buildTree(rootCollections, childCollections);
-          const treeItems = renderTree(tree);
 
-          output(treeItems, LIST_COLUMNS, {
+          outputTree(tree, {
             format: globalOpts.format,
             quiet: globalOpts.quiet,
-            verbose: globalOpts.verbose,
-            debug: globalOpts.debug,
           });
         }
       } catch (error) {
