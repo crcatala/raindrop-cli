@@ -204,7 +204,6 @@ export function createCollectionsCommand(): Command {
   const collections = new Command("collections")
     .description("Manage collections")
     .exitOverride()
-    .configureOutput({ outputError: () => {} })
     .action(function (this: Command) {
       this.help();
     });

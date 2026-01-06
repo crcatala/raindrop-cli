@@ -52,7 +52,6 @@ export function createHighlightsCommand(): Command {
   const highlights = new Command("highlights")
     .description("View highlights and annotations")
     .exitOverride()
-    .configureOutput({ outputError: () => {} })
     .action(function (this: Command) {
       this.help();
     });

@@ -20,7 +20,6 @@ export function createTagsCommand(): Command {
   const tags = new Command("tags")
     .description("Manage tags")
     .exitOverride()
-    .configureOutput({ outputError: () => {} })
     .action(function (this: Command) {
       this.help();
     });

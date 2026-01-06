@@ -28,12 +28,6 @@ program
     "--timeout <seconds>",
     `request timeout in seconds (default: ${DEFAULT_TIMEOUT_SECONDS}, env: RDCLI_TIMEOUT)`
   )
-  .configureOutput({
-    // Suppress Commander's error formatting since we handle errors ourselves.
-    // Note: We do NOT suppress writeErr because Commander uses it for help output
-    // when no subcommand is provided (calls help({ error: true })).
-    outputError: () => {},
-  })
   .exitOverride()
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
@@ -76,17 +70,13 @@ try {
   program.parse();
 } catch (err) {
   if (err instanceof CommanderError) {
-    // Help/version display should exit cleanly
-    if (
+    // Commander already output the error/help, just exit with appropriate code
+    const isHelpOrVersion =
       err.code === "commander.help" ||
       err.code === "commander.helpDisplayed" ||
-      err.code === "commander.version"
-    ) {
-      process.exit(0);
-    }
-    // Commander errors are usage errors (per clig.dev conventions)
-    outputError(err.message);
-    process.exit(2);
+      err.code === "commander.version";
+    // Help/version exit 0, usage errors exit 2 (per clig.dev conventions)
+    process.exit(isHelpOrVersion ? 0 : 2);
   }
   throw err;
 }

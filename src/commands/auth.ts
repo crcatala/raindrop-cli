@@ -74,7 +74,6 @@ export function createAuthCommand(): Command {
   const auth = new Command("auth")
     .description("Manage authentication")
     .exitOverride()
-    .configureOutput({ outputError: () => {} })
     .action(function (this: Command) {
       this.help();
     });

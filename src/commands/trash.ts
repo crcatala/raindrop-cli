@@ -10,7 +10,6 @@ export function createTrashCommand(): Command {
   const trash = new Command("trash")
     .description("Manage trash collection")
     .exitOverride()
-    .configureOutput({ outputError: () => {} })
     .action(function (this: Command) {
       this.help();
     });
