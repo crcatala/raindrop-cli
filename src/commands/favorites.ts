@@ -17,6 +17,7 @@ const FAVORITES_COLUMNS: ColumnConfig[] = [
   { key: "excerpt", header: "Excerpt" },
   { key: "note", header: "Note" },
   { key: "tags", header: "Tags", width: 20 },
+  { key: "favorite", header: "❤️ Fav", width: 8 },
   { key: "created", header: "Created", width: 12 },
   { key: "_id", header: "ID", width: 12 },
 ];
@@ -57,6 +58,7 @@ function formatFavoriteItem(item: {
     title: item.title,
     link: item.link,
     tags: item.tags.join(", "),
+    favorite: "true", // Always true for favorites list
     created: item.created.split("T")[0],
     excerpt: item.excerpt,
     domain: item.domain,

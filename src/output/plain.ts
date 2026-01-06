@@ -25,6 +25,7 @@ const FIELD_ICONS: Record<string, string> = {
   type: "📁",
   collection: "📂",
   collectionid: "📂",
+  favorite: "", // Header already includes ❤️ emoji
 };
 
 /**
