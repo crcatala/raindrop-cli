@@ -213,6 +213,15 @@ export function createCollectionsCommand(): Command {
     .command("list")
     .description("List all collections")
     .option("--flat", "Show flat list instead of tree")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli collections list                      # Show collections as tree
+  rdcli collections list --flat               # Show as flat list
+  rdcli collections list -f json              # Output as JSON
+  rdcli collections list -q                   # Output just IDs`
+    )
     .action(async function (this: Command, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -275,6 +284,13 @@ export function createCollectionsCommand(): Command {
     .command("show")
     .description("Show collection details")
     .argument("<collection-id>", "Collection ID")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli collections show 12345                # Show collection details
+  rdcli collections show 12345 -f json        # Output as JSON`
+    )
     .action(async function (this: Command, collectionIdArg: string) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -312,6 +328,14 @@ export function createCollectionsCommand(): Command {
     .description("Create a new collection")
     .argument("<name>", "Collection name")
     .option("-p, --parent <id>", "Parent collection ID for creating nested collections")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli collections create "My Collection"           # Create root collection
+  rdcli collections create "Sub" --parent 12345      # Create nested collection
+  rdcli collections create "Work" -f json            # Output as JSON`
+    )
     .action(async function (this: Command, name: string, options: { parent?: string }) {
       // Track parentId for use in error handling
       let parentId: number | undefined;
@@ -373,6 +397,13 @@ export function createCollectionsCommand(): Command {
     .description("Delete a collection")
     .argument("<collection-id>", "Collection ID to delete")
     .option("-f, --force", "Skip confirmation prompt")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli collections delete 12345              # Delete (prompts for confirmation)
+  rdcli collections delete 12345 --force      # Delete without confirmation`
+    )
     .action(async function (this: Command, collectionIdArg: string, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -423,6 +454,13 @@ export function createCollectionsCommand(): Command {
   collections
     .command("stats")
     .description("Show system collection statistics")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli collections stats                     # Show All/Unsorted/Trash counts
+  rdcli collections stats -f json             # Output as JSON`
+    )
     .action(async function (this: Command) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;

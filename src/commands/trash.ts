@@ -20,6 +20,14 @@ export function createTrashCommand(): Command {
     .description("Permanently delete all items in trash")
     .option("-f, --force", "Skip confirmation prompt")
     .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli trash empty --dry-run                 # Preview what would be deleted
+  rdcli trash empty --force                   # Permanently delete all trash items
+  rdcli trash empty -f -q                     # Silent deletion for scripts`
+    )
     .action(async function (this: Command, options: { force?: boolean; dryRun?: boolean }) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;

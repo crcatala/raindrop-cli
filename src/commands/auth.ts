@@ -84,6 +84,15 @@ export function createAuthCommand(): Command {
     .description("Set your Raindrop.io API token")
     .option("--validate", "Validate token against API before saving", true)
     .option("--no-validate", "Skip token validation")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli auth set-token                        # Prompt for token (validates)
+  rdcli auth set-token --no-validate          # Save without validation
+
+Get your token from: https://app.raindrop.io/settings/integrations`
+    )
     .action(async (options) => {
       outputMessage("Get your token from: https://app.raindrop.io/settings/integrations");
       outputMessage("");
@@ -124,6 +133,13 @@ export function createAuthCommand(): Command {
     .command("status")
     .description("Show authentication status")
     .option("--json", "Output as JSON")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli auth status                           # Check authentication status
+  rdcli auth status --json                    # Output as JSON for scripts`
+    )
     .action(async (options) => {
       verbose("Checking authentication status");
       const config = getConfig();
@@ -213,6 +229,12 @@ export function createAuthCommand(): Command {
   auth
     .command("clear")
     .description("Remove stored token from config file")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli auth clear                            # Remove saved token`
+    )
     .action(() => {
       const hadToken = !!getStoredToken();
       clearStoredToken();

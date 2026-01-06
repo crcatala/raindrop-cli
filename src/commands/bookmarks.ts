@@ -237,6 +237,15 @@ export function createBookmarksCommand(): Command {
     .option("-p, --permanent", "Skip trash and delete permanently")
     .option("-f, --force", "Skip confirmation prompt")
     .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli bookmarks delete 12345                # Move bookmark to trash
+  rdcli bookmarks delete 12345 --permanent    # Delete permanently (skip trash)
+  rdcli bookmarks delete 12345 --force        # Skip confirmation prompt
+  rdcli bookmarks delete 12345 --dry-run      # Preview what would be deleted`
+    )
     .action(async function (this: Command, idArg: string, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -364,6 +373,22 @@ export function createBookmarksCommand(): Command {
     .option("--has-reminder", "Show only bookmarks with reminders")
     .option("--broken", "Show only bookmarks with broken links")
     .option("--created <date>", "Filter by creation date (YYYY-MM or YYYY-MM-DD)")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli bookmarks list                        # List all bookmarks
+  rdcli bookmarks list 12345                  # List bookmarks in collection
+  rdcli bookmarks list unsorted               # List unsorted bookmarks
+  rdcli bookmarks list --limit 50             # Limit results
+  rdcli bookmarks list --tag javascript       # Filter by tag
+  rdcli bookmarks list --type article         # Filter by type
+  rdcli bookmarks list --domain github.com    # Filter by domain
+  rdcli bookmarks list --favorites            # Show only favorites
+  rdcli bookmarks list --search "#cli"        # Raw search query
+  rdcli bookmarks list --search "type:article #dev"  # Multiple filters
+  rdcli bookmarks list -f json | jq '.[].title'   # Pipe JSON to jq`
+    )
     .action(async function (this: Command, collectionIdArg: string | undefined, options) {
       try {
         // Get global options from parent command
@@ -468,6 +493,14 @@ export function createBookmarksCommand(): Command {
     .command("get")
     .description("Get a single bookmark by ID")
     .argument("<id>", "Bookmark ID")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli bookmarks get 12345                   # Get bookmark details
+  rdcli bookmarks get 12345 -f json           # Output as JSON
+  rdcli bookmarks get 12345 -q                # Output just the ID`
+    )
     .action(async function (this: Command, idArg: string) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -526,6 +559,17 @@ export function createBookmarksCommand(): Command {
       "unsorted"
     )
     .option("-p, --parse", "Auto-parse URL to extract title, excerpt, and metadata")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli bookmarks add https://example.com                     # Add bookmark
+  rdcli bookmarks add https://example.com --parse             # Auto-parse title/excerpt
+  rdcli bookmarks add https://example.com -t "My Title"       # Set custom title
+  rdcli bookmarks add https://example.com --tags "dev,read"   # Add with tags
+  rdcli bookmarks add https://example.com -c 12345            # Add to collection
+  rdcli bookmarks add https://example.com -n "Check later"    # Add with note`
+    )
     .action(async function (this: Command, url: string, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -663,6 +707,18 @@ export function createBookmarksCommand(): Command {
     .option("-i, --important", "Mark as important/favorite")
     .option("-I, --no-important", "Remove important/favorite flag")
     .option("--dry-run", "Show what would be updated without actually updating")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli bookmarks update 12345 -t "New Title"     # Update title
+  rdcli bookmarks update 12345 --tags "a,b,c"     # Replace all tags
+  rdcli bookmarks update 12345 --add-tags "new"   # Add tags to existing
+  rdcli bookmarks update 12345 --remove-tags "old"  # Remove specific tags
+  rdcli bookmarks update 12345 -c 67890           # Move to collection
+  rdcli bookmarks update 12345 --important        # Mark as favorite
+  rdcli bookmarks update 12345 --dry-run          # Preview changes`
+    )
     .action(async function (this: Command, idArg: string, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -917,6 +973,16 @@ export function createBookmarksCommand(): Command {
     .option("--move-to <collection>", "Move bookmarks to a different collection")
     .option("-f, --force", "Skip confirmation prompt")
     .option("-n, --dry-run", "Show what would be updated without actually updating")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli bookmarks batch-update --ids 1,2,3 --add-tags "review"   # Add tag to specific IDs
+  rdcli bookmarks batch-update -c 12345 --important -f           # Mark all in collection as favorite
+  rdcli bookmarks batch-update --ids 1,2 --move-to 67890         # Move bookmarks to collection
+  echo "1\\n2\\n3" | rdcli bookmarks batch-update --add-tags "x"  # Pipe IDs from stdin
+  rdcli bookmarks list -q | rdcli bookmarks batch-update --add-tags "bulk"  # Chain commands`
+    )
     .action(async function (this: Command, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
@@ -1204,6 +1270,16 @@ export function createBookmarksCommand(): Command {
     .option("--search <query>", "Search query to filter bookmarks (used with --collection)")
     .option("-f, --force", "Skip confirmation prompt")
     .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli bookmarks batch-delete --ids 1,2,3 -f         # Delete specific bookmarks
+  rdcli bookmarks batch-delete -c 12345 -f            # Delete all in collection
+  rdcli bookmarks batch-delete -c 12345 --search "old" -f   # Delete matching search
+  echo "1\\n2\\n3" | rdcli bookmarks batch-delete -f   # Pipe IDs from stdin
+  rdcli bookmarks batch-delete --ids 1,2 --dry-run    # Preview what would be deleted`
+    )
     .action(async function (this: Command, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;

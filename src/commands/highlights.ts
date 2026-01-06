@@ -63,6 +63,15 @@ export function createHighlightsCommand(): Command {
     .option("-c, --collection <id>", "Collection ID or name (all, unsorted, trash)")
     .option("-l, --limit <number>", "Maximum number of highlights to return (1-50)", "25")
     .option("-p, --page <number>", "Page number (0-indexed)", "0")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli highlights list                       # List all highlights
+  rdcli highlights list -c 12345              # List highlights in collection
+  rdcli highlights list --limit 50            # Limit results
+  rdcli highlights list -f json               # Output as JSON`
+    )
     .action(async function (
       this: Command,
       options: { collection?: string; limit: string; page: string }
@@ -119,6 +128,13 @@ export function createHighlightsCommand(): Command {
     .command("get")
     .description("Get highlights for a specific bookmark")
     .argument("<bookmark-id>", "Bookmark ID")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli highlights get 12345                  # Get highlights for bookmark
+  rdcli highlights get 12345 -f json          # Output as JSON`
+    )
     .action(async function (this: Command, bookmarkIdArg: string) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;

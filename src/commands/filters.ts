@@ -96,6 +96,15 @@ export function createFiltersCommand(): Command {
     .command("list")
     .description("List available filters for a collection")
     .argument("[collection]", "Collection ID or name (all, unsorted, trash). Default: all")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rdcli filters list                          # Show filters for all bookmarks
+  rdcli filters list 12345                    # Show filters for collection
+  rdcli filters list -f json                  # Output as JSON
+  rdcli filters list -f table                 # Show as flat table`
+    )
     .action(async function (this: Command, collectionArg: string | undefined) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
