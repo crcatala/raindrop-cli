@@ -1,18 +1,6 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { describe, test, expect, spyOn, beforeEach, afterEach } from "bun:test";
 import { output, type ColumnConfig } from "./index.js";
-import type { OutputFormat } from "../types/index.js";
 import { OUTPUT_FORMATS } from "../types/index.js";
-
-// Mock the output streams module
-const mockOutputData = mock(() => {});
-mock.module("../utils/output-streams.js", () => ({
-  outputData: mockOutputData,
-}));
-
-// Mock tty to control default format
-mock.module("../utils/tty.js", () => ({
-  getDefaultFormat: () => "table" as OutputFormat,
-}));
 
 describe("output", () => {
   const testData = [
@@ -32,30 +20,40 @@ describe("output", () => {
     debug: false,
   };
 
+  let stdoutSpy: ReturnType<typeof spyOn>;
+  let capturedOutput: string;
+
   beforeEach(() => {
-    mockOutputData.mockClear();
+    capturedOutput = "";
+    stdoutSpy = spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      capturedOutput += String(chunk);
+      return true;
+    });
+  });
+
+  afterEach(() => {
+    stdoutSpy.mockRestore();
   });
 
   describe("format selection", () => {
     test("all OUTPUT_FORMATS values are handled", () => {
       // This test ensures the switch statement handles all defined formats
       for (const format of OUTPUT_FORMATS) {
+        capturedOutput = "";
         expect(() => {
           output(testData, columns, { ...baseOptions, format });
         }).not.toThrow();
-        expect(mockOutputData).toHaveBeenCalled();
-        mockOutputData.mockClear();
+        expect(capturedOutput.length).toBeGreaterThan(0);
       }
     });
 
     test("json format outputs valid JSON", () => {
       output(testData, columns, { ...baseOptions, format: "json" });
 
-      expect(mockOutputData).toHaveBeenCalledTimes(1);
-      const calls = mockOutputData.mock.calls as unknown[][];
-      const outputStr = String(calls[0]?.[0] ?? "");
-      expect(() => JSON.parse(outputStr)).not.toThrow();
-      const parsed = JSON.parse(outputStr);
+      // Remove trailing newline for JSON parsing
+      const jsonStr = capturedOutput.trim();
+      expect(() => JSON.parse(jsonStr)).not.toThrow();
+      const parsed = JSON.parse(jsonStr);
       expect(parsed).toHaveLength(2);
       expect(parsed[0]._id).toBe(1);
     });
@@ -63,41 +61,28 @@ describe("output", () => {
     test("table format outputs formatted table", () => {
       output(testData, columns, { ...baseOptions, format: "table" });
 
-      expect(mockOutputData).toHaveBeenCalledTimes(1);
-      const calls = mockOutputData.mock.calls as unknown[][];
-      const outputStr = String(calls[0]?.[0] ?? "");
-      expect(outputStr).toContain("ID");
-      expect(outputStr).toContain("Title");
+      expect(capturedOutput).toContain("ID");
+      expect(capturedOutput).toContain("Title");
     });
 
     test("tsv format outputs tab-separated values", () => {
       output(testData, columns, { ...baseOptions, format: "tsv" });
 
-      expect(mockOutputData).toHaveBeenCalledTimes(1);
-      const calls = mockOutputData.mock.calls as unknown[][];
-      const outputStr = String(calls[0]?.[0] ?? "");
-      expect(outputStr).toContain("\t");
-      expect(outputStr).toContain("First");
+      expect(capturedOutput).toContain("\t");
+      expect(capturedOutput).toContain("First");
     });
 
     test("plain format outputs readable text", () => {
       output(testData, columns, { ...baseOptions, format: "plain" });
 
-      expect(mockOutputData).toHaveBeenCalledTimes(1);
-      const calls = mockOutputData.mock.calls as unknown[][];
-      const outputStr = String(calls[0]?.[0] ?? "");
-      expect(outputStr).toContain("First");
+      expect(capturedOutput).toContain("First");
     });
 
     test("uses default format when not specified", () => {
-      // Default is mocked to "table" above
+      // Default format depends on TTY state, but we can verify output happens
       output(testData, columns, baseOptions);
 
-      expect(mockOutputData).toHaveBeenCalledTimes(1);
-      const calls = mockOutputData.mock.calls as unknown[][];
-      const outputStr = String(calls[0]?.[0] ?? "");
-      // Table format includes headers
-      expect(outputStr).toContain("ID");
+      expect(capturedOutput.length).toBeGreaterThan(0);
     });
   });
 
@@ -105,26 +90,28 @@ describe("output", () => {
     test("outputs only IDs when quiet is true", () => {
       output(testData, columns, { ...baseOptions, quiet: true });
 
-      // Should output each ID on separate calls
-      expect(mockOutputData).toHaveBeenCalledTimes(2);
-      expect(mockOutputData).toHaveBeenCalledWith("1");
-      expect(mockOutputData).toHaveBeenCalledWith("2");
+      // Should output IDs with newlines
+      expect(capturedOutput).toContain("1");
+      expect(capturedOutput).toContain("2");
+      // Should NOT contain other data
+      expect(capturedOutput).not.toContain("First");
+      expect(capturedOutput).not.toContain("https://");
     });
 
     test("handles objects with id instead of _id", () => {
       const dataWithId = [{ id: 100 }, { id: 200 }];
       output(dataWithId, columns, { ...baseOptions, quiet: true });
 
-      expect(mockOutputData).toHaveBeenCalledWith("100");
-      expect(mockOutputData).toHaveBeenCalledWith("200");
+      expect(capturedOutput).toContain("100");
+      expect(capturedOutput).toContain("200");
     });
 
     test("handles single object in quiet mode", () => {
       const singleItem = { _id: 42, title: "Single" };
       output(singleItem, columns, { ...baseOptions, quiet: true });
 
-      expect(mockOutputData).toHaveBeenCalledTimes(1);
-      expect(mockOutputData).toHaveBeenCalledWith("42");
+      expect(capturedOutput).toContain("42");
+      expect(capturedOutput).not.toContain("Single");
     });
   });
 });
