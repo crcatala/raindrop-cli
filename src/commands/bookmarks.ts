@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
+import { addOutputOptions } from "../utils/command-options.js";
 import { handleError, UsageError } from "../utils/errors.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
@@ -230,14 +231,16 @@ export function createBookmarksCommand(): Command {
     });
 
   // delete command
-  bookmarks
-    .command("delete")
-    .alias("rm")
-    .description("Delete a bookmark (alias: rm)")
-    .argument("<id>", "Bookmark ID")
-    .option("-P, --permanent", "Skip trash and delete permanently (uppercase: dangerous)")
-    .option("-f, --force", "Skip confirmation prompt")
-    .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+  addOutputOptions(
+    bookmarks
+      .command("delete")
+      .alias("rm")
+      .description("Delete a bookmark (alias: rm)")
+      .argument("<id>", "Bookmark ID")
+      .option("-P, --permanent", "Skip trash and delete permanently (uppercase: dangerous)")
+      .option("-f, --force", "Skip confirmation prompt")
+      .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+  )
     .addHelpText(
       "after",
       `
@@ -344,37 +347,39 @@ Examples:
     });
 
   // list command
-  bookmarks
-    .command("list")
-    .alias("ls")
-    .description("List bookmarks from a collection (alias: ls)")
-    .argument("[collection-id]", "Collection ID or name (all, unsorted, trash). Default: all")
-    .option("-l, --limit <number>", "Maximum number of bookmarks to return", "25")
-    .option("-p, --page <number>", "Page number (0-indexed)", "0")
-    .option(
-      "--sort <field>",
-      "Sort field: created, title, domain, lastUpdate, sort. Prefix with - for descending",
-      "-created"
-    )
-    .option(
-      "-s, --search <query>",
-      `Search query (raw Raindrop syntax). Examples:
-                    "type:article"       Filter by type
-                    "#javascript"        Filter by tag
-                    "domain:github.com"  Filter by domain
-                    Full syntax: https://help.raindrop.io/using-search`
-    )
-    // Convenience filter flags
-    .option("--type <type>", "Filter by type: article, video, link, image, document, audio")
-    .option("--tag <tag>", "Filter by tag")
-    .option("--domain <domain>", "Filter by domain (e.g., github.com)")
-    .option("--favorites", "Show only favorites")
-    .option("--with-notes", "Show only bookmarks with notes")
-    .option("--with-highlights", "Show only bookmarks with highlights")
-    .option("--without-tags", "Show only bookmarks without tags")
-    .option("--has-reminder", "Show only bookmarks with reminders")
-    .option("--broken", "Show only bookmarks with broken links")
-    .option("--created <date>", "Filter by creation date (YYYY-MM or YYYY-MM-DD)")
+  addOutputOptions(
+    bookmarks
+      .command("list")
+      .alias("ls")
+      .description("List bookmarks from a collection (alias: ls)")
+      .argument("[collection-id]", "Collection ID or name (all, unsorted, trash). Default: all")
+      .option("-l, --limit <number>", "Maximum number of bookmarks to return", "25")
+      .option("-p, --page <number>", "Page number (0-indexed)", "0")
+      .option(
+        "--sort <field>",
+        "Sort field: created, title, domain, lastUpdate, sort. Prefix with - for descending",
+        "-created"
+      )
+      .option(
+        "-s, --search <query>",
+        `Search query (raw Raindrop syntax). Examples:
+                      "type:article"       Filter by type
+                      "#javascript"        Filter by tag
+                      "domain:github.com"  Filter by domain
+                      Full syntax: https://help.raindrop.io/using-search`
+      )
+      // Convenience filter flags
+      .option("--type <type>", "Filter by type: article, video, link, image, document, audio")
+      .option("--tag <tag>", "Filter by tag")
+      .option("--domain <domain>", "Filter by domain (e.g., github.com)")
+      .option("--favorites", "Show only favorites")
+      .option("--with-notes", "Show only bookmarks with notes")
+      .option("--with-highlights", "Show only bookmarks with highlights")
+      .option("--without-tags", "Show only bookmarks without tags")
+      .option("--has-reminder", "Show only bookmarks with reminders")
+      .option("--broken", "Show only bookmarks with broken links")
+      .option("--created <date>", "Filter by creation date (YYYY-MM or YYYY-MM-DD)")
+  )
     .addHelpText(
       "after",
       `
@@ -491,10 +496,12 @@ Examples:
     });
 
   // show command - fetch a single bookmark by ID
-  bookmarks
-    .command("show")
-    .description("Show a single bookmark by ID")
-    .argument("<id>", "Bookmark ID")
+  addOutputOptions(
+    bookmarks
+      .command("show")
+      .description("Show a single bookmark by ID")
+      .argument("<id>", "Bookmark ID")
+  )
     .addHelpText(
       "after",
       `
@@ -547,21 +554,23 @@ Examples:
     });
 
   // add command - create a new bookmark
-  bookmarks
-    .command("add")
-    .aliases(["new", "create"])
-    .description("Add a new bookmark (aliases: new, create)")
-    .argument("<url>", "URL to bookmark")
-    .option("-t, --title <title>", "Bookmark title (auto-detected if --parse is used)")
-    .option("-e, --excerpt <excerpt>", "Short description/excerpt")
-    .option("-n, --note <note>", "Personal note")
-    .option("--tags <tags>", "Comma-separated tags (e.g., 'tech,reading,important')")
-    .option(
-      "-c, --collection <id>",
-      "Collection ID or name (all, unsorted, trash). Default: unsorted",
-      "unsorted"
-    )
-    .option("-p, --parse", "Auto-parse URL to extract title, excerpt, and metadata")
+  addOutputOptions(
+    bookmarks
+      .command("add")
+      .aliases(["new", "create"])
+      .description("Add a new bookmark (aliases: new, create)")
+      .argument("<url>", "URL to bookmark")
+      .option("-t, --title <title>", "Bookmark title (auto-detected if --parse is used)")
+      .option("-e, --excerpt <excerpt>", "Short description/excerpt")
+      .option("-n, --note <note>", "Personal note")
+      .option("--tags <tags>", "Comma-separated tags (e.g., 'tech,reading,important')")
+      .option(
+        "-c, --collection <id>",
+        "Collection ID or name (all, unsorted, trash). Default: unsorted",
+        "unsorted"
+      )
+      .option("-p, --parse", "Auto-parse URL to extract title, excerpt, and metadata")
+  )
     .addHelpText(
       "after",
       `
@@ -690,26 +699,28 @@ Examples:
     });
 
   // update command - update an existing bookmark
-  bookmarks
-    .command("update")
-    .description("Update an existing bookmark")
-    .argument("<id>", "Bookmark ID")
-    .option("-t, --title <title>", "Update bookmark title")
-    .option(
-      "-e, --excerpt <excerpt>",
-      "Update short description/excerpt (use empty string to clear)"
-    )
-    .option("-n, --note <note>", "Update personal note (use empty string to clear)")
-    .option(
-      "--tags <tags>",
-      "Replace all tags with comma-separated list (cannot combine with --add-tags/--remove-tags)"
-    )
-    .option("--add-tags <tags>", "Add comma-separated tags to existing tags")
-    .option("--remove-tags <tags>", "Remove comma-separated tags from existing tags")
-    .option("-c, --collection <id>", "Move to collection (ID or name: all, unsorted, trash)")
-    .option("-i, --important", "Mark as important/favorite")
-    .option("-I, --no-important", "Remove important/favorite flag")
-    .option("--dry-run", "Show what would be updated without actually updating")
+  addOutputOptions(
+    bookmarks
+      .command("update")
+      .description("Update an existing bookmark")
+      .argument("<id>", "Bookmark ID")
+      .option("-t, --title <title>", "Update bookmark title")
+      .option(
+        "-e, --excerpt <excerpt>",
+        "Update short description/excerpt (use empty string to clear)"
+      )
+      .option("-n, --note <note>", "Update personal note (use empty string to clear)")
+      .option(
+        "--tags <tags>",
+        "Replace all tags with comma-separated list (cannot combine with --add-tags/--remove-tags)"
+      )
+      .option("--add-tags <tags>", "Add comma-separated tags to existing tags")
+      .option("--remove-tags <tags>", "Remove comma-separated tags from existing tags")
+      .option("-c, --collection <id>", "Move to collection (ID or name: all, unsorted, trash)")
+      .option("-i, --important", "Mark as important/favorite")
+      .option("-I, --no-important", "Remove important/favorite flag")
+      .option("--dry-run", "Show what would be updated without actually updating")
+  )
     .addHelpText(
       "after",
       `
@@ -955,27 +966,29 @@ Examples:
     });
 
   // batch-update command - update multiple bookmarks at once
-  bookmarks
-    .command("batch-update")
-    .description(
-      "Update multiple bookmarks at once. Provide IDs via --ids, stdin, or use --collection to update all in a collection."
-    )
-    .option(
-      "--ids <ids>",
-      "Comma-separated list of bookmark IDs (or pipe IDs via stdin, separated by newlines/commas/spaces)"
-    )
-    .option(
-      "-c, --collection <id>",
-      "Collection ID or name. Required as scope for the batch operation."
-    )
-    .option("--add-tags <tags>", "Add comma-separated tags to existing tags")
-    .option("--remove-tags <tags>", "Remove comma-separated tags from existing tags")
-    .option("--tags <tags>", "Set tags (comma-separated). Note: batch API adds to existing tags")
-    .option("-i, --important", "Mark as important/favorite")
-    .option("-I, --no-important", "Remove important/favorite flag")
-    .option("--move-to <collection>", "Move bookmarks to a different collection")
-    .option("-f, --force", "Skip confirmation prompt")
-    .option("-n, --dry-run", "Show what would be updated without actually updating")
+  addOutputOptions(
+    bookmarks
+      .command("batch-update")
+      .description(
+        "Update multiple bookmarks at once. Provide IDs via --ids, stdin, or use --collection to update all in a collection."
+      )
+      .option(
+        "--ids <ids>",
+        "Comma-separated list of bookmark IDs (or pipe IDs via stdin, separated by newlines/commas/spaces)"
+      )
+      .option(
+        "-c, --collection <id>",
+        "Collection ID or name. Required as scope for the batch operation."
+      )
+      .option("--add-tags <tags>", "Add comma-separated tags to existing tags")
+      .option("--remove-tags <tags>", "Remove comma-separated tags from existing tags")
+      .option("--tags <tags>", "Set tags (comma-separated). Note: batch API adds to existing tags")
+      .option("-i, --important", "Mark as important/favorite")
+      .option("-I, --no-important", "Remove important/favorite flag")
+      .option("--move-to <collection>", "Move bookmarks to a different collection")
+      .option("-f, --force", "Skip confirmation prompt")
+      .option("-n, --dry-run", "Show what would be updated without actually updating")
+  )
     .addHelpText(
       "after",
       `
@@ -1257,23 +1270,25 @@ Examples:
     });
 
   // batch-delete command - delete multiple bookmarks at once
-  bookmarks
-    .command("batch-delete")
-    .alias("batch-rm")
-    .description(
-      "Delete multiple bookmarks at once (alias: batch-rm). Provide IDs via --ids, stdin, or use --collection to delete all in a collection."
-    )
-    .option(
-      "--ids <ids>",
-      "Comma-separated list of bookmark IDs (or pipe IDs via stdin, separated by newlines/commas/spaces)"
-    )
-    .option(
-      "-c, --collection <id>",
-      "Collection ID or name. When used without --ids, deletes ALL bookmarks in the collection."
-    )
-    .option("-s, --search <query>", "Search query to filter bookmarks (used with --collection)")
-    .option("-f, --force", "Skip confirmation prompt")
-    .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+  addOutputOptions(
+    bookmarks
+      .command("batch-delete")
+      .alias("batch-rm")
+      .description(
+        "Delete multiple bookmarks at once (alias: batch-rm). Provide IDs via --ids, stdin, or use --collection to delete all in a collection."
+      )
+      .option(
+        "--ids <ids>",
+        "Comma-separated list of bookmark IDs (or pipe IDs via stdin, separated by newlines/commas/spaces)"
+      )
+      .option(
+        "-c, --collection <id>",
+        "Collection ID or name. When used without --ids, deletes ALL bookmarks in the collection."
+      )
+      .option("-s, --search <query>", "Search query to filter bookmarks (used with --collection)")
+      .option("-f, --force", "Skip confirmation prompt")
+      .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+  )
     .addHelpText(
       "after",
       `

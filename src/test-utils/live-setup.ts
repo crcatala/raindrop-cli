@@ -19,6 +19,7 @@
 
 import { beforeAll } from "bun:test";
 import { cleanupTestArtifacts } from "./cleanup.js";
+import { AUTH_TEST_TIMEOUT_MS } from "./timeouts.js";
 
 // Re-export helpers for convenience
 export {
@@ -39,16 +40,19 @@ let cleanupComplete = false;
  * This will run cleanup once before all live tests start.
  */
 export function setupLiveTests(): void {
-  beforeAll(async () => {
-    // Only run cleanup once, even if multiple files import this
-    if (cleanupComplete) {
-      return;
-    }
+  beforeAll(
+    async () => {
+      // Only run cleanup once, even if multiple files import this
+      if (cleanupComplete) {
+        return;
+      }
 
-    // Only cleanup if we have a token (i.e., live tests will actually run)
-    if (process.env["RAINDROP_TOKEN"]) {
-      await cleanupTestArtifacts();
-      cleanupComplete = true;
-    }
-  });
+      // Only cleanup if we have a token (i.e., live tests will actually run)
+      if (process.env["RAINDROP_TOKEN"]) {
+        await cleanupTestArtifacts();
+        cleanupComplete = true;
+      }
+    },
+    { timeout: AUTH_TEST_TIMEOUT_MS }
+  );
 }

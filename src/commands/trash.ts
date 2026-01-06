@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
+import { addOutputOptions } from "../utils/command-options.js";
 import { handleError, UsageError } from "../utils/errors.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
@@ -15,11 +16,13 @@ export function createTrashCommand(): Command {
     });
 
   // empty command
-  trash
-    .command("empty")
-    .description("Permanently delete all items in trash")
-    .option("-f, --force", "Skip confirmation prompt")
-    .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+  addOutputOptions(
+    trash
+      .command("empty")
+      .description("Permanently delete all items in trash")
+      .option("-f, --force", "Skip confirmation prompt")
+      .option("-n, --dry-run", "Show what would be deleted without actually deleting")
+  )
     .addHelpText(
       "after",
       `

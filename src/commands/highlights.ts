@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
+import { addOutputOptions } from "../utils/command-options.js";
 import { handleError } from "../utils/errors.js";
 import { parseLimit, parsePage, parseBookmarkId } from "../utils/validation.js";
 import { verbose, debug } from "../utils/debug.js";
@@ -57,13 +58,15 @@ export function createHighlightsCommand(): Command {
     });
 
   // list command
-  highlights
-    .command("list")
-    .alias("ls")
-    .description("List highlights across bookmarks (alias: ls)")
-    .option("-c, --collection <id>", "Collection ID or name (all, unsorted, trash)")
-    .option("-l, --limit <number>", "Maximum number of highlights to return (1-50)", "25")
-    .option("-p, --page <number>", "Page number (0-indexed)", "0")
+  addOutputOptions(
+    highlights
+      .command("list")
+      .alias("ls")
+      .description("List highlights across bookmarks (alias: ls)")
+      .option("-c, --collection <id>", "Collection ID or name (all, unsorted, trash)")
+      .option("-l, --limit <number>", "Maximum number of highlights to return (1-50)", "25")
+      .option("-p, --page <number>", "Page number (0-indexed)", "0")
+  )
     .addHelpText(
       "after",
       `
@@ -125,10 +128,12 @@ Examples:
     });
 
   // show command - show highlights for a specific bookmark
-  highlights
-    .command("show")
-    .description("Show highlights for a specific bookmark")
-    .argument("<bookmark-id>", "Bookmark ID")
+  addOutputOptions(
+    highlights
+      .command("show")
+      .description("Show highlights for a specific bookmark")
+      .argument("<bookmark-id>", "Bookmark ID")
+  )
     .addHelpText(
       "after",
       `
