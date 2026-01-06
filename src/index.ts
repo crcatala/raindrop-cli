@@ -36,36 +36,39 @@ program
     `request timeout in seconds (default: ${DEFAULT_TIMEOUT_SECONDS}, env: RDCLI_TIMEOUT)`
   )
   .exitOverride()
-  .hook("preAction", (thisCommand) => {
-    const opts = thisCommand.opts();
+  .hook("preAction", (_thisCommand, actionCommand) => {
+    // With enablePositionalOptions(), flags after subcommand go to subcommand.
+    // Use optsWithGlobals() from actionCommand to see all options.
+    const globalOpts = actionCommand.optsWithGlobals();
 
     // Set the no-color flag before any command runs
-    if (opts.color === false) {
+    if (globalOpts.color === false) {
       setNoColorFlag(true);
     }
 
     // Set debug/verbose flags
-    if (opts.debug) {
+    if (globalOpts.debug) {
       setDebugEnabled(true);
     }
-    if (opts.verbose) {
+    if (globalOpts.verbose) {
       setVerboseEnabled(true);
     }
 
     // Set timeout if specified
-    if (opts.timeout !== undefined) {
-      const error = validateTimeout(opts.timeout);
+    if (globalOpts.timeout !== undefined) {
+      const error = validateTimeout(globalOpts.timeout);
       if (error) {
         outputError(error);
         process.exit(2);
       }
-      setTimeoutSeconds(parseInt(opts.timeout, 10));
+      setTimeoutSeconds(parseInt(globalOpts.timeout, 10));
     }
 
     // Normalize --json flag: if --json is set but --format isn't, set format to json
     // --format takes precedence over --json when both are specified
-    if (opts.json && !opts.format) {
-      opts.format = "json";
+    // Must set on actionCommand since that's where the action will read from
+    if (globalOpts.json && !globalOpts.format) {
+      actionCommand.setOptionValue("format", "json");
     }
   });
 

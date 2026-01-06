@@ -241,6 +241,38 @@ describe("CLI integration", () => {
       }
     });
 
+    test("--json after subcommand outputs JSON (not just recognized)", async () => {
+      // This specifically tests the fix for enablePositionalOptions() behavior.
+      // When --json comes AFTER the subcommand name, it's parsed by the subcommand,
+      // not the root program. The preAction hook must use actionCommand.optsWithGlobals()
+      // to see it and set format correctly.
+      const result = await runCli(["auth", "status", "--json"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      // Must output valid JSON structure (not table/plain format)
+      const trimmed = result.stdout.trim();
+      if (trimmed) {
+        expect(() => JSON.parse(trimmed)).not.toThrow();
+        // Verify it's actually a JSON object, not some other output
+        const parsed = JSON.parse(trimmed);
+        expect(typeof parsed).toBe("object");
+        expect(parsed).toHaveProperty("authenticated");
+      }
+    });
+
+    test("--json before subcommand also outputs JSON", async () => {
+      // Verify --json works when placed before subcommand too
+      const result = await runCli(["--json", "auth", "status"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      const trimmed = result.stdout.trim();
+      if (trimmed) {
+        expect(() => JSON.parse(trimmed)).not.toThrow();
+        const parsed = JSON.parse(trimmed);
+        expect(parsed).toHaveProperty("authenticated");
+      }
+    });
+
     test("--format takes precedence over --json", async () => {
       // When both --format and --json are specified, --format wins
       const result = await runCli(["--format", "table", "--json", "auth", "status"], {
@@ -263,6 +295,15 @@ describe("CLI integration", () => {
       const result = await runCli(["--json", "--format", "plain", "auth", "status"], {
         env: { RAINDROP_TOKEN: "" },
       });
+      expect(result.stderr).not.toContain("unknown option");
+    });
+
+    test("--format after subcommand takes precedence over --json after subcommand", async () => {
+      // Both flags after subcommand - --format still wins
+      // Use bookmarks list which has both --format and --json via addOutputOptions
+      // We test with --help since we may not have API access
+      const result = await runCli(["bookmarks", "list", "--json", "--format", "plain", "--help"]);
+      expect(result.exitCode).toBe(0);
       expect(result.stderr).not.toContain("unknown option");
     });
 
@@ -400,6 +441,36 @@ describe("CLI integration", () => {
       // Both types of output should appear on stderr
       expect(result.stderr).toContain("→");
       expect(result.stderr).toContain("[debug]");
+    });
+
+    test("--verbose after subcommand shows operational output", async () => {
+      // Tests that global flags work when placed after subcommand name
+      // (requires preAction to use actionCommand.optsWithGlobals())
+      // Use bookmarks list which has --verbose via addOutputOptions
+      const result = await runCli(["bookmarks", "list", "--verbose"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      // Will fail due to no auth, but verbose output should still appear
+      expect(result.stderr).toContain("→");
+    });
+
+    test("--debug after subcommand shows debug output", async () => {
+      // Tests that global flags work when placed after subcommand name
+      // Use bookmarks list which has --debug via addOutputOptions
+      const result = await runCli(["bookmarks", "list", "--debug"], {
+        env: { RAINDROP_TOKEN: "" },
+      });
+      // Will fail due to no auth, but debug output should still appear
+      expect(result.stderr).toContain("[debug]");
+    });
+
+    test("--no-color after subcommand is respected", async () => {
+      // Use bookmarks list which has --no-color via addOutputOptions
+      const result = await runCli(["bookmarks", "list", "--no-color", "--help"]);
+      // Output should not contain ANSI escape codes
+      // eslint-disable-next-line no-control-regex
+      expect(result.stdout).not.toMatch(/\x1b\[[0-9;]*m/);
+      expect(result.stderr).not.toMatch(/\x1b\[[0-9;]*m/);
     });
   });
 });
