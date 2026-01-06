@@ -207,6 +207,32 @@ describe("StyledHelp", () => {
       expect(result).toContain("(alias: ls)");
     });
   });
+
+  describe("formatItemList", () => {
+    test("adds blank line after heading", () => {
+      const items = ["  item1", "  item2"];
+      const result = help.formatItemList("Options:", items, help);
+      // Should be: [styled heading, "", item1, item2, ""]
+      expect(result.length).toBe(5);
+      expect(result[0]).toContain("Options:");
+      expect(result[1]).toBe(""); // blank line after heading
+      expect(result[2]).toBe("  item1");
+      expect(result[3]).toBe("  item2");
+      expect(result[4]).toBe(""); // blank line after items
+    });
+
+    test("returns empty array for empty items", () => {
+      const result = help.formatItemList("Options:", [], help);
+      expect(result).toEqual([]);
+    });
+
+    test("styles the heading", () => {
+      const items = ["  item1"];
+      const result = help.formatItemList("Commands:", items, help);
+      expect(result[0]).toContain("\x1b[1m"); // bold
+      expect(result[0]).toContain("Commands:");
+    });
+  });
 });
 
 describe("StyledHelp with NO_COLOR environment", () => {

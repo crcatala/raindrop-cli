@@ -118,6 +118,16 @@ export class StyledHelp extends Help {
   styleArgumentDescription(str: string): string {
     return styleMetadata(str);
   }
+
+  /**
+   * Format a list of items with a heading.
+   * Adds a blank line after the heading for better readability.
+   */
+  formatItemList(heading: string, items: string[], helper: Help): string[] {
+    if (items.length === 0) return [];
+    // Add blank line after heading, then items, then blank line after
+    return [helper.styleTitle(heading), "", ...items, ""];
+  }
 }
 
 /**
@@ -158,6 +168,8 @@ const styledHelpConfig = {
   styleOptionDescription: (str: string) => new StyledHelp().styleOptionDescription(str),
   styleSubcommandDescription: (str: string) => new StyledHelp().styleSubcommandDescription(str),
   styleArgumentDescription: (str: string) => new StyledHelp().styleArgumentDescription(str),
+  formatItemList: (heading: string, items: string[], helper: Help) =>
+    new StyledHelp().formatItemList(heading, items, helper),
 };
 
 /**

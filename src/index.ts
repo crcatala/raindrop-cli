@@ -16,7 +16,7 @@ import { configureStyledHelpRecursive } from "./utils/help-formatter.js";
 
 program
   .name("rd")
-  .description("CLI for Raindrop.io - AI agent friendly bookmark management")
+  .description("CLI for Raindrop.io, the all-in-one bookmark manager")
   .version("0.1.0")
   .enablePositionalOptions()
   .addHelpText("after", "\nReport issues: https://github.com/crcatala/raindrop-cli-spike/issues")
@@ -69,15 +69,9 @@ program
     }
   });
 
-// Register commands
+// Register commands in desired help order
 program.addCommand(createAuthCommand());
 program.addCommand(createBookmarksCommand());
-program.addCommand(createCollectionsCommand());
-program.addCommand(createFavoritesCommand());
-program.addCommand(createHighlightsCommand());
-program.addCommand(createTagsCommand());
-program.addCommand(createFiltersCommand());
-program.addCommand(createTrashCommand());
 
 /**
  * Create root-level shortcuts for bookmark commands.
@@ -246,10 +240,13 @@ All bookmarks list options are supported.`
 }
 
 // Root-level bookmark shortcuts (bookmarks is the primary resource)
-program.addCommand(createSearchShortcut());
 program.addCommand(
   createRootBookmarkShortcut("list", ["ls"], "List bookmarks (shortcut for: bookmarks list)")
 );
+program.addCommand(
+  createRootBookmarkShortcut("show", [], "Show a bookmark (shortcut for: bookmarks show)")
+);
+program.addCommand(createSearchShortcut());
 program.addCommand(
   createRootBookmarkShortcut(
     "add",
@@ -258,13 +255,10 @@ program.addCommand(
   )
 );
 program.addCommand(
-  createRootBookmarkShortcut("show", [], "Show a bookmark (shortcut for: bookmarks show)")
+  createRootBookmarkShortcut("update", [], "Update a bookmark (shortcut for: bookmarks update)")
 );
 program.addCommand(
   createRootBookmarkShortcut("delete", ["rm"], "Delete a bookmark (shortcut for: bookmarks delete)")
-);
-program.addCommand(
-  createRootBookmarkShortcut("update", [], "Update a bookmark (shortcut for: bookmarks update)")
 );
 program.addCommand(
   createRootBookmarkShortcut(
@@ -280,6 +274,14 @@ program.addCommand(
     "Batch delete bookmarks (shortcut for: bookmarks batch-delete)"
   )
 );
+
+// Register remaining commands after shortcuts
+program.addCommand(createCollectionsCommand());
+program.addCommand(createTagsCommand());
+program.addCommand(createFiltersCommand());
+program.addCommand(createFavoritesCommand());
+program.addCommand(createHighlightsCommand());
+program.addCommand(createTrashCommand());
 
 // Configure styled help output (respects NO_COLOR, --no-color, and TTY detection)
 // Must be called after all commands are added so it can recursively configure subcommands
