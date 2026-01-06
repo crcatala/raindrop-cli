@@ -12,7 +12,7 @@ import { outputError } from "./utils/output-streams.js";
 import { setTimeoutSeconds, validateTimeout, DEFAULT_TIMEOUT_SECONDS } from "./utils/timeout.js";
 
 program
-  .name("rdcli")
+  .name("rd")
   .description("CLI for Raindrop.io - AI agent friendly bookmark management")
   .version("0.1.0")
   .enablePositionalOptions()
@@ -68,7 +68,7 @@ program.addCommand(createTrashCommand());
 
 /**
  * Create root-level shortcuts for bookmark commands.
- * These allow users to run `rdcli list` instead of `rdcli bookmarks list`.
+ * These allow users to run `rd list` instead of `rd bookmarks list`.
  * The shortcuts delegate to the full bookmarks subcommands.
  */
 function createRootBookmarkShortcut(
@@ -83,7 +83,7 @@ function createRootBookmarkShortcut(
     .passThroughOptions()
     .helpOption(false) // Disable help to pass through to bookmarks command
     .action(async () => {
-      // Find the command at the expected position (index 2: ['node', 'rdcli', '<cmd>', ...])
+      // Find the command at the expected position (index 2: ['node', 'rd', '<cmd>', ...])
       // We check explicitly at index 2 to avoid matching command names in argument values
       const cmdIndex = process.argv.findIndex(
         (arg, index) => index === 2 && [subcommandName, ...aliases].includes(arg)

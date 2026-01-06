@@ -20,7 +20,7 @@ describe("CLI integration", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("Usage:");
-      expect(result.stdout).toContain("rdcli");
+      expect(result.stdout).toContain("rd");
     });
 
     test("-h is alias for --help", async () => {
@@ -43,7 +43,7 @@ describe("CLI integration", () => {
 
       // Should show help (Commander outputs to stderr when no subcommand provided)
       expect(result.stderr).toContain("Usage:");
-      expect(result.stderr).toContain("rdcli");
+      expect(result.stderr).toContain("rd");
       expect(result.stderr).toContain("Commands:");
     });
 

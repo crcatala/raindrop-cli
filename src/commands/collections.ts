@@ -194,7 +194,7 @@ function parseCollectionId(value: string): number {
   const num = parseInt(value, 10);
   if (isNaN(num)) {
     throw new UsageError(
-      `Invalid collection ID: "${value}". Use a number or run \`rdcli collections list\` for IDs.`
+      `Invalid collection ID: "${value}". Use a number or run \`rd collections list\` for IDs.`
     );
   }
   return num;
@@ -218,10 +218,10 @@ export function createCollectionsCommand(): Command {
       "after",
       `
 Examples:
-  rdcli collections list                      # Show collections as tree
-  rdcli collections list --flat               # Show as flat list
-  rdcli collections list -f json              # Output as JSON
-  rdcli collections list -q                   # Output just IDs`
+  rd collections list                      # Show collections as tree
+  rd collections list --flat               # Show as flat list
+  rd collections list -f json              # Output as JSON
+  rd collections list -q                   # Output just IDs`
     )
     .action(async function (this: Command, options) {
       try {
@@ -289,8 +289,8 @@ Examples:
       "after",
       `
 Examples:
-  rdcli collections show 12345                # Show collection details
-  rdcli collections show 12345 -f json        # Output as JSON`
+  rd collections show 12345                # Show collection details
+  rd collections show 12345 -f json        # Output as JSON`
     )
     .action(async function (this: Command, collectionIdArg: string) {
       try {
@@ -334,9 +334,9 @@ Examples:
       "after",
       `
 Examples:
-  rdcli collections add "My Collection"              # Create root collection
-  rdcli collections add "Sub" --parent 12345         # Create nested collection
-  rdcli collections add "Work" -f json               # Output as JSON`
+  rd collections add "My Collection"              # Create root collection
+  rd collections add "Sub" --parent 12345         # Create nested collection
+  rd collections add "Work" -f json               # Output as JSON`
     )
     .action(async function (this: Command, name: string, options: { parent?: string }) {
       // Track parentId for use in error handling
@@ -385,7 +385,7 @@ Examples:
         if (parentId && error instanceof ApiError && error.statusCode === 403) {
           handleError(
             new UsageError(
-              `Parent collection ${parentId} not found or not accessible. Run \`rdcli collections list\` to see available collections.`
+              `Parent collection ${parentId} not found or not accessible. Run \`rd collections list\` to see available collections.`
             )
           );
         }
@@ -404,8 +404,8 @@ Examples:
       "after",
       `
 Examples:
-  rdcli collections delete 12345              # Delete (prompts for confirmation)
-  rdcli collections delete 12345 --force      # Delete without confirmation`
+  rd collections delete 12345              # Delete (prompts for confirmation)
+  rd collections delete 12345 --force      # Delete without confirmation`
     )
     .action(async function (this: Command, collectionIdArg: string, options) {
       try {
@@ -461,8 +461,8 @@ Examples:
       "after",
       `
 Examples:
-  rdcli collections stats                     # Show All/Unsorted/Trash counts
-  rdcli collections stats -f json             # Output as JSON`
+  rd collections stats                     # Show All/Unsorted/Trash counts
+  rd collections stats -f json             # Output as JSON`
     )
     .action(async function (this: Command) {
       try {

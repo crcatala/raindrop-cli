@@ -17,7 +17,7 @@ export function getClient(): RaindropClient {
     const config = getConfig();
     if (!config.token) {
       throw new ConfigError(
-        "No API token configured. Run `rdcli auth set-token` or set `RAINDROP_TOKEN`. " +
+        "No API token configured. Run `rd auth set-token` or set `RAINDROP_TOKEN`. " +
           "Get your token from: https://app.raindrop.io/settings/integrations."
       );
     }

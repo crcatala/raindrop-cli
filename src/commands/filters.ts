@@ -101,10 +101,10 @@ export function createFiltersCommand(): Command {
       "after",
       `
 Examples:
-  rdcli filters list                          # Show filters for all bookmarks
-  rdcli filters list 12345                    # Show filters for collection
-  rdcli filters list -f json                  # Output as JSON
-  rdcli filters list -f table                 # Show as flat table`
+  rd filters list                          # Show filters for all bookmarks
+  rd filters list 12345                    # Show filters for collection
+  rd filters list -f json                  # Output as JSON
+  rd filters list -f table                 # Show as flat table`
     )
     .action(async function (this: Command, collectionArg: string | undefined) {
       try {

@@ -24,9 +24,9 @@ export function createTrashCommand(): Command {
       "after",
       `
 Examples:
-  rdcli trash empty --dry-run                 # Preview what would be deleted
-  rdcli trash empty --force                   # Permanently delete all trash items
-  rdcli trash empty -f -q                     # Silent deletion for scripts`
+  rd trash empty --dry-run                 # Preview what would be deleted
+  rd trash empty --force                   # Permanently delete all trash items
+  rd trash empty -f -q                     # Silent deletion for scripts`
     )
     .action(async function (this: Command, options: { force?: boolean; dryRun?: boolean }) {
       try {
