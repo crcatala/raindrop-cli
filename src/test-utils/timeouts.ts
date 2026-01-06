@@ -1,2 +1,2 @@
-export const AUTH_TEST_TIMEOUT_MS = 20000;
+export const AUTH_TEST_TIMEOUT_MS = 30000;
 export const AUTH_CLI_TIMEOUT_MS = 20000;
