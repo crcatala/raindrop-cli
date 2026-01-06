@@ -28,14 +28,7 @@ program
     "--timeout <seconds>",
     `request timeout in seconds (default: ${DEFAULT_TIMEOUT_SECONDS}, env: RDCLI_TIMEOUT)`
   )
-  .configureOutput({
-    outputError: () => {},
-  })
   .exitOverride()
-  .configureOutput({
-    // Suppress Commander's own error output since we handle errors ourselves
-    writeErr: () => {},
-  })
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
 
@@ -73,24 +66,18 @@ program.addCommand(createFiltersCommand());
 program.addCommand(createTrashCommand());
 
 try {
+  // Commander automatically shows help when no subcommand is provided
   program.parse();
-  // If we get here with no subcommand, show help
-  if (process.argv.length <= 2) {
-    program.help();
-  }
 } catch (err) {
   if (err instanceof CommanderError) {
-    // Help/version display should exit cleanly
-    if (
+    // Commander already output the error/help, just exit with appropriate code
+    // (see docs/commander-best-practices.md for why we don't re-output errors)
+    const isHelpOrVersion =
       err.code === "commander.help" ||
       err.code === "commander.helpDisplayed" ||
-      err.code === "commander.version"
-    ) {
-      process.exit(0);
-    }
-    // Commander errors are usage errors (per clig.dev conventions)
-    outputError(err.message);
-    process.exit(2);
+      err.code === "commander.version";
+    // Help/version exit 0, usage errors exit 2 (per clig.dev conventions)
+    process.exit(isHelpOrVersion ? 0 : 2);
   }
   throw err;
 }
