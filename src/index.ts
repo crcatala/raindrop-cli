@@ -141,7 +141,111 @@ function createRootBookmarkShortcut(
   return cmd;
 }
 
+/**
+ * Create search shortcut that transforms positional query to --search flag.
+ * `rd search <query> [options]` -> `rd bookmarks list --search <query> [options]`
+ */
+function createSearchShortcut(): Command {
+  const cmd = new Command("search")
+    .description("Search bookmarks (shortcut for: bookmarks list --search)")
+    .argument("<query>", "Search query (supports Raindrop search syntax)")
+    .allowUnknownOption()
+    .allowExcessArguments()
+    .passThroughOptions()
+    .helpOption(false) // Disable help to pass through to bookmarks command
+    .addHelpText(
+      "after",
+      `
+Examples:
+  rd search "javascript"                  # Full-text search
+  rd search "#cli"                        # Search by tag
+  rd search "type:article"                # Search by type
+  rd search "#dev" --limit 50             # With additional options
+  rd search "domain:github.com" --tag js  # Combined filters
+
+This is a shortcut for: rd bookmarks list --search <query>
+All bookmarks list options are supported.`
+    )
+    .action(async () => {
+      // Find 'search' command in argv (after position 1 to skip node/bun and script path)
+      // We look for the first non-option argument that matches 'search'
+      let cmdIndex = -1;
+      for (let i = 2; i < process.argv.length; i++) {
+        const arg = process.argv[i];
+        if (!arg) continue;
+        // Skip options and their values
+        if (arg.startsWith("-")) {
+          // If it's an option that takes a value (like --format json), skip next arg too
+          // For simplicity, skip just the flag - Commander handles this before calling action
+          continue;
+        }
+        if (arg === "search") {
+          cmdIndex = i;
+          break;
+        }
+      }
+
+      if (cmdIndex === -1) {
+        debug("Search shortcut: command not found in argv", {
+          argv: process.argv,
+        });
+        return;
+      }
+
+      // The query is right after 'search'
+      const query = process.argv[cmdIndex + 1];
+
+      // If no query provided, let it fall through to show help/error
+      if (!query || query.startsWith("-")) {
+        // Transform to show bookmarks list help with search context
+        const newArgv = [...process.argv.slice(0, cmdIndex), "bookmarks", "list", "--help"];
+        try {
+          await program.parseAsync(newArgv);
+        } catch (err) {
+          if (err instanceof CommanderError) {
+            process.exit(
+              err.code === "commander.help" || err.code === "commander.helpDisplayed" ? 0 : 2
+            );
+          }
+          throw err;
+        }
+        return;
+      }
+
+      // Transform: rd search "query" [opts] -> rd bookmarks list --search "query" [opts]
+      const newArgv = [
+        ...process.argv.slice(0, cmdIndex),
+        "bookmarks",
+        "list",
+        "--search",
+        query,
+        ...process.argv.slice(cmdIndex + 2), // Everything after the query
+      ];
+
+      debug("Search shortcut: transforming command", {
+        original: process.argv,
+        transformed: newArgv,
+      });
+
+      try {
+        await program.parseAsync(newArgv);
+      } catch (err) {
+        if (err instanceof CommanderError) {
+          const isHelpOrVersion =
+            err.code === "commander.help" ||
+            err.code === "commander.helpDisplayed" ||
+            err.code === "commander.version";
+          process.exit(isHelpOrVersion ? 0 : 2);
+        }
+        throw err;
+      }
+    });
+
+  return cmd;
+}
+
 // Root-level bookmark shortcuts (bookmarks is the primary resource)
+program.addCommand(createSearchShortcut());
 program.addCommand(
   createRootBookmarkShortcut("list", ["ls"], "List bookmarks (shortcut for: bookmarks list)")
 );

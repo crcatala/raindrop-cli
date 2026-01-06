@@ -397,3 +397,71 @@ describe("CLI piping behavior", () => {
     expect(result.stdout).toContain("Options:");
   });
 });
+
+describe("search shortcut command", () => {
+  test("search command appears in root help", async () => {
+    const result = await runCliExpectSuccess(["--help"]);
+
+    expect(result.stdout).toContain("search <query>");
+    // Description may wrap across lines, so check parts separately
+    expect(result.stdout).toContain("Search bookmarks");
+    expect(result.stdout).toContain("--search");
+  });
+
+  test("rd help search shows usage and examples", async () => {
+    const result = await runCliExpectSuccess(["help", "search"]);
+
+    expect(result.stdout).toContain("Usage: rd search <query>");
+    expect(result.stdout).toContain("Search query");
+    expect(result.stdout).toContain('rd search "javascript"');
+    expect(result.stdout).toContain('rd search "#cli"');
+    expect(result.stdout).toContain("All bookmarks list options are supported");
+  });
+
+  test("search without query shows error", async () => {
+    const result = await runCli(["search"]);
+
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr).toContain("missing required argument");
+    expect(result.stderr).toContain("query");
+  });
+
+  test("search --help shows bookmarks list help (pass-through)", async () => {
+    const result = await runCli(["search", "--help"]);
+
+    // Should show bookmarks list help since --help is passed through
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("bookmarks list");
+    expect(result.stdout).toContain("--search");
+    expect(result.stdout).toContain("--limit");
+  });
+
+  test("search transforms to bookmarks list --search (verified via debug)", async () => {
+    const result = await runCli(["--debug", "search", "test-query", "--limit", "5"]);
+
+    // Debug output shows the transformation
+    expect(result.stderr).toContain("Search shortcut: transforming command");
+    expect(result.stderr).toContain("bookmarks");
+    expect(result.stderr).toContain("list");
+    expect(result.stderr).toContain("--search");
+    expect(result.stderr).toContain("test-query");
+  });
+
+  test("search works with global options before command", async () => {
+    const result = await runCli(["--debug", "--format", "json", "search", "query"]);
+
+    // Should successfully transform (not fail to find command)
+    expect(result.stderr).toContain("Search shortcut: transforming command");
+    expect(result.stderr).not.toContain("command not found");
+  });
+
+  test("search passes through additional options", async () => {
+    const result = await runCli(["--debug", "search", "query", "--tag", "dev", "--limit", "10"]);
+
+    // Verify options are passed through in the transformed command
+    expect(result.stderr).toContain("--tag");
+    expect(result.stderr).toContain("dev");
+    expect(result.stderr).toContain("--limit");
+    expect(result.stderr).toContain("10");
+  });
+});
