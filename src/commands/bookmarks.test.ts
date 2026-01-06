@@ -64,6 +64,29 @@ describe("bookmarks command structure", () => {
     });
   });
 
+  describe("command aliases", () => {
+    test("list has ls alias", () => {
+      const list = bookmarks.commands.find((c) => c.name() === "list");
+      expect(list?.aliases()).toContain("ls");
+    });
+
+    test("delete has rm alias", () => {
+      const del = bookmarks.commands.find((c) => c.name() === "delete");
+      expect(del?.aliases()).toContain("rm");
+    });
+
+    test("add has new and create aliases", () => {
+      const add = bookmarks.commands.find((c) => c.name() === "add");
+      expect(add?.aliases()).toContain("new");
+      expect(add?.aliases()).toContain("create");
+    });
+
+    test("batch-delete has batch-rm alias", () => {
+      const batchDelete = bookmarks.commands.find((c) => c.name() === "batch-delete");
+      expect(batchDelete?.aliases()).toContain("batch-rm");
+    });
+  });
+
   describe("help text", () => {
     test("bookmarks --help shows command description", () => {
       const help = bookmarks.helpInformation();

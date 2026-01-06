@@ -33,10 +33,10 @@ describe("collections command structure", () => {
       expect(show?.description()).toContain("Show collection details");
     });
 
-    test("has create subcommand", () => {
-      const create = collections.commands.find((c) => c.name() === "create");
-      expect(create).toBeDefined();
-      expect(create?.description()).toContain("Create a new collection");
+    test("has add subcommand", () => {
+      const add = collections.commands.find((c) => c.name() === "add");
+      expect(add).toBeDefined();
+      expect(add?.description()).toContain("Create a new collection");
     });
 
     test("has delete subcommand", () => {
@@ -52,13 +52,31 @@ describe("collections command structure", () => {
     });
   });
 
+  describe("command aliases", () => {
+    test("list has ls alias", () => {
+      const list = collections.commands.find((c) => c.name() === "list");
+      expect(list?.aliases()).toContain("ls");
+    });
+
+    test("delete has rm alias", () => {
+      const del = collections.commands.find((c) => c.name() === "delete");
+      expect(del?.aliases()).toContain("rm");
+    });
+
+    test("add has new and create aliases", () => {
+      const add = collections.commands.find((c) => c.name() === "add");
+      expect(add?.aliases()).toContain("new");
+      expect(add?.aliases()).toContain("create");
+    });
+  });
+
   describe("help text", () => {
     test("collections --help shows command description", () => {
       const help = collections.helpInformation();
       expect(help).toContain("Manage collections");
       expect(help).toContain("list");
       expect(help).toContain("show");
-      expect(help).toContain("create");
+      expect(help).toContain("add");
       expect(help).toContain("delete");
       expect(help).toContain("stats");
     });
@@ -75,9 +93,9 @@ describe("collections command structure", () => {
       expect(help).toContain("collection-id");
     });
 
-    test("collections create --help shows arguments and options", () => {
-      const create = collections.commands.find((c) => c.name() === "create");
-      const help = create?.helpInformation() ?? "";
+    test("collections add --help shows arguments and options", () => {
+      const add = collections.commands.find((c) => c.name() === "add");
+      const help = add?.helpInformation() ?? "";
       expect(help).toContain("name");
       expect(help).toContain("--parent");
       expect(help).toContain("-p");
@@ -111,18 +129,18 @@ describe("collections command structure", () => {
     });
   });
 
-  describe("create command arguments and options", () => {
-    const create = collections.commands.find((c) => c.name() === "create");
+  describe("add command arguments and options", () => {
+    const add = collections.commands.find((c) => c.name() === "add");
 
     test("requires name argument", () => {
-      const args = create?.registeredArguments ?? [];
+      const args = add?.registeredArguments ?? [];
       expect(args.length).toBe(1);
       expect(args[0]?.name()).toBe("name");
       expect(args[0]?.required).toBe(true);
     });
 
     test("has --parent option", () => {
-      const opt = create?.options.find((o) => o.long === "--parent");
+      const opt = add?.options.find((o) => o.long === "--parent");
       expect(opt).toBeDefined();
       expect(opt?.short).toBe("-p");
     });

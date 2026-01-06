@@ -59,7 +59,8 @@ export function createHighlightsCommand(): Command {
   // list command
   highlights
     .command("list")
-    .description("List highlights across bookmarks")
+    .alias("ls")
+    .description("List highlights across bookmarks (alias: ls)")
     .option("-c, --collection <id>", "Collection ID or name (all, unsorted, trash)")
     .option("-l, --limit <number>", "Maximum number of highlights to return (1-50)", "25")
     .option("-p, --page <number>", "Page number (0-indexed)", "0")
