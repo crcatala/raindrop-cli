@@ -16,7 +16,7 @@
     "test": "bash scripts/check.sh test",
     "test:verbose": "bash scripts/test-unit.sh",
     "test:live": "bash scripts/check.sh test:live",
-    "test:live:verbose": "RDCLI_API_DELAY_MS=250 bun test src/**/*.live.test.ts",
+    "test:live:verbose": "RDCLI_API_DELAY_MS=250 bun test --no-parallel src/**/*.live.test.ts",
     "test:all": "bash scripts/check.sh test:all",
     "test:all:verbose": "RDCLI_API_DELAY_MS=250 bun test src",
     "lint": "bash scripts/check.sh lint",

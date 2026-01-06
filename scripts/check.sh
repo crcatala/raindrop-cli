@@ -27,7 +27,7 @@ case "$cmd" in
     run_silent_test "Unit Tests" "bash scripts/test-unit.sh --bail --only-failures $extra_args" "bun run test:verbose -- $extra_args"
     ;;
   test:live)
-    run_silent_test "Live Tests" "RDCLI_API_DELAY_MS=250 bun test src/**/*.live.test.ts --bail --only-failures $extra_args" "bun run test:live:verbose -- $extra_args"
+    run_silent_test "Live Tests" "RDCLI_API_DELAY_MS=250 bun test --no-parallel src/**/*.live.test.ts --bail --only-failures $extra_args" "bun run test:live:verbose -- $extra_args"
     ;;
   test:all)
     run_silent_test "All Tests" "RDCLI_API_DELAY_MS=250 bun test src --bail --only-failures $extra_args" "bun run test:all:verbose -- $extra_args"
