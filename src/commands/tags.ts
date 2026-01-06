@@ -6,16 +6,34 @@ import { addOutputOptions } from "../utils/command-options.js";
 import { handleError, UsageError } from "../utils/errors.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
-import { outputError, outputMessage } from "../utils/output-streams.js";
+import { outputData, outputError, outputMessage } from "../utils/output-streams.js";
+import { getColors } from "../utils/colors.js";
 import type { GlobalOptions } from "../types/index.js";
 
 /**
- * Column configuration for tag list output.
+ * Column configuration for tag list output (used for table/tsv formats).
  */
 const TAG_COLUMNS: ColumnConfig[] = [
   { key: "_id", header: "Tag", prominent: true },
   { key: "count", header: "Count", width: 10 },
 ];
+
+/**
+ * Output tags as a simple inline list: "tagname (count)" per line.
+ * Matches the style used in filters command for tag lists.
+ */
+function outputTagsPlain(items: Array<{ _id: string; count: number }>): void {
+  const c = getColors();
+
+  if (items.length === 0) {
+    outputData(c.dim("No tags found."));
+    return;
+  }
+
+  for (const item of items) {
+    outputData(`${item._id} ${c.dim(`(${item.count})`)}`);
+  }
+}
 
 export function createTagsCommand(): Command {
   const tags = new Command("tags")
@@ -60,6 +78,20 @@ Examples:
         debug("API response", { tagCount: items.length });
         verbose(`Found ${items.length} tags`);
 
+        // For plain format (default), use simple inline list
+        if (!globalOpts.format || globalOpts.format === "plain") {
+          if (globalOpts.quiet) {
+            // Quiet mode: just tag names
+            for (const item of items) {
+              outputData(item._id);
+            }
+          } else {
+            outputTagsPlain(items);
+          }
+          return;
+        }
+
+        // For json/table/tsv formats, use standard output
         output(items, TAG_COLUMNS, {
           format: globalOpts.format,
           quiet: globalOpts.quiet,

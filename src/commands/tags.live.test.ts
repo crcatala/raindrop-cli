@@ -39,7 +39,7 @@ describe("tags command - with auth", () => {
   ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
 
   testWithAuth("list returns tags as JSON", async () => {
-    const result = await runCliExpectSuccess(["tags", "list"]);
+    const result = await runCliExpectSuccess(["tags", "list", "--format", "json"]);
     const data = parseJsonOutput<Array<{ _id: string; count: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -52,14 +52,14 @@ describe("tags command - with auth", () => {
   });
 
   testWithAuth("list supports special collection names", async () => {
-    const result = await runCliExpectSuccess(["tags", "list", "unsorted"]);
+    const result = await runCliExpectSuccess(["tags", "list", "unsorted", "--format", "json"]);
     const data = parseJsonOutput<Array<{ _id: string; count: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
   });
 
   testWithAuth("list supports numeric collection ID", async () => {
-    const result = await runCliExpectSuccess(["tags", "list", "0"]);
+    const result = await runCliExpectSuccess(["tags", "list", "0", "--format", "json"]);
     const data = parseJsonOutput<Array<{ _id: string; count: number }>>(result);
 
     expect(Array.isArray(data)).toBe(true);
@@ -95,11 +95,11 @@ describe("tags command - with auth", () => {
     const result = await runCli(["tags", "list", "--format", "plain"]);
 
     expect(result.exitCode).toBe(0);
-    // Plain format should have styled dividers between items (only if 2+ items)
-    // Count items by looking for the 🏷️ emoji which appears once per tag
-    const itemCount = (result.stdout.match(/🏷️/g) || []).length;
-    if (itemCount >= 2) {
-      expect(result.stdout).toContain("───");
+    // Plain format outputs simple "tagname (count)" per line
+    const lines = result.stdout.trim().split("\n");
+    if (lines.length > 0 && lines[0] && !lines[0].includes("No tags")) {
+      // Should have parentheses with count
+      expect(lines[0]).toMatch(/\(\d+\)/);
     }
   });
 
