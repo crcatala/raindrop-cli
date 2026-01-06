@@ -27,10 +27,10 @@ describe("bookmarks command structure", () => {
       expect(list?.description()).toContain("List bookmarks");
     });
 
-    test("has get subcommand", () => {
-      const get = bookmarks.commands.find((c) => c.name() === "get");
-      expect(get).toBeDefined();
-      expect(get?.description()).toContain("Get a single bookmark");
+    test("has show subcommand", () => {
+      const show = bookmarks.commands.find((c) => c.name() === "show");
+      expect(show).toBeDefined();
+      expect(show?.description()).toContain("Show a single bookmark");
     });
 
     test("has add subcommand", () => {
@@ -69,7 +69,7 @@ describe("bookmarks command structure", () => {
       const help = bookmarks.helpInformation();
       expect(help).toContain("Manage bookmarks");
       expect(help).toContain("list");
-      expect(help).toContain("get");
+      expect(help).toContain("show");
       expect(help).toContain("add");
       expect(help).toContain("update");
       expect(help).toContain("delete");
@@ -109,10 +109,10 @@ describe("bookmarks command structure", () => {
       expect(help).toContain("help.raindrop.io/using-search");
     });
 
-    test("bookmarks get --help shows usage", () => {
-      const get = bookmarks.commands.find((c) => c.name() === "get");
-      const help = get?.helpInformation() ?? "";
-      expect(help).toContain("Get a single bookmark by ID");
+    test("bookmarks show --help shows usage", () => {
+      const show = bookmarks.commands.find((c) => c.name() === "show");
+      const help = show?.helpInformation() ?? "";
+      expect(help).toContain("Show a single bookmark by ID");
       expect(help).toContain("<id>");
     });
 
@@ -214,11 +214,11 @@ describe("bookmarks command structure", () => {
     });
   });
 
-  describe("get command arguments", () => {
-    const get = bookmarks.commands.find((c) => c.name() === "get");
+  describe("show command arguments", () => {
+    const show = bookmarks.commands.find((c) => c.name() === "show");
 
     test("requires id argument", () => {
-      const args = get?.registeredArguments ?? [];
+      const args = show?.registeredArguments ?? [];
       expect(args.length).toBe(1);
       expect(args[0]?.name()).toBe("id");
       expect(args[0]?.required).toBe(true);

@@ -33,7 +33,7 @@ describe("highlights CLI integration", () => {
   });
 
   test("validation errors exit with code 2", async () => {
-    const result = await runCli(["highlights", "get", "invalid"], {
+    const result = await runCli(["highlights", "show", "invalid"], {
       env: { RAINDROP_TOKEN: "fake-token" },
     });
     expect(result.exitCode).toBe(2);

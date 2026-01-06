@@ -123,17 +123,17 @@ Examples:
       }
     });
 
-  // get command - get highlights for a specific bookmark
+  // show command - show highlights for a specific bookmark
   highlights
-    .command("get")
-    .description("Get highlights for a specific bookmark")
+    .command("show")
+    .description("Show highlights for a specific bookmark")
     .argument("<bookmark-id>", "Bookmark ID")
     .addHelpText(
       "after",
       `
 Examples:
-  rdcli highlights get 12345                  # Get highlights for bookmark
-  rdcli highlights get 12345 -f json          # Output as JSON`
+  rdcli highlights show 12345                 # Show highlights for bookmark
+  rdcli highlights show 12345 -f json         # Output as JSON`
     )
     .action(async function (this: Command, bookmarkIdArg: string) {
       try {
