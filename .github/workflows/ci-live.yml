@@ -76,9 +76,10 @@ jobs:
               name: 'Live API Tests',
               head_sha: '${{ steps.pr.outputs.sha }}',
               status: 'in_progress',
+              details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
               output: {
                 title: 'Running live tests...',
-                summary: 'Live API tests are currently running.'
+                summary: '[View live logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
               }
             });
 
@@ -114,16 +115,17 @@ jobs:
               head_sha: '${{ steps.pr.outputs.sha }}',
               status: 'completed',
               conclusion: 'success',
+              details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
               output: {
                 title: 'All live tests passed',
-                summary: 'Live API tests completed successfully.'
+                summary: 'Live API tests completed successfully. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
               }
             });
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: '✅ Live tests passed!'
+              body: '✅ Live tests passed! [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
             });
 
       - name: Update check (failure)
@@ -138,6 +140,7 @@ jobs:
               head_sha: '${{ steps.pr.outputs.sha }}',
               status: 'completed',
               conclusion: 'failure',
+              details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
               output: {
                 title: 'Live tests failed',
                 summary: 'Some live API tests failed. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
