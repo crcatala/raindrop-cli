@@ -35,6 +35,10 @@ Based on [Geoffrey Huntley's Ralph](https://ghuntley.com/ralph).
         ├── prd.json    # Task list with status
         ├── prompt.md   # Instructions for the agent
         └── progress.md # Learnings log (appended each iteration)
+
+~/.ralph/sessions/      # Pi session files stored globally (outside repo)
+└── <loop-name>/
+    └── *.jsonl         # One session file per iteration
 ```
 
 ## Usage
@@ -100,6 +104,22 @@ Ralph stops when:
 - All tasks have `"passes": true` (agent outputs `<promise>COMPLETE</promise>`)
 - Maximum iterations reached (default: 25)
 - Script is interrupted (Ctrl+C)
+
+## Debugging & Monitoring
+
+Each iteration saves a session file to `~/.ralph/sessions/<loop-name>/`. These `.jsonl` files contain the full conversation and can be used for:
+
+- **Debugging**: Review what the agent did in a specific iteration
+- **Monitoring**: Watch new files appear as iterations complete
+- **Export**: Convert to HTML with `pi --export <session.jsonl> output.html`
+
+```bash
+# Watch sessions directory for new iterations
+ls -la ~/.ralph/sessions/<loop-name>/
+
+# Export a session to HTML for easier reading
+pi --export ~/.ralph/sessions/<loop-name>/<session>.jsonl iteration-5.html
+```
 
 ## Tips
 
