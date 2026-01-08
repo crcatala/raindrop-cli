@@ -1,0 +1,60 @@
+{
+  "name": "OSS Prep Phase 1",
+  "description": "Prepare raindrop-cli-spike for public OSS release and npm publish",
+  "branch": "ralph/oss-prep-phase1",
+  "epicId": "rd-u22",
+  "tasks": [
+    {
+      "id": "rd-u22.1",
+      "title": "Add LICENSE file",
+      "passes": false
+    },
+    {
+      "id": "rd-u22.2",
+      "title": "Package.json cleanup for npm publish",
+      "passes": false
+    },
+    {
+      "id": "rd-u22.3",
+      "title": "Secure CI live tests workflow",
+      "passes": false,
+      "notes": "Use Option B: harden with fork check (if: github.event.pull_request.head.repo.full_name == github.repository). Do NOT delete the workflow."
+    },
+    {
+      "id": "rd-u22.4",
+      "title": "Dynamic version from package.json",
+      "passes": false
+    },
+    {
+      "id": "rd-u22.5",
+      "title": "Fix TypeScript any usage",
+      "passes": false
+    },
+    {
+      "id": "rd-u22.6",
+      "title": "Review and harden existing CI workflow",
+      "passes": false
+    },
+    {
+      "id": "rd-u22.7",
+      "title": "Update README for accuracy and completeness",
+      "passes": false
+    },
+    {
+      "id": "rd-u22.8",
+      "title": "Add CONTRIBUTING.md",
+      "passes": false
+    },
+    {
+      "id": "rd-u22.9",
+      "title": "Add CHANGELOG.md",
+      "passes": false
+    },
+    {
+      "id": "create-pr",
+      "title": "Create PR for ralph/oss-prep-phase1 branch",
+      "passes": false,
+      "notes": "Use gh pr create with comprehensive summary covering all changes. Title: 'feat(oss): Phase 1 OSS release preparation'. Include list of all completed tasks and key changes."
+    }
+  ]
+}
