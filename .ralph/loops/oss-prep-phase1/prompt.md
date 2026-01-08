@@ -45,26 +45,17 @@ bun run verify
 ```
 This runs lint, typecheck, test, and format checks. ALL must pass.
 
-### 7. Commit
-Commit your changes with a conventional commit message:
-```bash
-git add -A
-git commit -m "feat(oss): <task-id> - <brief description>"
-```
-
-Example: `git commit -m "feat(oss): rd-u22.1 - add MIT LICENSE file"`
-
-### 8. Close the Beads Issue (if applicable)
+### 7. Close the Beads Issue (if applicable)
 If the task ID starts with `rd-`, close it and sync:
 ```bash
 bd close <task-id>
 bd sync
 ```
 
-### 9. Update prd.json
+### 8. Update prd.json
 Set `"passes": true` for the completed task. Use a precise edit to change only that task's passes field.
 
-### 10. Log Progress
+### 9. Log Progress
 Append to `.ralph/loops/oss-prep-phase1/progress.md`:
 
 ```markdown
@@ -79,8 +70,35 @@ Use the current date AND time (e.g., `2026-01-07 14:32`) so iterations can be di
 
 If you discovered any reusable codebase patterns, add them to the "Codebase Patterns" section at the TOP of progress.md.
 
-### 11. Check Completion
-After updating prd.json, check if ALL tasks have `"passes": true`.
+### 10. Commit ALL Changes
+Commit everything together - implementation, beads sync, prd.json, and progress.md:
+```bash
+git add -A
+git commit -m "feat(oss): <task-id> - <brief description>"
+```
+
+Example: `git commit -m "feat(oss): rd-u22.1 - add MIT LICENSE file"`
+
+**Important:** The commit must include ALL changes from this iteration:
+- Your implementation (code, config, docs)
+- `.beads/` changes from `bd close` and `bd sync`
+- `.ralph/loops/oss-prep-phase1/prd.json` (passes: true)
+- `.ralph/loops/oss-prep-phase1/progress.md` (new log entry)
+
+### 11. Verify Clean Working Directory
+After committing, confirm there are no uncommitted changes:
+```bash
+git status
+```
+
+You should see "nothing to commit, working tree clean". If there are uncommitted changes, add and amend your commit:
+```bash
+git add -A
+git commit --amend --no-edit
+```
+
+### 12. Check Completion
+After committing, check if ALL tasks in prd.json have `"passes": true`.
 
 - If **more tasks remain** with `"passes": false`, end your response normally. The Ralph loop script will start a new iteration with a fresh context.
 - If **ALL tasks are complete** (every task has `"passes": true`), you must signal completion. See "Signaling Loop Completion" below.
@@ -105,9 +123,15 @@ When you reach the `create-pr` task:
    
    Base the description on the actual work completed, as recorded in progress.md and git history.
 
-3. Mark the task as complete in prd.json
+3. Update prd.json to mark create-pr as passing
 
-4. Signal loop completion (see below)
+4. Log to progress.md
+
+5. Commit the prd.json and progress.md updates
+
+6. Push the final commit: `git push`
+
+7. Signal loop completion (see below)
 
 ## Signaling Loop Completion
 
@@ -133,12 +157,14 @@ The Ralph loop script (`ralph.sh`) monitors your output to know when all work is
 4. **Notes supplement, not replace** - prd.json notes add context to beads issues, not replace them
 5. **Minimal changes** - Only change what's necessary for the current task
 6. **Log learnings** - Help future iterations by documenting patterns and gotchas
+7. **Commit everything** - Each iteration ends with ALL changes committed (no uncommitted files)
 
 ## Definition of Done (every task)
 
 - [ ] Acceptance criteria from beads issue satisfied
 - [ ] `bun run verify` passes
-- [ ] Changes committed with conventional commit message
 - [ ] Beads issue closed (if applicable) and synced
 - [ ] prd.json updated with `passes: true`
 - [ ] Progress logged to progress.md (with timestamp)
+- [ ] ALL changes committed (implementation + beads + prd.json + progress.md)
+- [ ] `git status` shows clean working directory
