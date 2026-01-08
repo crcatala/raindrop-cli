@@ -29,9 +29,9 @@ Ensure you're on the correct branch specified in prd.json (`ralph/oss-prep-phase
 Look at prd.json and find the FIRST task where `"passes": false`.
 
 ### 4. Get Task Details
-- If the task ID starts with `rd-` (a beads issue), run `bd show <id>` to get full acceptance criteria
-- If the task has a `notes` field in prd.json, those are additional instructions that OVERRIDE or CLARIFY the beads issue
-- Read the acceptance criteria carefully before implementing
+- If the task ID starts with `rd-` (a beads issue), run `bd show <id>` to get the full acceptance criteria. Always read the beads issue - it contains the authoritative details for implementation.
+- If the task has a `notes` field in prd.json, treat those as additional clarifications or context that supplement the beads issue. The notes help clarify intent but do not replace the beads issue content.
+- Read both the beads issue AND any notes carefully before implementing.
 
 ### 5. Implement the Task
 - Make the necessary changes
@@ -68,76 +68,69 @@ Set `"passes": true` for the completed task. Use a precise edit to change only t
 Append to `.ralph/loops/oss-prep-phase1/progress.md`:
 
 ```markdown
-## [YYYY-MM-DD] - <task-id>
+## [YYYY-MM-DD HH:MM] - <task-id>
 - What was implemented
 - Files changed: <list files>
 - **Learnings:** <any patterns, gotchas, or useful info for future iterations>
 ---
 ```
 
+Use the current date AND time (e.g., `2026-01-07 14:32`) so iterations can be distinguished.
+
 If you discovered any reusable codebase patterns, add them to the "Codebase Patterns" section at the TOP of progress.md.
 
 ### 11. Check Completion
 After updating prd.json, check if ALL tasks have `"passes": true`.
 
-- If **ALL tasks are complete**, output exactly: `<promise>COMPLETE</promise>`
-- If **more tasks remain**, end your response normally (the loop will start a new iteration)
+- If **more tasks remain** with `"passes": false`, end your response normally. The Ralph loop script will start a new iteration with a fresh context.
+- If **ALL tasks are complete** (every task has `"passes": true`), you must signal completion. See "Signaling Loop Completion" below.
 
 ## Special Task: create-pr
 
 When you reach the `create-pr` task:
 
 1. Push the branch: `git push -u origin ralph/oss-prep-phase1`
-2. Create a PR using GitHub CLI with a comprehensive summary:
 
-```bash
-gh pr create \
-  --title "feat(oss): Phase 1 OSS release preparation" \
-  --body "$(cat <<'EOF'
-## Summary
-
-Phase 1 preparation for public OSS release and npm v0.1.0 publish.
-
-## Changes
-
-### Legal & Metadata
-- Added MIT LICENSE file
-- Updated package.json for npm publish (files field, metadata, bin entries)
-
-### Security
-- Hardened CI live tests workflow to prevent token exfiltration from fork PRs
-- Hardened main CI workflow (pinned versions, frozen lockfile)
-
-### Code Quality
-- Dynamic version reading from package.json (no more hardcoded version)
-- Fixed TypeScript `any` usage
-
-### Documentation
-- Updated README with accurate command examples and installation instructions
-- Added CONTRIBUTING.md with development setup guide
-- Added CHANGELOG.md for v0.1.0
-
-## Testing
-
-- All changes verified with `bun run verify`
-- Each task committed separately for easy review
-
-## Related
-
-Epic: rd-u22 (OSS + npm v0.1.0 release readiness)
-EOF
-)"
-```
+2. Create a PR using GitHub CLI:
+   ```bash
+   gh pr create --title "feat(oss): Phase 1 OSS release preparation" --body "<description>"
+   ```
+   
+   Write a comprehensive PR description that:
+   - Summarizes the overall goal (OSS release preparation)
+   - Lists all the changes made across the branch (review git log and progress.md)
+   - Groups changes by category (e.g., Legal/Metadata, Security, Code Quality, Documentation)
+   - Notes that all changes were verified with `bun run verify`
+   - References the epic (rd-u22)
+   
+   Base the description on the actual work completed, as recorded in progress.md and git history.
 
 3. Mark the task as complete in prd.json
-4. Output `<promise>COMPLETE</promise>`
+
+4. Signal loop completion (see below)
+
+## Signaling Loop Completion
+
+The Ralph loop script (`ralph.sh`) monitors your output to know when all work is done. When ALL tasks in prd.json have `"passes": true`, you must include this exact string somewhere in your final response:
+
+```
+<promise>COMPLETE</promise>
+```
+
+**What this does:** The loop script greps for this string. When found, it exits successfully instead of starting another iteration.
+
+**When to output it:** Only after the FINAL task is complete and prd.json shows all tasks passing. This will typically be after the `create-pr` task.
+
+**How to output it:** Simply include `<promise>COMPLETE</promise>` in your response text. It can be on its own line or part of a sentence like "All tasks complete. <promise>COMPLETE</promise>"
+
+**When NOT to output it:** If any task still has `"passes": false`, do NOT output this string. End your response normally and the loop will continue.
 
 ## Rules
 
 1. **One task per iteration** - Complete exactly ONE task, then end your response
 2. **Verify before commit** - Always run `bun run verify` before committing
 3. **Read beads issues** - Use `bd show <id>` to get full acceptance criteria; don't rely on memory
-4. **Respect notes** - If prd.json has a `notes` field for a task, follow those instructions
+4. **Notes supplement, not replace** - prd.json notes add context to beads issues, not replace them
 5. **Minimal changes** - Only change what's necessary for the current task
 6. **Log learnings** - Help future iterations by documenting patterns and gotchas
 
@@ -148,4 +141,4 @@ EOF
 - [ ] Changes committed with conventional commit message
 - [ ] Beads issue closed (if applicable) and synced
 - [ ] prd.json updated with `passes: true`
-- [ ] Progress logged to progress.md
+- [ ] Progress logged to progress.md (with timestamp)
