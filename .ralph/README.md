@@ -1,8 +1,21 @@
 # Ralph - Autonomous AI Coding Loop
 
-Ralph is an autonomous coding loop that runs an AI agent iteratively until all tasks are complete. Each iteration gets a fresh context window, with memory persisting through git commits and text files.
+Ralph is an autonomous coding loop that runs an AI agent iteratively until all tasks are complete. Each iteration gets a fresh context window, with memory persisting through git commits and a progress log.
 
 Based on [Geoffrey Huntley's Ralph](https://ghuntley.com/ralph).
+
+## Quick Start
+
+```bash
+# Create a new loop from example
+cp .ralph/prd.yaml.example .ralph/loops/my-feature/prd.yaml
+
+# Edit the prd
+vim .ralph/loops/my-feature/prd.yaml
+
+# Run the loop
+.ralph/ralph.sh my-feature
+```
 
 ## How It Works
 
@@ -10,17 +23,18 @@ Based on [Geoffrey Huntley's Ralph](https://ghuntley.com/ralph).
 ┌─────────────────────────────────────────────────────────┐
 │                    ralph.sh loop                        │
 ├─────────────────────────────────────────────────────────┤
-│  1. Read prompt.md                                      │
-│  2. Agent reads prd.json (task list)                    │
-│  3. Agent reads progress.md (learnings from past runs)  │
-│  4. Agent picks first task where passes=false           │
-│  5. Agent reads full details via `bd show <id>`         │
+│  1. Validate prd.yaml                              │
+│  2. Generate prompt from templates + prd           │
+│  3. Agent reads prd (task list)                    │
+│  4. Agent reads progress.md (learnings from past runs)  │
+│  5. Agent picks first task where status=pending         │
 │  6. Agent implements the task                           │
-│  7. Agent runs `bun run verify`                         │
-│  8. Agent commits if passing                            │
-│  9. Agent marks task done in prd.json                   │
-│ 10. Agent logs learnings to progress.md                 │
-│ 11. Loop repeats until all tasks pass                   │
+│  7. Agent runs pre_commit verification (if configured)  │
+│  8. Agent marks task done in prd                   │
+│  9. Agent logs learnings to progress.md                 │
+│ 10. Agent commits all changes                           │
+│ 11. Loop repeats until all tasks done                   │
+│ 12. Creates PR if configured                            │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -28,102 +42,140 @@ Based on [Geoffrey Huntley's Ralph](https://ghuntley.com/ralph).
 
 ```
 .ralph/
-├── README.md           # This file
-├── ralph.sh            # The loop script
-└── loops/
-    └── <loop-name>/
-        ├── prd.json    # Task list with status
-        ├── prompt.md   # Instructions for the agent
-        └── progress.md # Learnings log (appended each iteration)
+├── README.md              # This file
+├── ralph.sh               # The loop runner
+├── prd.yaml.example       # Template for new loops
+├── templates/
+│   ├── base.md            # Core loop instructions
+│   └── beads.md           # Beads issue tracker integration
+├── loops/
+│   └── <your-loop>/
+│       ├── prd.yaml       # Loop configuration
+│       └── progress.md    # Learnings log (auto-created)
+└── loops-archived/        # Completed/old loops for reference
+    └── <old-loop>/
 
-~/.ralph/sessions/      # Pi session files stored globally (outside repo)
+~/.ralph/sessions/         # Pi session files (for debugging)
 └── <loop-name>/
-    └── *.jsonl         # One session file per iteration
+    └── *.jsonl
 ```
+
+## Manifest Reference
+
+```yaml
+# Required fields
+name: "Feature Name"
+branch: "ralph/feature-branch"
+create_pr: true           # Create PR when loop completes
+issue_tracker: none       # "none" or "beads"
+
+# Optional fields
+description: "Description for PR body"
+pr_title: "Custom PR title"  # Defaults to name
+pre_commit: "bun run verify" # Command to run before each commit
+
+# Tasks
+tasks:
+  - title: Task description
+    status: pending        # pending | done
+    acceptance:            # Inline acceptance criteria
+      - "Criterion 1"
+      - "Criterion 2"
+    notes: "Additional context"
+
+  # With beads integration (issue_tracker: beads)
+  - id: rd-u22.1           # Required when using beads
+    title: Task from beads
+    status: pending
+    notes: "Supplements beads issue details"
+```
+
+## Issue Tracker Integration
+
+### No Issue Tracker (`issue_tracker: none`)
+- Tasks use inline `acceptance` criteria
+- No external lookups or issue closing
+- Good for: quick batches, experiments, one-off automation
+
+### Beads (`issue_tracker: beads`)
+- Agent runs `bd show <id>` to get acceptance criteria
+- Agent runs `bd close <id>` when task completes
+- Task `id` field is required
+- Good for: tracked work, multi-session projects, auditing
 
 ## Usage
 
 ```bash
-# Run a loop (loop name is required)
+# Run a loop (loop name required)
 .ralph/ralph.sh <loop-name>
 
 # Run with custom iteration limit (default: 25)
 .ralph/ralph.sh <loop-name> 50
-
-# Example
-.ralph/ralph.sh oss-prep-phase1
-.ralph/ralph.sh oss-prep-phase1 50
 ```
 
 ## Creating a New Loop
 
-1. Create a new directory under `.ralph/loops/`:
+1. Create loop directory and copy example:
    ```bash
    mkdir -p .ralph/loops/my-feature
+   cp .ralph/prd.yaml.example .ralph/loops/my-feature/prd.yaml
    ```
 
-2. Create `prd.json` with your tasks:
-   ```json
-   {
-     "name": "My Feature",
-     "branch": "ralph/my-feature",
-     "tasks": [
-       { "id": "task-1", "title": "First task", "passes": false },
-       { "id": "task-2", "title": "Second task", "passes": false }
-     ]
-   }
+2. Edit `prd.yaml`:
+   - Set `name`, `branch`, `create_pr`
+   - Choose `issue_tracker` mode
+   - Add your tasks with acceptance criteria
+
+3. Run:
+   ```bash
+   .ralph/ralph.sh my-feature
    ```
 
-3. Create `prompt.md` with instructions (copy from an existing loop and modify)
+## Validation
 
-4. Run: `.ralph/ralph.sh my-feature`
+The script validates prd.yaml files before running:
+- Required fields present (`name`, `branch`, `create_pr`, `issue_tracker`)
+- Valid `issue_tracker` value (`none` or `beads`)
+- Valid `create_pr` value (boolean)
+- `tasks` section exists
 
-## Integration with Beads
+## Completion Signal
 
-This setup integrates with the `bd` (beads) issue tracker:
+The agent signals completion by outputting:
+```
+<loop>COMPLETE</loop>
+```
 
-- Tasks in `prd.json` reference beads issue IDs (e.g., `rd-u22.1`)
-- The agent uses `bd show <id>` to get full acceptance criteria
-- The agent uses `bd close <id>` to mark issues complete
-- The `notes` field in prd.json provides additional context to clarify beads issue details
+When detected, the loop:
+1. Stops iterating
+2. Creates PR if `create_pr: true`
+3. Exits successfully
 
-## Memory Persistence
+## PR Creation
 
-Ralph maintains context across iterations through:
+When `create_pr: true`, after all tasks complete:
+1. Branch is pushed to origin
+2. PR is created with:
+   - Title from `pr_title` (or `name`)
+   - Body from `description` + git log
+3. All automated, no agent context used
 
-1. **prd.json** - Task status (passes: true/false)
-2. **progress.md** - Learnings and patterns from each iteration
-3. **Git commits** - The actual work product
-4. **Beads issues** - Detailed acceptance criteria and status
+## Debugging
 
-Each iteration is a fresh context window - the agent doesn't remember previous iterations directly, but learns from progress.md and git history.
-
-## Stop Conditions
-
-Ralph stops when:
-- All tasks have `"passes": true` (agent outputs `<promise>COMPLETE</promise>`)
-- Maximum iterations reached (default: 25)
-- Script is interrupted (Ctrl+C)
-
-## Debugging & Monitoring
-
-Each iteration saves a session file to `~/.ralph/sessions/<loop-name>/`. These `.jsonl` files contain the full conversation and can be used for:
-
-- **Debugging**: Review what the agent did in a specific iteration
-- **Monitoring**: Watch new files appear as iterations complete
-- **Export**: Convert to HTML with `pi --export <session.jsonl> output.html`
+Session files are saved to `~/.ralph/sessions/<loop-name>/`:
 
 ```bash
-# Watch sessions directory for new iterations
+# List sessions
 ls -la ~/.ralph/sessions/<loop-name>/
 
-# Export a session to HTML for easier reading
-pi --export ~/.ralph/sessions/<loop-name>/<session>.jsonl iteration-5.html
+# Export to HTML for review
+pi --export ~/.ralph/sessions/<loop-name>/<session>.jsonl output.html
 ```
 
 ## Tips
 
 - **Small tasks**: Each task should fit in one context window
-- **Explicit criteria**: Use beads issues with clear acceptance criteria
-- **Fast feedback**: `bun run verify` provides quick pass/fail signal
+- **Explicit criteria**: Use clear acceptance criteria
+- **Fast feedback**: Configure `pre_commit` for quick verification
 - **Log learnings**: Patterns in progress.md help future iterations
+- **Iterate**: Start with `issue_tracker: none` for quick experiments
