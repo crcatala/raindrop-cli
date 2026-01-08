@@ -35,6 +35,7 @@ fi
 LOOP_NAME="$1"
 MAX_ITERATIONS="${2:-25}"
 LOOP_DIR="$SCRIPT_DIR/loops/$LOOP_NAME"
+SESSION_DIR="$HOME/.ralph/sessions/$LOOP_NAME"
 
 # Validate loop directory exists
 if [ ! -d "$LOOP_DIR" ]; then
@@ -69,10 +70,17 @@ if [ ! -f "$LOOP_DIR/progress.md" ]; then
   echo "" >> "$LOOP_DIR/progress.md"
 fi
 
+# Create session directory for pi session files
+mkdir -p "$SESSION_DIR"
+
 echo "🚀 Starting Ralph"
 echo "   Loop: $LOOP_NAME"
 echo "   Max iterations: $MAX_ITERATIONS"
 echo "   Prompt: $LOOP_DIR/prompt.md"
+echo "   Sessions: $SESSION_DIR"
+echo ""
+echo "   💡 Monitor sessions: ls -la $SESSION_DIR"
+echo "      Each iteration creates a .jsonl file for debugging/review"
 echo ""
 
 for i in $(seq 1 $MAX_ITERATIONS); do
@@ -83,9 +91,9 @@ for i in $(seq 1 $MAX_ITERATIONS); do
 
   # Run pi with the prompt file
   # --print: non-interactive mode
-  # --no-session: fresh context each iteration (memory via files/git)
+  # --session-dir: store session files for each iteration (useful for debugging)
   # --thinking high: use extended thinking for complex tasks
-  OUTPUT=$(pi --print --no-session --thinking high @"$LOOP_DIR/prompt.md" 2>&1 | tee /dev/stderr) || true
+  OUTPUT=$(pi --print --session-dir "$SESSION_DIR" --thinking high @"$LOOP_DIR/prompt.md" 2>&1 | tee /dev/stderr) || true
 
   # Check for completion signal
   if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
