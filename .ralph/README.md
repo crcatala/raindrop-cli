@@ -40,14 +40,15 @@ Based on [Geoffrey Huntley's Ralph](https://ghuntley.com/ralph).
 ## Usage
 
 ```bash
-# Run the default loop (oss-prep-phase1) with 25 iterations
-.ralph/ralph.sh
+# Run a loop (loop name is required)
+.ralph/ralph.sh <loop-name>
 
-# Run a specific loop with custom iteration limit
+# Run with custom iteration limit (default: 25)
+.ralph/ralph.sh <loop-name> 50
+
+# Example
+.ralph/ralph.sh oss-prep-phase1
 .ralph/ralph.sh oss-prep-phase1 50
-
-# Run a different loop
-.ralph/ralph.sh some-other-loop 25
 ```
 
 ## Creating a New Loop
@@ -80,7 +81,7 @@ This setup integrates with the `bd` (beads) issue tracker:
 - Tasks in `prd.json` reference beads issue IDs (e.g., `rd-u22.1`)
 - The agent uses `bd show <id>` to get full acceptance criteria
 - The agent uses `bd close <id>` to mark issues complete
-- The `notes` field in prd.json can override/clarify beads issue details
+- The `notes` field in prd.json provides additional context to clarify beads issue details
 
 ## Memory Persistence
 

@@ -3,26 +3,49 @@
 # Ralph - Autonomous AI coding loop
 # Runs pi agent iteratively until all tasks are complete.
 #
-# Usage: .ralph/ralph.sh [loop-name] [max-iterations]
-#   loop-name: Name of the loop directory under .ralph/loops/ (default: oss-prep-phase1)
+# Usage: .ralph/ralph.sh <loop-name> [max-iterations]
+#   loop-name: Name of the loop directory under .ralph/loops/ (required)
 #   max-iterations: Maximum iterations before stopping (default: 25)
 #
 # Example:
-#   .ralph/ralph.sh                      # Run oss-prep-phase1 with 25 iterations
+#   .ralph/ralph.sh oss-prep-phase1      # Run with 25 iterations
 #   .ralph/ralph.sh oss-prep-phase1 50   # Run with 50 iterations
 #
 set -e
 
-LOOP_NAME="${1:-oss-prep-phase1}"
-MAX_ITERATIONS="${2:-25}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Require loop name
+if [ -z "$1" ]; then
+  echo "❌ Error: loop name is required"
+  echo ""
+  echo "Usage: .ralph/ralph.sh <loop-name> [max-iterations]"
+  echo ""
+  echo "Available loops:"
+  if [ -d "$SCRIPT_DIR/loops" ] && [ "$(ls -A "$SCRIPT_DIR/loops" 2>/dev/null)" ]; then
+    ls -1 "$SCRIPT_DIR/loops/"
+  else
+    echo "  (none found in $SCRIPT_DIR/loops/)"
+  fi
+  echo ""
+  echo "Example: .ralph/ralph.sh oss-prep-phase1"
+  exit 1
+fi
+
+LOOP_NAME="$1"
+MAX_ITERATIONS="${2:-25}"
 LOOP_DIR="$SCRIPT_DIR/loops/$LOOP_NAME"
 
 # Validate loop directory exists
 if [ ! -d "$LOOP_DIR" ]; then
   echo "❌ Loop directory not found: $LOOP_DIR"
+  echo ""
   echo "Available loops:"
-  ls -1 "$SCRIPT_DIR/loops/" 2>/dev/null || echo "  (none)"
+  if [ -d "$SCRIPT_DIR/loops" ] && [ "$(ls -A "$SCRIPT_DIR/loops" 2>/dev/null)" ]; then
+    ls -1 "$SCRIPT_DIR/loops/"
+  else
+    echo "  (none found in $SCRIPT_DIR/loops/)"
+  fi
   exit 1
 fi
 
@@ -37,7 +60,7 @@ done
 # Create progress.md if it doesn't exist
 if [ ! -f "$LOOP_DIR/progress.md" ]; then
   echo "# Ralph Progress Log" > "$LOOP_DIR/progress.md"
-  echo "Started: $(date +%Y-%m-%d)" >> "$LOOP_DIR/progress.md"
+  echo "Started: $(date '+%Y-%m-%d %H:%M')" >> "$LOOP_DIR/progress.md"
   echo "" >> "$LOOP_DIR/progress.md"
   echo "## Codebase Patterns" >> "$LOOP_DIR/progress.md"
   echo "(Patterns discovered during this loop will be added here)" >> "$LOOP_DIR/progress.md"
