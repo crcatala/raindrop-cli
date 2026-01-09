@@ -48,3 +48,9 @@ tasks:
   - id: rd-u22.9
     title: Add CHANGELOG.md
     status: done
+
+  - title: Ensure PR is passing CI
+    status: done
+    acceptance:
+      - "The associated PR for this branch's CI steps are all passing"
+    notes: "CI can potentially fail even though local verify/tests pass. You can use github CLI to read detailed CI runs/statuses. Make any changes necessary to make sure each CI step passes. If multiple failing, try making a commit per fix and pushing. then monitor the latest CI run until passing. Use intelligent checks to monitor status at reasonable intervals"

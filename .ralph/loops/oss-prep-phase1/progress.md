@@ -73,3 +73,10 @@ Started: 2026-01-07
 - Files changed: CHANGELOG.md
 - **Learnings:** Standard changelog format clarifies what features are included in the initial release.
 ---
+
+## [2026-01-09 16:55] - Ensure PR is passing CI
+- Updated CI workflow to use Bun 1.3.5 to match local lockfile version.
+- Fixed flaky integration tests by increasing timeouts and ensuring auth is disabled for command transformation tests.
+- Files changed: .github/workflows/ci.yml, src/cli.integration.test.ts
+- **Learnings:** Pinning CI versions is good for stability but requires manual updates when local tooling advances. Integration tests spawning subprocesses can be slow and sensitive to environment (network), so explicit timeouts and environment isolation are crucial.
+---

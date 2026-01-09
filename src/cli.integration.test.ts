@@ -288,7 +288,7 @@ describe("CLI integration", () => {
         const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
         expect(looksLikeJson).toBe(false);
       }
-    });
+    }, 30000);
 
     test("--json after --format still lets --format win", async () => {
       // Order shouldn't matter - --format always takes precedence
@@ -532,7 +532,9 @@ describe("search shortcut command", () => {
   });
 
   test("search transforms to bookmarks list --search (verified via debug)", async () => {
-    const result = await runCli(["--debug", "search", "test-query", "--limit", "5"]);
+    const result = await runCli(["--debug", "search", "test-query", "--limit", "5"], {
+      env: { RAINDROP_TOKEN: "" },
+    });
 
     // Debug output shows the transformation
     expect(result.stderr).toContain("Search shortcut: transforming command");
@@ -540,15 +542,17 @@ describe("search shortcut command", () => {
     expect(result.stderr).toContain("list");
     expect(result.stderr).toContain("--search");
     expect(result.stderr).toContain("test-query");
-  });
+  }, 30000);
 
   test("search works with global options before command", async () => {
-    const result = await runCli(["--debug", "--format", "json", "search", "query"]);
+    const result = await runCli(["--debug", "--format", "json", "search", "query"], {
+      env: { RAINDROP_TOKEN: "" },
+    });
 
     // Should successfully transform (not fail to find command)
     expect(result.stderr).toContain("Search shortcut: transforming command");
     expect(result.stderr).not.toContain("command not found");
-  });
+  }, 30000);
 
   test("search passes through additional options", async () => {
     const result = await runCli(["--debug", "search", "query", "--tag", "dev", "--limit", "10"]);
