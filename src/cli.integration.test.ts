@@ -138,9 +138,7 @@ describe("CLI integration", () => {
   describe("auth status command", () => {
     test("outputs to appropriate streams", async () => {
       // Run without token to get unauthenticated status
-      const result = await runCli(["auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["auth", "status"]);
 
       // Should exit with code 1 when not authenticated
       // But the important thing is it runs without crashing
@@ -148,9 +146,7 @@ describe("CLI integration", () => {
     });
 
     test("auth status --json outputs valid JSON to stdout", async () => {
-      const result = await runCli(["auth", "status", "--json"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["auth", "status", "--json"]);
 
       // Even if not authenticated, should output valid JSON
       if (result.stdout.trim()) {
@@ -203,26 +199,20 @@ describe("CLI integration", () => {
 
     test("--format does not have -f shorthand (reserved for --force)", async () => {
       // -f should be unrecognized at global level since it's reserved for --force on subcommands
-      const result = await runCli(["-f", "json", "auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["-f", "json", "auth", "status"]);
       expect(result.stderr).toContain("unknown option");
       expect(result.stderr).toContain("-f");
     });
 
     test("--json flag is recognized", async () => {
-      const result = await runCli(["auth", "status", "--json"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["auth", "status", "--json"]);
       // Should not error due to unrecognized flag
       // Exit code may be non-zero due to no auth, but that's OK
       expect(result.stderr).not.toContain("unknown option");
     });
 
     test("--json flag outputs valid JSON", async () => {
-      const result = await runCli(["--json", "auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["--json", "auth", "status"]);
       // Should not error due to unrecognized flag
       expect(result.stderr).not.toContain("unknown option");
       // stdout should be valid JSON (if there is output)
@@ -232,9 +222,7 @@ describe("CLI integration", () => {
     });
 
     test("--json flag works on subcommands", async () => {
-      const result = await runCli(["auth", "status", "--json"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["auth", "status", "--json"]);
       expect(result.stderr).not.toContain("unknown option");
       if (result.stdout.trim()) {
         expect(() => JSON.parse(result.stdout)).not.toThrow();
@@ -246,9 +234,7 @@ describe("CLI integration", () => {
       // When --json comes AFTER the subcommand name, it's parsed by the subcommand,
       // not the root program. The preAction hook must use actionCommand.optsWithGlobals()
       // to see it and set format correctly.
-      const result = await runCli(["auth", "status", "--json"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["auth", "status", "--json"]);
       // Must output valid JSON structure (not table/plain format)
       const trimmed = result.stdout.trim();
       if (trimmed) {
@@ -262,9 +248,7 @@ describe("CLI integration", () => {
 
     test("--json before subcommand also outputs JSON", async () => {
       // Verify --json works when placed before subcommand too
-      const result = await runCli(["--json", "auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["--json", "auth", "status"]);
       const trimmed = result.stdout.trim();
       if (trimmed) {
         expect(() => JSON.parse(trimmed)).not.toThrow();
@@ -275,9 +259,7 @@ describe("CLI integration", () => {
 
     test("--format takes precedence over --json", async () => {
       // When both --format and --json are specified, --format wins
-      const result = await runCli(["--format", "table", "--json", "auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["--format", "table", "--json", "auth", "status"]);
       // Should not error
       expect(result.stderr).not.toContain("unknown option");
       // Output should NOT be JSON (it's table format)
@@ -288,13 +270,11 @@ describe("CLI integration", () => {
         const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
         expect(looksLikeJson).toBe(false);
       }
-    }, 30000);
+    });
 
     test("--json after --format still lets --format win", async () => {
       // Order shouldn't matter - --format always takes precedence
-      const result = await runCli(["--json", "--format", "plain", "auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["--json", "--format", "plain", "auth", "status"]);
       expect(result.stderr).not.toContain("unknown option");
     });
 
@@ -371,9 +351,7 @@ describe("CLI integration", () => {
     });
 
     test("-t validates timeout value", async () => {
-      const result = await runCli(["-t", "invalid", "auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["-t", "invalid", "auth", "status"]);
       expect(result.exitCode).not.toBe(0);
       expect(result.stderr).toContain("Invalid timeout");
     });
@@ -418,9 +396,7 @@ describe("CLI integration", () => {
     });
 
     test("--verbose shows operational output on stderr", async () => {
-      const result = await runCli(["--verbose", "auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["--verbose", "auth", "status"]);
       // Verbose output should go to stderr
       expect(result.stderr).toContain("→");
     });
@@ -435,9 +411,7 @@ describe("CLI integration", () => {
     });
 
     test("--debug and --verbose can be used together", async () => {
-      const result = await runCli(["--debug", "--verbose", "auth", "status"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["--debug", "--verbose", "auth", "status"]);
       // Both types of output should appear on stderr
       expect(result.stderr).toContain("→");
       expect(result.stderr).toContain("[debug]");
@@ -447,9 +421,7 @@ describe("CLI integration", () => {
       // Tests that global flags work when placed after subcommand name
       // (requires preAction to use actionCommand.optsWithGlobals())
       // Use bookmarks list which has --verbose via addOutputOptions
-      const result = await runCli(["bookmarks", "list", "--verbose"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["bookmarks", "list", "--verbose"]);
       // Will fail due to no auth, but verbose output should still appear
       expect(result.stderr).toContain("→");
     });
@@ -457,9 +429,7 @@ describe("CLI integration", () => {
     test("--debug after subcommand shows debug output", async () => {
       // Tests that global flags work when placed after subcommand name
       // Use bookmarks list which has --debug via addOutputOptions
-      const result = await runCli(["bookmarks", "list", "--debug"], {
-        env: { RAINDROP_TOKEN: "" },
-      });
+      const result = await runCli(["bookmarks", "list", "--debug"]);
       // Will fail due to no auth, but debug output should still appear
       expect(result.stderr).toContain("[debug]");
     });
@@ -532,9 +502,7 @@ describe("search shortcut command", () => {
   });
 
   test("search transforms to bookmarks list --search (verified via debug)", async () => {
-    const result = await runCli(["--debug", "search", "test-query", "--limit", "5"], {
-      env: { RAINDROP_TOKEN: "" },
-    });
+    const result = await runCli(["--debug", "search", "test-query", "--limit", "5"]);
 
     // Debug output shows the transformation
     expect(result.stderr).toContain("Search shortcut: transforming command");
@@ -542,17 +510,15 @@ describe("search shortcut command", () => {
     expect(result.stderr).toContain("list");
     expect(result.stderr).toContain("--search");
     expect(result.stderr).toContain("test-query");
-  }, 30000);
+  });
 
   test("search works with global options before command", async () => {
-    const result = await runCli(["--debug", "--format", "json", "search", "query"], {
-      env: { RAINDROP_TOKEN: "" },
-    });
+    const result = await runCli(["--debug", "--format", "json", "search", "query"]);
 
     // Should successfully transform (not fail to find command)
     expect(result.stderr).toContain("Search shortcut: transforming command");
     expect(result.stderr).not.toContain("command not found");
-  }, 30000);
+  });
 
   test("search passes through additional options", async () => {
     const result = await runCli(["--debug", "search", "query", "--tag", "dev", "--limit", "10"]);

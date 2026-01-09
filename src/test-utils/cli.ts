@@ -42,6 +42,7 @@ export async function runCli(args: string[], options: CliOptions = {}): Promise<
     cwd: cwd ?? import.meta.dir.replace("/src/test-utils", ""),
     env: {
       ...process.env,
+      RAINDROP_TOKEN: "", // Default to empty to prevent accidental network calls in tests
       ...env,
       // Ensure consistent output for tests (disable colors)
       NO_COLOR: "1",

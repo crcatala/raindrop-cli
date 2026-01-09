@@ -32,11 +32,20 @@ describe("highlights command - with auth", () => {
 
   const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
   const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
-    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+    runCliBase(args, {
+      timeout: AUTH_CLI_TIMEOUT,
+      ...options,
+      env: { RAINDROP_TOKEN: process.env.RAINDROP_TOKEN, ...options.env },
+    });
   const runCliExpectSuccess = (
     args: string[],
     options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
-  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  ) =>
+    runCliExpectSuccessBase(args, {
+      timeout: AUTH_CLI_TIMEOUT,
+      ...options,
+      env: { RAINDROP_TOKEN: process.env.RAINDROP_TOKEN, ...options.env },
+    });
 
   testWithAuth("list returns highlights as JSON", async () => {
     const result = await runCliExpectSuccess(["highlights", "list"]);
