@@ -1,5 +1,8 @@
 # raindrop-cli
 
+[![npm version](https://img.shields.io/npm/v/raindrop-cli)](https://npmjs.com/package/raindrop-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A TypeScript CLI for Raindrop.io built on `@lasuillard/raindrop-client` and `commander`, designed for AI agent integration and personal productivity workflows.
 
 ## Features
@@ -11,10 +14,19 @@ A TypeScript CLI for Raindrop.io built on `@lasuillard/raindrop-client` and `com
 - Collection management
 - Tag and highlight operations
 
+## Requirements
+
+- Node.js 20+
+
 ## Installation
 
 ```bash
 npm install -g raindrop-cli
+```
+
+Or use without installing:
+```bash
+npx raindrop-cli --help
 ```
 
 This installs `rd` as the primary command. An `rdcli` alias is also available if `rd` conflicts with another tool on your system:
@@ -34,20 +46,39 @@ export RAINDROP_TOKEN=your-token-here
 
 Get your token from [Raindrop.io Integrations Settings](https://app.raindrop.io/settings/integrations).
 
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `RAINDROP_TOKEN` | API token from Raindrop.io | Yes |
+| `RDCLI_TIMEOUT` | Request timeout in seconds | No |
+| `RDCLI_API_DELAY_MS` | Delay between API calls | No |
+
 ## Usage
 
 ```bash
-# List your raindrops
-rd raindrops list
+# List your bookmarks
+rd bookmarks list
 
 # Add a new bookmark
-rd raindrops add https://example.com --tags "reading,tech"
+rd bookmarks add https://example.com --tags "reading,tech"
 
-# Search raindrops
-rd raindrops search "typescript"
+# Search bookmarks
+rd bookmarks search "typescript"
 
 # Get help
 rd --help
+```
+
+### Root Shortcuts
+
+Common operations have shortcuts at the root level:
+
+```bash
+rd list                 # Shortcut for: rd bookmarks list
+rd search "query"       # Shortcut for: rd bookmarks search
+rd add <url>            # Shortcut for: rd bookmarks add
+rd show <id>            # Shortcut for: rd bookmarks show
 ```
 
 ## Development

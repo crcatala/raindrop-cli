@@ -49,3 +49,13 @@ Started: 2026-01-07
 - Files changed: .github/workflows/ci.yml
 - **Learnings:** Using `sed` is efficient for applying identical changes across multiple jobs in a YAML file. Pinned versions prevent unexpected breakages from upstream updates.
 ---
+
+## [2026-01-08 16:55] - rd-u22.7
+- Updated README.md to match actual CLI behavior and OSS requirements.
+- Replaced outdated `rd raindrops` references with `rd bookmarks`.
+- Added badges for npm version and license.
+- Documented root shortcuts, environment variables, and requirements (Node.js 20+).
+- Added `npx` usage instructions.
+- Files changed: README.md
+- **Learnings:** Direct file overwrite is sometimes cleaner than applying patches when rewriting documentation structures significantly.
+---

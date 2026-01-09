@@ -39,7 +39,7 @@ tasks:
 
   - id: rd-u22.7
     title: Update README for accuracy and completeness
-    status: pending
+    status: done
 
   - id: rd-u22.8
     title: Add CONTRIBUTING.md
