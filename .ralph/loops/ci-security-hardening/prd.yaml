@@ -38,7 +38,7 @@ tasks:
 
   - id: rd-u22.14
     title: Add secret scanning with GitGuardian
-    status: pending
+    status: done
     notes: |
       Create new workflow .github/workflows/gitguardian.yml
       

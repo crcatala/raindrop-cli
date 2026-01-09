@@ -16,3 +16,12 @@ Started: 2026-01-09 07:11
 - Files changed: .github/workflows/ci.yml, .github/workflows/ci-live.yml
 - **Learnings:** Keep version comments after SHA for Dependabot compatibility and maintainability
 ---
+
+## [2026-01-09 07:13] - rd-u22.14
+- Added GitGuardian secret scanning workflow
+- Uses ggshield-action pinned to SHA for supply chain security
+- Configured with fetch-depth: 0 for full history scanning
+- Required env vars: GITHUB_PUSH_BEFORE_SHA, GITHUB_PUSH_BASE_SHA, GITHUB_DEFAULT_BRANCH
+- Files changed: .github/workflows/gitguardian.yml (new)
+- **Learnings:** GitGuardian requires GITGUARDIAN_API_KEY repository secret to be pre-configured
+---
