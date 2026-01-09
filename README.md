@@ -316,15 +316,7 @@ bun run verify
 
 ### Verbose Commands
 
-Most commands have a `:verbose` variant with human-friendly output. The defaults are optimized for AI agents with minimal output.
-
-```bash
-bun run test:verbose         # detailed test output
-bun run test:live:verbose    # detailed live test output
-bun run lint:verbose         # show all lint details
-bun run format:verbose       # show formatted files
-bun run verify:verbose       # detailed verification output
-```
+Most commands have a `:verbose` variant with human-friendly output (e.g., `bun run test:verbose`). The defaults are optimized for AI agents with minimal output.
 
 ### Live Tests in CI
 
