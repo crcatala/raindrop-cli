@@ -337,6 +337,62 @@ src/
 └── types/             # TypeScript types
 ```
 
+## Releasing
+
+For maintainers publishing a new version to npm.
+
+### Prerequisites
+
+- Push access to the repository
+- npm account with publish rights to `raindrop-cli`
+- Logged in to npm (`npm whoami` to verify)
+
+### Release Process
+
+```bash
+# 1. Ensure you're on main with latest changes
+git checkout main
+git pull
+
+# 2. Update version in package.json
+npm version patch  # or: minor, major
+
+# 3. Update CHANGELOG.md
+# - Move items from "Unreleased" to new version section
+# - Set the release date
+
+# 4. Commit the changelog
+git add CHANGELOG.md
+git commit -m "chore: update changelog for vX.Y.Z"
+
+# 5. Dry run to verify package contents
+npm publish --dry-run --access public
+
+# 6. Publish (runs tests + build automatically via prepublishOnly)
+npm publish --access public
+
+# 7. Push commits and tags
+git push && git push --tags
+
+# 8. Verify
+npm info raindrop-cli
+npx raindrop-cli@latest --version
+```
+
+### What `npm publish` Does
+
+1. Runs `prepublishOnly` script (verify + build)
+2. Creates a tarball with only: `dist/*`, `README.md`, `LICENSE`, `package.json`
+3. Uploads to npm registry
+
+No need to build manually first — `prepublishOnly` handles it.
+
+### Notes
+
+- Published versions are **immutable** — double-check before publishing
+- Use `npm version` to bump version (it creates a git tag automatically)
+- The `--access public` flag is required for public packages
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
