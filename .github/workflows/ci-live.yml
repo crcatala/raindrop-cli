@@ -112,8 +112,9 @@ jobs:
         id: tests
         env:
           RAINDROP_TOKEN: ${{ secrets.RAINDROP_TOKEN }}
+          # Delay handled by npm script but kept here for clarity
           RDCLI_API_DELAY_MS: "250"
-        run: bun run test:live
+        run: bun run test:live:verbose
 
       - name: Update check (success)
         if: github.event_name == 'issue_comment' && success()
