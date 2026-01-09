@@ -385,10 +385,12 @@ cmd_run() {
   if [ -n "$branch_override" ]; then
     branch="$branch_override"
     info "Using branch override: $branch"
+    # Session dir with branch-- prefix to avoid collision with loop names
+    local session_dir="$HOME/.ralph/sessions/$loop_name/branch--${branch//\//_}"
+  else
+    # Default session dir (no branch subfolder)
+    local session_dir="$HOME/.ralph/sessions/$loop_name"
   fi
-  
-  # Session dir includes branch name for comparison runs
-  local session_dir="$HOME/.ralph/sessions/$loop_name/${branch//\//_}"
 
   # Create progress.md if missing
   if [ ! -f "$progress" ]; then
