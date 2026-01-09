@@ -69,7 +69,7 @@ tasks:
       Combined with GitHub's fork approval settings, provides defense in depth.
 
   - title: Create PR and push branch
-    status: pending
+    status: done
     acceptance:
       - "Branch is pushed to origin"
       - "PR is created with descriptive title and body"
