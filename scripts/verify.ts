@@ -43,8 +43,9 @@ interface CheckResult {
 const checks: CheckConfig[] = [
   {
     name: "Tests",
-    command: ["bash", "scripts/test-unit.sh", "--bail", "--only-failures"],
+    command: ["bash", "scripts/test-unit.sh", "--bail"],
     verboseHint: "bun run test:verbose",
+    env: { FORCE_COLOR: "1" },
   },
   {
     name: "Lint",
