@@ -35,7 +35,7 @@ tasks:
 
   - id: rd-u22.6
     title: Review and harden existing CI workflow
-    status: pending
+    status: done
 
   - id: rd-u22.7
     title: Update README for accuracy and completeness

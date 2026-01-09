@@ -42,3 +42,10 @@ Started: 2026-01-07
 - Files changed: src/commands/bookmarks.ts
 - **Learnings:** Explicit error typing with `unknown` and `instanceof` is safer and preferred over `any`.
 ---
+
+## [2026-01-08 16:50] - rd-u22.6
+- Hardened `.github/workflows/ci.yml` by pinning Bun version to 1.1.42 and using `--frozen-lockfile`.
+- Implemented "Option A - Minimal fix" to ensure reproducibility and determinism in CI.
+- Files changed: .github/workflows/ci.yml
+- **Learnings:** Using `sed` is efficient for applying identical changes across multiple jobs in a YAML file. Pinned versions prevent unexpected breakages from upstream updates.
+---
