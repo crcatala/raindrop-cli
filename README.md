@@ -346,6 +346,7 @@ For maintainers publishing a new version to npm.
 - Push access to the repository
 - npm account with publish rights to `raindrop-cli`
 - Logged in to npm (`npm whoami` to verify)
+- ggshield installed and authenticated (`ggshield auth status`)
 
 ### Release Process
 
@@ -354,44 +355,48 @@ For maintainers publishing a new version to npm.
 git checkout main
 git pull
 
-# 2. Update version in package.json
-npm version patch  # or: minor, major
-
-# 3. Update CHANGELOG.md
+# 2. Update CHANGELOG.md
 # - Move items from "Unreleased" to new version section
-# - Set the release date
+# - Set the release date (e.g., ## [0.2.0] - 2026-01-15)
 
-# 4. Commit the changelog
+# 3. Commit the changelog
 git add CHANGELOG.md
 git commit -m "chore: update changelog for vX.Y.Z"
+
+# 4. Bump version (creates commit + git tag automatically)
+npm version patch  # or: minor, major
+# This updates package.json and creates a vX.Y.Z tag
 
 # 5. Dry run to verify package contents
 npm publish --dry-run --access public
 
-# 6. Publish (runs tests + build automatically via prepublishOnly)
+# 6. Publish to npm
 npm publish --access public
 
-# 7. Push commits and tags
+# 7. Push commits and tags to GitHub
 git push && git push --tags
 
-# 8. Verify
+# 8. Verify installation works
 npm info raindrop-cli
 npx raindrop-cli@latest --version
 ```
 
-### What `npm publish` Does
+### What Happens During Publish
 
-1. Runs `prepublishOnly` script (verify + build)
-2. Creates a tarball with only: `dist/*`, `README.md`, `LICENSE`, `package.json`
-3. Uploads to npm registry
+The `prepublishOnly` script runs automatically before upload:
 
-No need to build manually first — `prepublishOnly` handles it.
+1. **Verify** — runs tests, lint, typecheck, format
+2. **Build** — compiles to `dist/`
+3. **Secret scan** — ggshield scans source and `dist/` for leaked secrets
+4. **Package** — creates tarball with only: `dist/*`, `README.md`, `LICENSE`, `package.json`
+
+No need to run `bun run build` manually — it's all handled automatically.
 
 ### Notes
 
-- Published versions are **immutable** — double-check before publishing
-- Use `npm version` to bump version (it creates a git tag automatically)
-- The `--access public` flag is required for public packages
+- **Immutable** — published versions cannot be changed, only deprecated
+- **Tags** — `npm version` creates the git tag; just remember to `git push --tags`
+- **Secrets** — publish will fail if ggshield detects secrets in the bundle
 
 ## Contributing
 
