@@ -43,7 +43,7 @@ tasks:
 
   - id: rd-u22.8
     title: Add CONTRIBUTING.md
-    status: pending
+    status: done
 
   - id: rd-u22.9
     title: Add CHANGELOG.md

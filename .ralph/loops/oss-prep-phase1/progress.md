@@ -59,3 +59,10 @@ Started: 2026-01-07
 - Files changed: README.md
 - **Learnings:** Direct file overwrite is sometimes cleaner than applying patches when rewriting documentation structures significantly.
 ---
+
+## [2026-01-08 16:58] - rd-u22.8
+- Added CONTRIBUTING.md with development guidelines.
+- Documented setup, testing, and PR process.
+- Files changed: CONTRIBUTING.md
+- **Learnings:** Providing clear setup instructions helps new contributors get started quickly.
+---
