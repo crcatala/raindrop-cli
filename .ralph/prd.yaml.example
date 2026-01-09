@@ -1,0 +1,42 @@
+# Example Ralph Loop Manifest
+# Copy this to create a new loop: cp -r .ralph/loops/example .ralph/loops/my-feature
+
+name: "Example Feature"
+description: "A sample loop demonstrating manifest structure"
+branch: "ralph/example-feature"
+
+# Orchestration
+create_pr: true
+pr_title: "feat: Example feature implementation"  # Optional, defaults to name
+
+# Issue tracker integration: "none" or "beads"
+issue_tracker: none
+
+# Pre-commit verification command (optional)
+pre_commit: "bun run verify"
+
+# Task list
+# Each task needs:
+#   - title (required)
+#   - status: pending | done (required)
+#   - id (required if issue_tracker != "none")
+#   - acceptance (optional, inline criteria)
+#   - notes (optional, additional context)
+tasks:
+  - title: First task
+    status: pending
+    acceptance:
+      - "First criterion is met"
+      - "Second criterion is met"
+    notes: "Any additional context for the agent"
+
+  - title: Second task
+    status: pending
+    acceptance:
+      - "This task's criterion is met"
+
+  # Example with beads integration (when issue_tracker: beads)
+  # - id: rd-u22.1
+  #   title: Add LICENSE file
+  #   status: pending
+  #   notes: "Check beads issue for full acceptance criteria"
