@@ -610,6 +610,12 @@ describe("bookmarks update command - with auth", () => {
     : test.skip;
 
   const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
+  const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
+    runCliBase(args, {
+      timeout: AUTH_CLI_TIMEOUT,
+      ...options,
+      env: { RAINDROP_TOKEN: LIVE_TOKEN, ...options.env },
+    });
   const runCliExpectSuccess = (
     args: string[],
     options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
