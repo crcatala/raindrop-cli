@@ -1,0 +1,125 @@
+# CI Security Hardening - P2 nice-to-have items from OSS readiness epic
+# Tackles rd-u22.13, rd-u22.14, rd-u22.15
+
+name: "CI Security Hardening"
+description: |
+  Implement security hardening for GitHub Actions workflows:
+  - Pin actions to SHA commits (supply chain security)
+  - Add GitGuardian secret scanning (prevent accidental secret commits)
+  - Add CODEOWNERS for workflow protection (require review for CI changes)
+
+branch: "ralph/ci-security-hardening"
+
+# PR created manually in final tasks so we can monitor/fix CI
+create_pr: false
+pr_title: "chore(ci): security hardening - SHA pinning, GitGuardian, CODEOWNERS"
+
+issue_tracker: beads
+pre_commit: "bun run verify"
+
+tasks:
+  - id: rd-u22.13
+    title: Pin GitHub Actions to SHA commits
+    status: pending
+    notes: |
+      Pin all actions in .github/workflows/*.yml to specific SHA commits.
+      Keep version comment for maintainability and Dependabot compatibility.
+      
+      Use these exact SHAs (researched 2026-01-09):
+      
+      For ci.yml and ci-live.yml:
+      - actions/checkout@v4 → actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+      - actions/github-script@v7 → actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+      - oven-sh/setup-bun@v2 → oven-sh/setup-bun@b7a1c7ccf290d58743029c4f6903da283811b979  # v2.1.0
+      
+      Files to update:
+      - .github/workflows/ci.yml
+      - .github/workflows/ci-live.yml
+
+  - id: rd-u22.14
+    title: Add secret scanning with GitGuardian
+    status: pending
+    notes: |
+      Create new workflow .github/workflows/gitguardian.yml
+      
+      Use GitGuardian ggshield-action for comprehensive secret scanning.
+      Pin to SHA: GitGuardian/ggshield-action@f4b0b39a8a8c07a14b2ed99634c75b6e93f983f3  # v1.46.0
+      
+      Required setup (user has added the secret):
+      - Repository secret: GITGUARDIAN_API_KEY (already configured)
+      
+      Workflow configuration:
+      - Run on push and pull_request
+      - fetch-depth: 0 required for full history scan
+      - Include env vars: GITHUB_PUSH_BEFORE_SHA, GITHUB_PUSH_BASE_SHA, GITHUB_DEFAULT_BRANCH
+      
+      Also pin the checkout action in this new workflow to the v6 SHA.
+
+  - id: rd-u22.15
+    title: Add CODEOWNERS for .github/workflows/
+    status: pending
+    notes: |
+      Create .github/CODEOWNERS with:
+      ```
+      # Require maintainer review for workflow changes
+      /.github/workflows/ @crcatala
+      ```
+      
+      This requires explicit approval before workflow changes can be merged.
+      Combined with GitHub's fork approval settings, provides defense in depth.
+
+  - title: Create PR and push branch
+    status: pending
+    acceptance:
+      - "Branch is pushed to origin"
+      - "PR is created with descriptive title and body"
+      - "PR link is logged to progress.md"
+    notes: |
+      Push the branch and create a PR using gh CLI:
+      
+      ```bash
+      git push -u origin ralph/ci-security-hardening
+      gh pr create --title "chore(ci): security hardening - SHA pinning, GitGuardian, CODEOWNERS" \
+        --body "## Summary
+      
+      Security hardening for GitHub Actions workflows:
+      
+      - **SHA Pinning**: Pin all actions to immutable commit SHAs (supply chain security)
+      - **GitGuardian**: Add secret scanning to catch accidentally committed secrets
+      - **CODEOWNERS**: Require maintainer review for workflow changes
+      
+      ## Changes
+      - Updated ci.yml and ci-live.yml with pinned action SHAs
+      - Added gitguardian.yml workflow
+      - Added CODEOWNERS file
+      
+      Closes rd-u22.13, rd-u22.14, rd-u22.15"
+      ```
+      
+      Record the PR number/URL in progress.md for the next task.
+
+  - title: Ensure PR CI is passing
+    status: pending
+    acceptance:
+      - "All CI workflow checks on the PR are passing (green)"
+      - "No workflow syntax errors"
+      - "GitGuardian scan completes (may show as skipped if no secret found, that's OK)"
+    notes: |
+      CI can fail even though local verify passes - especially since we modified workflows.
+      
+      Monitor and fix strategy:
+      1. Check PR status: `gh pr checks` or `gh pr view --json statusCheckRollup`
+      2. If checks are pending, wait and re-check at reasonable intervals (30-60 seconds)
+      3. If checks fail, investigate:
+         - `gh run list --branch ralph/ci-security-hardening` to see runs
+         - `gh run view <run-id> --log-failed` to see failure details
+      4. Fix issues, commit, push, and monitor again
+      5. Repeat until all checks pass
+      
+      Common issues to watch for:
+      - YAML syntax errors in workflow files
+      - Missing or incorrect SHA references
+      - GitGuardian may need the secret to be present (should be configured)
+      - Node version compatibility with new action versions
+      
+      Only mark this task done when `gh pr checks` shows all checks passing.
