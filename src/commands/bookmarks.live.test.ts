@@ -435,7 +435,12 @@ describe("bookmarks add command - with auth", () => {
   const runCliExpectSuccess = (
     args: string[],
     options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
-  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  ) =>
+    runCliExpectSuccessBase(args, {
+      timeout: AUTH_CLI_TIMEOUT,
+      ...options,
+      env: { RAINDROP_TOKEN: LIVE_TOKEN, ...options.env },
+    });
 
   testWithAuth("add creates a bookmark with just URL", async () => {
     const testUrl = `https://example.com/test-${Date.now()}`;
@@ -608,7 +613,12 @@ describe("bookmarks update command - with auth", () => {
   const runCliExpectSuccess = (
     args: string[],
     options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
-  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  ) =>
+    runCliExpectSuccessBase(args, {
+      timeout: AUTH_CLI_TIMEOUT,
+      ...options,
+      env: { RAINDROP_TOKEN: LIVE_TOKEN, ...options.env },
+    });
 
   testWithAuth("update title", async () => {
     const { id } = await createTestBookmark("-title");
@@ -930,7 +940,12 @@ describe("bookmarks batch commands - with auth", () => {
   const runCliExpectSuccess = (
     args: string[],
     options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
-  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  ) =>
+    runCliExpectSuccessBase(args, {
+      timeout: AUTH_CLI_TIMEOUT,
+      ...options,
+      env: { RAINDROP_TOKEN: LIVE_TOKEN, ...options.env },
+    });
 
   testWithAuth("batch-update adds tags to multiple bookmarks", async () => {
     const bookmark1 = await createTestBookmark("-batch1");
