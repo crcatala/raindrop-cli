@@ -43,7 +43,7 @@
     "verify": "bun scripts/verify.ts",
     "verify:verbose": "VERBOSE=1 bun scripts/verify.ts",
     "prepare": "lefthook install || true",
-    "prepublishOnly": "bun run verify && bun run build"
+    "prepublishOnly": "bun run verify && bun run build && ggshield secret scan path . -r --use-gitignore -y && ggshield secret scan path dist -r -y"
   },
   "keywords": [
     "raindrop",
