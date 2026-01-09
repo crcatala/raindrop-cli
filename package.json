@@ -8,17 +8,23 @@
   "types": "dist/index.d.ts",
   "bin": {
     "rd": "dist/index.js",
-    "rdcli": "dist/index.js"
+    "rdcli": "dist/index.js",
+    "raindrop-cli": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --format esm && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/temp && mv dist/temp dist/index.js && bun run build:dts",
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "dev": "bun src/index.ts",
     "test": "bash scripts/check.sh test",
     "test:verbose": "bash scripts/test-unit.sh",
-    "test:live": "bash scripts/check.sh test:live",
+    "test:live": "RDCLI_API_DELAY_MS=250 bash scripts/check.sh test:live",
     "test:live:verbose": "RDCLI_API_DELAY_MS=250 bun test --no-parallel src/**/*.live.test.ts",
-    "test:all": "bash scripts/check.sh test:all",
+    "test:all": "RDCLI_API_DELAY_MS=250 bash scripts/check.sh test:all",
     "test:all:verbose": "RDCLI_API_DELAY_MS=250 bun test src",
     "lint": "bash scripts/check.sh lint",
     "lint:fix": "oxlint --type-aware --fix src/",
@@ -31,7 +37,8 @@
     "typecheck:verbose": "tsc --noEmit",
     "verify": "bun scripts/verify.ts",
     "verify:verbose": "VERBOSE=1 bun scripts/verify.ts",
-    "postinstall": "lefthook install"
+    "prepare": "lefthook install || true",
+    "prepublishOnly": "bun run verify && bun run build"
   },
   "keywords": [
     "raindrop",
@@ -40,16 +47,16 @@
     "bookmarks",
     "ai-agent"
   ],
-  "author": "",
+  "author": "Christian Catalan <crcatala@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/crcatala/raindrop-cli-spike.git"
+    "url": "git+https://github.com/crcatala/raindrop-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/crcatala/raindrop-cli-spike/issues"
+    "url": "https://github.com/crcatala/raindrop-cli/issues"
   },
-  "homepage": "https://github.com/crcatala/raindrop-cli-spike#readme",
+  "homepage": "https://github.com/crcatala/raindrop-cli#readme",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -62,8 +69,10 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/nock": "^11.1.0",
     "@types/node": "^22",
     "lefthook": "^2.0.13",
+    "nock": "^14.0.10",
     "oxlint": "^1.36.0",
     "oxlint-tsgolint": "^0.10.1",
     "prettier": "^3.7.4",

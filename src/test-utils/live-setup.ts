@@ -18,6 +18,7 @@
  */
 
 import { beforeAll } from "bun:test";
+import nock from "nock";
 import { cleanupTestArtifacts } from "./cleanup.js";
 import { AUTH_TEST_TIMEOUT_MS } from "./timeouts.js";
 
@@ -40,8 +41,21 @@ let cleanupComplete = false;
  * This will run cleanup once before all live tests start.
  */
 export function setupLiveTests(): void {
+  // Debug logging
+  if (process.env.CI) {
+    const token = process.env.RAINDROP_TOKEN;
+    if (token) {
+      console.log(`[setupLiveTests] Token present (length: ${token.length})`);
+    } else {
+      console.error("[setupLiveTests] No RAINDROP_TOKEN found in environment!");
+    }
+  }
+
   beforeAll(
     async () => {
+      // Enable network access for live tests (blocked by default in global setup)
+      nock.enableNetConnect();
+
       // Only run cleanup once, even if multiple files import this
       if (cleanupComplete) {
         return;

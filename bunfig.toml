@@ -1,4 +1,5 @@
 [test]
+preload = ["./src/test-utils/setup.ts"]
 # Default timeout for tests and hooks (in milliseconds)
 timeout = 15000
 

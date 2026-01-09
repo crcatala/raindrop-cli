@@ -5,7 +5,18 @@
  * that use the [RDCLI-TEST] naming convention.
  */
 
-import { runCli, parseJsonOutput } from "./cli.js";
+import { runCli as runCliBase, parseJsonOutput, CliOptions } from "./cli.js";
+
+/**
+ * Wrapper for runCli that includes the RAINDROP_TOKEN from environment.
+ * This ensures cleanup operations have access to the API token.
+ */
+function runCli(args: string[], options: CliOptions = {}) {
+  return runCliBase(args, {
+    ...options,
+    env: { RAINDROP_TOKEN: process.env.RAINDROP_TOKEN || "", ...options.env },
+  });
+}
 
 /** Prefix used to identify test-created bookmarks */
 export const TEST_BOOKMARK_PREFIX = "[RDCLI-TEST]";

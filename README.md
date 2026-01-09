@@ -1,5 +1,8 @@
 # raindrop-cli
 
+[![npm version](https://img.shields.io/npm/v/raindrop-cli)](https://npmjs.com/package/raindrop-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A fast, scriptable command-line interface for [Raindrop.io](https://raindrop.io) — the all-in-one bookmark manager.
 
 Built for power users, automation workflows, and AI agent integration.
@@ -16,10 +19,19 @@ Built for power users, automation workflows, and AI agent integration.
 - **Tag Operations** — Bulk rename, delete, and manage tags
 - **Fast** — Built with Bun for quick startup and execution
 
+## Requirements
+
+- Node.js 20+
+
 ## Installation
 
 ```bash
 npm install -g raindrop-cli
+```
+
+Or use without installing:
+```bash
+npx raindrop-cli --help
 ```
 
 This installs `rd` as the primary command. An `rdcli` alias is also available if `rd` conflicts with another tool:
@@ -272,6 +284,7 @@ Tokens can be provided via:
 |----------|-------------|
 | `RAINDROP_TOKEN` | API token (overrides config file) |
 | `RDCLI_TIMEOUT` | Request timeout in seconds (default: 30) |
+| `RDCLI_API_DELAY_MS` | Delay between API calls (milliseconds) |
 | `NO_COLOR` | Disable colored output |
 
 ## Development
@@ -314,7 +327,9 @@ src/
 
 ## Contributing
 
-Contributions are welcome! Please:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+Quick start:
 
 1. Fork the repository
 2. Create a feature branch
@@ -324,10 +339,11 @@ Contributions are welcome! Please:
 
 ## License
 
-MIT
+[MIT](LICENSE)
 
 ## Links
 
 - [Raindrop.io](https://raindrop.io)
 - [Raindrop.io API Documentation](https://developer.raindrop.io)
+- [Changelog](CHANGELOG.md)
 - [Report Issues](https://github.com/crcatala/raindrop-cli-spike/issues)
