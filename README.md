@@ -7,6 +7,8 @@ A fast, scriptable command-line interface for [Raindrop.io](https://raindrop.io)
 
 Built for power users, automation workflows, and AI agent integration.
 
+> **Disclaimer:** This is an unofficial, community-built tool and is not affiliated with or endorsed by Raindrop.io.
+
 ## Features
 
 - **Full CRUD Operations** — Create, read, update, and delete bookmarks with ease
