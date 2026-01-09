@@ -7,14 +7,20 @@ Based on [Geoffrey Huntley's Ralph](https://ghuntley.com/ralph).
 ## Quick Start
 
 ```bash
-# Create a new loop from example
-cp .ralph/prd.yaml.example .ralph/loops/my-feature/prd.yaml
+# List available loops
+.ralph/ralph.sh list
+
+# Create a new loop from template
+.ralph/ralph.sh new my-feature
 
 # Edit the prd
 vim .ralph/loops/my-feature/prd.yaml
 
+# Validate before running
+.ralph/ralph.sh validate my-feature
+
 # Run the loop
-.ralph/ralph.sh my-feature
+.ralph/ralph.sh run my-feature
 ```
 
 ## How It Works
@@ -106,29 +112,41 @@ tasks:
 ## Usage
 
 ```bash
-# Run a loop (loop name required)
-.ralph/ralph.sh <loop-name>
+# List available loops
+.ralph/ralph.sh list
 
-# Run with custom iteration limit (default: 25)
-.ralph/ralph.sh <loop-name> 50
+# Create a new loop
+.ralph/ralph.sh new <loop-name>
+
+# Validate a loop's prd.yaml
+.ralph/ralph.sh validate <loop-name>
+
+# Run a loop (default: 25 iterations)
+.ralph/ralph.sh run <loop-name>
+
+# Run with custom iteration limit
+.ralph/ralph.sh run <loop-name> 50
 ```
 
 ## Creating a New Loop
 
-1. Create loop directory and copy example:
+1. Create from template:
    ```bash
-   mkdir -p .ralph/loops/my-feature
-   cp .ralph/prd.yaml.example .ralph/loops/my-feature/prd.yaml
+   .ralph/ralph.sh new my-feature
    ```
 
 2. Edit `prd.yaml`:
+   ```bash
+   vim .ralph/loops/my-feature/prd.yaml
+   ```
    - Set `name`, `branch`, `create_pr`
    - Choose `issue_tracker` mode
    - Add your tasks with acceptance criteria
 
-3. Run:
+3. Validate and run:
    ```bash
-   .ralph/ralph.sh my-feature
+   .ralph/ralph.sh validate my-feature
+   .ralph/ralph.sh run my-feature
    ```
 
 ## Validation

@@ -1,14 +1,20 @@
 #!/bin/bash
 #
 # Ralph - Autonomous AI coding loop
-# Runs pi agent iteratively until all tasks are complete.
 #
-# Usage: .ralph/ralph.sh <loop-name> [max-iterations]
+# Usage: .ralph/ralph.sh <command> [args]
+#
+# Commands:
+#   run <loop> [max-iterations]  Run a loop until complete
+#   validate <loop>              Validate a loop's prd.yaml
+#   list                         List available loops
+#   new <loop>                   Create a new loop from template
 #
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATES_DIR="$SCRIPT_DIR/templates"
+LOOPS_DIR="$SCRIPT_DIR/loops"
 
 #######################################
 # Color output helpers
@@ -84,7 +90,6 @@ validate_prd() {
 
   # If issue_tracker is not "none", validate each task has an id
   if [[ "$tracker" != "none" ]]; then
-    # Check for tasks without id field (simplified check)
     local in_tasks=false
     while IFS= read -r line; do
       if [[ "$line" =~ ^tasks: ]]; then
@@ -92,13 +97,10 @@ validate_prd() {
         continue
       fi
       if $in_tasks && [[ "$line" =~ ^[a-z] ]]; then
-        # Hit another top-level key, stop
         break
       fi
       if $in_tasks && [[ "$line" =~ ^[[:space:]]*-[[:space:]] ]]; then
-        # Task entry - check if next lines have id before next task or end
         if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*title: ]] && [[ ! "$line" =~ id: ]]; then
-          # Inline title without id on same line - need to check following lines
           :
         fi
       fi
@@ -127,7 +129,6 @@ generate_prompt() {
   local progress="$2"
   local loop_dir="$3"
 
-  # Read prd values
   local name branch issue_tracker pre_commit
   name=$(yaml_get "$prd_file" "name")
   branch=$(yaml_get "$prd_file" "branch")
@@ -137,18 +138,15 @@ generate_prompt() {
   local timestamp
   timestamp=$(date '+%Y-%m-%d %H:%M')
 
-  # Start with base template
   local prompt
   prompt=$(cat "$TEMPLATES_DIR/base.md")
 
-  # Replace placeholders
   prompt="${prompt//\{\{NAME\}\}/$name}"
   prompt="${prompt//\{\{BRANCH\}\}/$branch}"
   prompt="${prompt//\{\{PRD_PATH\}\}/$prd_file}"
   prompt="${prompt//\{\{PROGRESS_PATH\}\}/$progress}"
   prompt="${prompt//\{\{TIMESTAMP\}\}/$timestamp}"
 
-  # Task details instructions
   local task_details="Read the task's \`acceptance\` array for criteria. If \`notes\` is present, use as additional context."
   if [[ "$issue_tracker" == "beads" ]]; then
     task_details="$task_details
@@ -157,7 +155,6 @@ If the task has an \`id\` field (e.g., \`rd-u22.1\`), run \`bd show <id>\` to ge
   fi
   prompt="${prompt//\{\{TASK_DETAILS_INSTRUCTIONS\}\}/$task_details}"
 
-  # Pre-commit instructions
   local pre_commit_instructions
   if [[ -n "$pre_commit" ]]; then
     pre_commit_instructions="Run the verification command:
@@ -170,7 +167,6 @@ ALL checks must pass before committing."
   fi
   prompt="${prompt//\{\{PRE_COMMIT_INSTRUCTIONS\}\}/$pre_commit_instructions}"
 
-  # Issue tracker instructions
   local issue_instructions=""
   local issue_commit_files=""
   if [[ "$issue_tracker" == "beads" ]]; then
@@ -195,7 +191,6 @@ create_pull_request() {
   description=$(yaml_get "$prd_file" "description")
   pr_title=$(yaml_get "$prd_file" "pr_title")
   
-  # Default PR title to name if not specified
   pr_title="${pr_title:-$name}"
 
   info "Pushing branch..."
@@ -203,7 +198,6 @@ create_pull_request() {
 
   info "Creating PR..."
   
-  # Generate PR body from git log and prd
   local pr_body
   pr_body="## Summary
 
@@ -232,74 +226,132 @@ All changes verified with pre-commit checks.
 }
 
 #######################################
-# Main
+# Commands
 #######################################
-usage() {
-  echo "Usage: .ralph/ralph.sh <loop-name> [max-iterations]"
-  echo ""
-  echo "Arguments:"
-  echo "  loop-name       Name of the loop directory under .ralph/loops/"
-  echo "  max-iterations  Maximum iterations before stopping (default: 25)"
-  echo ""
+
+cmd_list() {
   echo "Available loops:"
-  if [ -d "$SCRIPT_DIR/loops" ] && [ "$(ls -A "$SCRIPT_DIR/loops" 2>/dev/null)" ]; then
-    ls -1 "$SCRIPT_DIR/loops/" | sed 's/^/  /'
+  if [ -d "$LOOPS_DIR" ] && [ "$(ls -A "$LOOPS_DIR" 2>/dev/null)" ]; then
+    for loop in "$LOOPS_DIR"/*/; do
+      if [ -d "$loop" ]; then
+        local name=$(basename "$loop")
+        local prd="$loop/prd.yaml"
+        if [ -f "$prd" ]; then
+          local title=$(yaml_get "$prd" "name")
+          local pending=$(grep -c "status:[[:space:]]*pending" "$prd" 2>/dev/null || true)
+          local done_count=$(grep -c "status:[[:space:]]*done" "$prd" 2>/dev/null || true)
+          pending="${pending:-0}"
+          done_count="${done_count:-0}"
+          echo "  $name - $title [$done_count done, $pending pending]"
+        else
+          echo "  $name - (missing prd.yaml)"
+        fi
+      fi
+    done
   else
     echo "  (none found)"
   fi
 }
 
-# Parse arguments
-if [ -z "$1" ]; then
-  error "Loop name is required"
-  echo ""
-  usage
-  exit 1
-fi
+cmd_new() {
+  local loop_name="$1"
+  
+  if [ -z "$loop_name" ]; then
+    error "Loop name required"
+    echo "Usage: .ralph/ralph.sh new <loop-name>"
+    exit 1
+  fi
+  
+  local loop_dir="$LOOPS_DIR/$loop_name"
+  
+  if [ -d "$loop_dir" ]; then
+    error "Loop already exists: $loop_dir"
+    exit 1
+  fi
+  
+  mkdir -p "$loop_dir"
+  cp "$SCRIPT_DIR/prd.yaml.example" "$loop_dir/prd.yaml"
+  
+  success "Created new loop: $loop_name"
+  echo "  Edit: $loop_dir/prd.yaml"
+  echo "  Run:  .ralph/ralph.sh run $loop_name"
+}
 
-LOOP_NAME="$1"
-MAX_ITERATIONS="${2:-25}"
-LOOP_DIR="$SCRIPT_DIR/loops/$LOOP_NAME"
-PRD_FILE="$LOOP_DIR/prd.yaml"
-PROGRESS="$LOOP_DIR/progress.md"
-SESSION_DIR="$HOME/.ralph/sessions/$LOOP_NAME"
+cmd_validate() {
+  local loop_name="$1"
+  
+  if [ -z "$loop_name" ]; then
+    error "Loop name required"
+    echo "Usage: .ralph/ralph.sh validate <loop-name>"
+    exit 1
+  fi
+  
+  local loop_dir="$LOOPS_DIR/$loop_name"
+  local prd_file="$loop_dir/prd.yaml"
+  
+  if [ ! -d "$loop_dir" ]; then
+    error "Loop not found: $loop_name"
+    cmd_list
+    exit 1
+  fi
+  
+  if [ ! -f "$prd_file" ]; then
+    error "prd.yaml not found: $prd_file"
+    exit 1
+  fi
+  
+  validate_prd "$prd_file"
+}
 
-# Check for legacy prd.json and suggest migration
-if [ -f "$LOOP_DIR/prd.json" ] && [ ! -f "$PRD_FILE" ]; then
-  error "Found legacy prd.json but no prd.yaml"
-  echo ""
-  echo "Ralph now uses prd.yaml instead of prd.json."
-  echo "Please migrate your loop configuration."
-  exit 1
-fi
+cmd_run() {
+  local loop_name="$1"
+  local max_iterations="${2:-25}"
+  
+  if [ -z "$loop_name" ]; then
+    error "Loop name required"
+    echo "Usage: .ralph/ralph.sh run <loop-name> [max-iterations]"
+    exit 1
+  fi
+  
+  local loop_dir="$LOOPS_DIR/$loop_name"
+  local prd_file="$loop_dir/prd.yaml"
+  local progress="$loop_dir/progress.md"
+  local session_dir="$HOME/.ralph/sessions/$loop_name"
 
-# Validate loop exists
-if [ ! -d "$LOOP_DIR" ]; then
-  error "Loop directory not found: $LOOP_DIR"
-  echo ""
-  usage
-  exit 1
-fi
+  # Check for legacy prd.json
+  if [ -f "$loop_dir/prd.json" ] && [ ! -f "$prd_file" ]; then
+    error "Found legacy prd.json but no prd.yaml"
+    echo ""
+    echo "Ralph now uses prd.yaml instead of prd.json."
+    echo "Please migrate your loop configuration."
+    exit 1
+  fi
 
-if [ ! -f "$PRD_FILE" ]; then
-  error "prd.yaml not found: $PRD_FILE"
-  exit 1
-fi
+  if [ ! -d "$loop_dir" ]; then
+    error "Loop not found: $loop_name"
+    cmd_list
+    exit 1
+  fi
 
-# Validate prd
-if ! validate_prd "$PRD_FILE"; then
-  exit 1
-fi
+  if [ ! -f "$prd_file" ]; then
+    error "prd.yaml not found: $prd_file"
+    exit 1
+  fi
 
-# Read config
-BRANCH=$(yaml_get "$PRD_FILE" "branch")
-CREATE_PR=$(yaml_get_bool "$PRD_FILE" "create_pr")
-NAME=$(yaml_get "$PRD_FILE" "name")
+  # Validate
+  if ! validate_prd "$prd_file"; then
+    exit 1
+  fi
 
-# Create progress.md if missing
-if [ ! -f "$PROGRESS" ]; then
-  cat > "$PROGRESS" << EOF
-# Ralph Progress Log: $NAME
+  # Read config
+  local branch=$(yaml_get "$prd_file" "branch")
+  local create_pr=$(yaml_get_bool "$prd_file" "create_pr")
+  local name=$(yaml_get "$prd_file" "name")
+
+  # Create progress.md if missing
+  if [ ! -f "$progress" ]; then
+    cat > "$progress" << EOF
+# Ralph Progress Log: $name
 Started: $(date '+%Y-%m-%d %H:%M')
 
 ## Codebase Patterns
@@ -308,65 +360,117 @@ Started: $(date '+%Y-%m-%d %H:%M')
 ---
 
 EOF
-  success "Created progress.md"
-fi
-
-# Create session directory
-mkdir -p "$SESSION_DIR"
-
-echo ""
-echo "═══════════════════════════════════════════════════"
-echo "🚀 Ralph Loop: $NAME"
-echo "═══════════════════════════════════════════════════"
-echo "   Branch: $BRANCH"
-echo "   Max iterations: $MAX_ITERATIONS"
-echo "   Create PR on completion: $CREATE_PR"
-echo "   Sessions: $SESSION_DIR"
-echo ""
-
-# Generate prompt to temp file
-PROMPT_FILE=$(mktemp)
-generate_prompt "$PRD_FILE" "$PROGRESS" "$LOOP_DIR" > "$PROMPT_FILE"
-trap "rm -f $PROMPT_FILE" EXIT
-
-# Main loop
-for i in $(seq 1 $MAX_ITERATIONS); do
-  echo ""
-  echo "═══════════════════════════════════════════════════"
-  echo "═══ Iteration $i of $MAX_ITERATIONS"
-  echo "═══════════════════════════════════════════════════"
-  echo ""
-
-  # Regenerate prompt each iteration (timestamp updates)
-  generate_prompt "$PRD_FILE" "$PROGRESS" "$LOOP_DIR" > "$PROMPT_FILE"
-
-  # Run pi agent
-  OUTPUT=$(pi --print --session-dir "$SESSION_DIR" --thinking high @"$PROMPT_FILE" 2>&1 | tee /dev/stderr) || true
-
-  # Check for completion signal
-  if echo "$OUTPUT" | grep -q "<loop>COMPLETE</loop>"; then
-    echo ""
-    echo "═══════════════════════════════════════════════════"
-    success "All tasks complete!"
-    echo "═══════════════════════════════════════════════════"
-    
-    # Create PR if configured
-    if [ "$CREATE_PR" = "true" ]; then
-      echo ""
-      create_pull_request "$PRD_FILE" "$BRANCH"
-    fi
-    
-    exit 0
+    success "Created progress.md"
   fi
 
-  echo ""
-  info "Iteration $i finished, continuing..."
-  sleep 2
-done
+  mkdir -p "$session_dir"
 
-echo ""
-echo "═══════════════════════════════════════════════════"
-warn "Max iterations ($MAX_ITERATIONS) reached"
-echo "    Check progress.md and prd.yaml for status"
-echo "═══════════════════════════════════════════════════"
-exit 1
+  echo ""
+  echo "═══════════════════════════════════════════════════"
+  echo "🚀 Ralph Loop: $name"
+  echo "═══════════════════════════════════════════════════"
+  echo "   Branch: $branch"
+  echo "   Max iterations: $max_iterations"
+  echo "   Create PR on completion: $create_pr"
+  echo "   Sessions: $session_dir"
+  echo ""
+
+  # Generate prompt to temp file
+  local prompt_file=$(mktemp)
+  generate_prompt "$prd_file" "$progress" "$loop_dir" > "$prompt_file"
+  trap "rm -f $prompt_file" EXIT
+
+  # Main loop
+  for i in $(seq 1 $max_iterations); do
+    echo ""
+    echo "═══════════════════════════════════════════════════"
+    echo "═══ Iteration $i of $max_iterations"
+    echo "═══════════════════════════════════════════════════"
+    echo ""
+
+    # Regenerate prompt each iteration (timestamp updates)
+    generate_prompt "$prd_file" "$progress" "$loop_dir" > "$prompt_file"
+
+    # Run pi agent
+    OUTPUT=$(pi --print --session-dir "$session_dir" --thinking high @"$prompt_file" 2>&1 | tee /dev/stderr) || true
+
+    # Check for completion signal
+    if echo "$OUTPUT" | grep -q "<loop>COMPLETE</loop>"; then
+      echo ""
+      echo "═══════════════════════════════════════════════════"
+      success "All tasks complete!"
+      echo "═══════════════════════════════════════════════════"
+      
+      if [ "$create_pr" = "true" ]; then
+        echo ""
+        create_pull_request "$prd_file" "$branch"
+      fi
+      
+      exit 0
+    fi
+
+    echo ""
+    info "Iteration $i finished, continuing..."
+    sleep 2
+  done
+
+  echo ""
+  echo "═══════════════════════════════════════════════════"
+  warn "Max iterations ($max_iterations) reached"
+  echo "    Check progress.md and prd.yaml for status"
+  echo "═══════════════════════════════════════════════════"
+  exit 1
+}
+
+#######################################
+# Main
+#######################################
+usage() {
+  echo "Usage: .ralph/ralph.sh <command> [args]"
+  echo ""
+  echo "Commands:"
+  echo "  run <loop> [max-iter]  Run a loop until complete (default: 25 iterations)"
+  echo "  validate <loop>        Validate a loop's prd.yaml"
+  echo "  list                   List available loops"
+  echo "  new <loop>             Create a new loop from template"
+  echo ""
+  echo "Examples:"
+  echo "  .ralph/ralph.sh list"
+  echo "  .ralph/ralph.sh new my-feature"
+  echo "  .ralph/ralph.sh validate my-feature"
+  echo "  .ralph/ralph.sh run my-feature"
+  echo "  .ralph/ralph.sh run my-feature 50"
+}
+
+# Parse command
+COMMAND="${1:-}"
+
+case "$COMMAND" in
+  run)
+    cmd_run "$2" "$3"
+    ;;
+  validate)
+    cmd_validate "$2"
+    ;;
+  list)
+    cmd_list
+    ;;
+  new)
+    cmd_new "$2"
+    ;;
+  help|--help|-h)
+    usage
+    ;;
+  "")
+    error "Command required"
+    echo ""
+    usage
+    exit 1
+    ;;
+  *)
+    error "Unknown command: $COMMAND"
+    echo ""
+    usage
+    exit 1
+    ;;
+esac
