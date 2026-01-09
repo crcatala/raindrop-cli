@@ -20,7 +20,7 @@ pre_commit: "bun run verify"
 tasks:
   - id: rd-u22.13
     title: Pin GitHub Actions to SHA commits
-    status: pending
+    status: done
     notes: |
       Pin all actions in .github/workflows/*.yml to specific SHA commits.
       Keep version comment for maintainability and Dependabot compatibility.
@@ -38,7 +38,7 @@ tasks:
 
   - id: rd-u22.14
     title: Add secret scanning with GitGuardian
-    status: pending
+    status: done
     notes: |
       Create new workflow .github/workflows/gitguardian.yml
       
@@ -57,7 +57,7 @@ tasks:
 
   - id: rd-u22.15
     title: Add CODEOWNERS for .github/workflows/
-    status: pending
+    status: done
     notes: |
       Create .github/CODEOWNERS with:
       ```
@@ -69,7 +69,7 @@ tasks:
       Combined with GitHub's fork approval settings, provides defense in depth.
 
   - title: Create PR and push branch
-    status: pending
+    status: done
     acceptance:
       - "Branch is pushed to origin"
       - "PR is created with descriptive title and body"
@@ -99,7 +99,7 @@ tasks:
       Record the PR number/URL in progress.md for the next task.
 
   - title: Ensure PR CI is passing
-    status: pending
+    status: done
     acceptance:
       - "All CI workflow checks on the PR are passing (green)"
       - "No workflow syntax errors"
