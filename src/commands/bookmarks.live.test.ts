@@ -41,7 +41,7 @@ describe("bookmarks command - with auth", () => {
     runCliBase(args, {
       timeout: AUTH_CLI_TIMEOUT,
       ...options,
-      env: { RAINDROP_TOKEN: process.env.RAINDROP_TOKEN, ...options.env },
+      env: { RAINDROP_TOKEN: process.env.RAINDROP_TOKEN || "", ...options.env },
     });
   const runCliExpectSuccess = (
     args: string[],
@@ -50,7 +50,7 @@ describe("bookmarks command - with auth", () => {
     runCliExpectSuccessBase(args, {
       timeout: AUTH_CLI_TIMEOUT,
       ...options,
-      env: { RAINDROP_TOKEN: process.env.RAINDROP_TOKEN, ...options.env },
+      env: { RAINDROP_TOKEN: process.env.RAINDROP_TOKEN || "", ...options.env },
     });
 
   testWithAuth("list returns bookmarks as JSON", async () => {

@@ -69,8 +69,10 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/nock": "^11.1.0",
     "@types/node": "^22",
     "lefthook": "^2.0.13",
+    "nock": "^14.0.10",
     "oxlint": "^1.36.0",
     "oxlint-tsgolint": "^0.10.1",
     "prettier": "^3.7.4",

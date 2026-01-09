@@ -18,6 +18,7 @@
  */
 
 import { beforeAll } from "bun:test";
+import nock from "nock";
 import { cleanupTestArtifacts } from "./cleanup.js";
 import { AUTH_TEST_TIMEOUT_MS } from "./timeouts.js";
 
@@ -42,6 +43,9 @@ let cleanupComplete = false;
 export function setupLiveTests(): void {
   beforeAll(
     async () => {
+      // Enable network access for live tests (blocked by default in global setup)
+      nock.enableNetConnect();
+
       // Only run cleanup once, even if multiple files import this
       if (cleanupComplete) {
         return;
