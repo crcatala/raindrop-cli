@@ -20,7 +20,7 @@ pre_commit: "bun run verify"
 tasks:
   - id: rd-u22.13
     title: Pin GitHub Actions to SHA commits
-    status: pending
+    status: done
     notes: |
       Pin all actions in .github/workflows/*.yml to specific SHA commits.
       Keep version comment for maintainability and Dependabot compatibility.
