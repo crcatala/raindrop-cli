@@ -1,0 +1,50 @@
+# OSS Prep Phase 1 - Migrated from legacy prd.json
+# Original archived at: .ralph/loops-archived/oss-prep-phase1/
+
+name: "OSS Prep Phase 1"
+description: "Prepare raindrop-cli-spike for public OSS release and npm publish"
+branch: "ralph/oss-prep-phase1"
+
+create_pr: true
+pr_title: "feat(oss): Phase 1 OSS release preparation"
+
+issue_tracker: beads
+pre_commit: "bun run verify"
+
+tasks:
+  - id: rd-u22.1
+    title: Add LICENSE file
+    status: pending
+
+  - id: rd-u22.2
+    title: Package.json cleanup for npm publish
+    status: pending
+
+  - id: rd-u22.3
+    title: Secure CI live tests workflow
+    status: pending
+    notes: "Use Option B: harden with fork check (if: github.event.pull_request.head.repo.full_name == github.repository). Do NOT delete the workflow."
+
+  - id: rd-u22.4
+    title: Dynamic version from package.json
+    status: pending
+
+  - id: rd-u22.5
+    title: Fix TypeScript any usage
+    status: pending
+
+  - id: rd-u22.6
+    title: Review and harden existing CI workflow
+    status: pending
+
+  - id: rd-u22.7
+    title: Update README for accuracy and completeness
+    status: pending
+
+  - id: rd-u22.8
+    title: Add CONTRIBUTING.md
+    status: pending
+
+  - id: rd-u22.9
+    title: Add CHANGELOG.md
+    status: pending
