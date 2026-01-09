@@ -27,7 +27,7 @@ tasks:
 
   - id: rd-u22.4
     title: Dynamic version from package.json
-    status: pending
+    status: done
 
   - id: rd-u22.5
     title: Fix TypeScript any usage

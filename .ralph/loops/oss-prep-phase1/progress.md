@@ -27,3 +27,11 @@ Started: 2026-01-07
 - Files changed: .github/workflows/ci-live.yml
 - **Learnings:** `issue_comment` workflows require explicit checking of PR source repository to be safe for secrets, as `if: github.event.pull_request...` doesn't work directly on top-level job context for this event type.
 ---
+
+## [2026-01-08 16:38] - rd-u22.4
+- Replaced hardcoded version "0.1.0" in `src/index.ts` with dynamic read from `package.json`.
+- Used `fs.readFileSync` and `import.meta.url` to robustly locate `package.json` relative to script location.
+- Verified works in both dev (`bun src/index.ts`) and built (`node dist/index.js`) modes.
+- Files changed: src/index.ts
+- **Learnings:** When using `bun build` targeting node, `import.meta.url` and `fs` operations work well for runtime file access, preserving directory structure assumptions.
+---
