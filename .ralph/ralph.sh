@@ -128,10 +128,11 @@ generate_prompt() {
   local prd_file="$1"
   local progress="$2"
   local loop_dir="$3"
+  local branch_override="$4"  # Optional: override branch from prd
 
   local name branch issue_tracker pre_commit
   name=$(yaml_get "$prd_file" "name")
-  branch=$(yaml_get "$prd_file" "branch")
+  branch="${branch_override:-$(yaml_get "$prd_file" "branch")}"
   issue_tracker=$(yaml_get "$prd_file" "issue_tracker")
   pre_commit=$(yaml_get "$prd_file" "pre_commit")
   
@@ -304,19 +305,51 @@ cmd_validate() {
 }
 
 cmd_run() {
-  local loop_name="$1"
-  local max_iterations="${2:-25}"
+  local loop_name=""
+  local max_iterations=25
+  local branch_override=""
+  
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --branch)
+        branch_override="$2"
+        shift 2
+        ;;
+      --branch=*)
+        branch_override="${1#*=}"
+        shift
+        ;;
+      -n|--max-iterations)
+        max_iterations="$2"
+        shift 2
+        ;;
+      -*)
+        error "Unknown option: $1"
+        echo "Usage: .ralph/ralph.sh run <loop-name> [--branch <branch>] [-n <max-iterations>]"
+        exit 1
+        ;;
+      *)
+        if [ -z "$loop_name" ]; then
+          loop_name="$1"
+        else
+          # Legacy positional arg for max_iterations
+          max_iterations="$1"
+        fi
+        shift
+        ;;
+    esac
+  done
   
   if [ -z "$loop_name" ]; then
     error "Loop name required"
-    echo "Usage: .ralph/ralph.sh run <loop-name> [max-iterations]"
+    echo "Usage: .ralph/ralph.sh run <loop-name> [--branch <branch>] [-n <max-iterations>]"
     exit 1
   fi
   
   local loop_dir="$LOOPS_DIR/$loop_name"
   local prd_file="$loop_dir/prd.yaml"
   local progress="$loop_dir/progress.md"
-  local session_dir="$HOME/.ralph/sessions/$loop_name"
 
   # Check for legacy prd.json
   if [ -f "$loop_dir/prd.json" ] && [ ! -f "$prd_file" ]; then
@@ -347,6 +380,15 @@ cmd_run() {
   local branch=$(yaml_get "$prd_file" "branch")
   local create_pr=$(yaml_get_bool "$prd_file" "create_pr")
   local name=$(yaml_get "$prd_file" "name")
+  
+  # Apply branch override if provided
+  if [ -n "$branch_override" ]; then
+    branch="$branch_override"
+    info "Using branch override: $branch"
+  fi
+  
+  # Session dir includes branch name for comparison runs
+  local session_dir="$HOME/.ralph/sessions/$loop_name/${branch//\//_}"
 
   # Create progress.md if missing
   if [ ! -f "$progress" ]; then
@@ -370,6 +412,9 @@ EOF
   echo "🚀 Ralph Loop: $name"
   echo "═══════════════════════════════════════════════════"
   echo "   Branch: $branch"
+  if [ -n "$branch_override" ]; then
+    echo "   (override from --branch flag)"
+  fi
   echo "   Max iterations: $max_iterations"
   echo "   Create PR on completion: $create_pr"
   echo "   Sessions: $session_dir"
@@ -377,7 +422,7 @@ EOF
 
   # Generate prompt to temp file
   local prompt_file=$(mktemp)
-  generate_prompt "$prd_file" "$progress" "$loop_dir" > "$prompt_file"
+  generate_prompt "$prd_file" "$progress" "$loop_dir" "$branch" > "$prompt_file"
   trap "rm -f $prompt_file" EXIT
 
   # Main loop
@@ -388,8 +433,8 @@ EOF
     echo "═══════════════════════════════════════════════════"
     echo ""
 
-    # Regenerate prompt each iteration (timestamp updates)
-    generate_prompt "$prd_file" "$progress" "$loop_dir" > "$prompt_file"
+    # Regenerate prompt each iteration (timestamp updates, branch preserved)
+    generate_prompt "$prd_file" "$progress" "$loop_dir" "$branch" > "$prompt_file"
 
     # Run pi agent
     OUTPUT=$(pi --print --session-dir "$session_dir" --thinking high @"$prompt_file" 2>&1 | tee /dev/stderr) || true
@@ -429,34 +474,40 @@ usage() {
   echo "Usage: .ralph/ralph.sh <command> [args]"
   echo ""
   echo "Commands:"
-  echo "  run <loop> [max-iter]  Run a loop until complete (default: 25 iterations)"
+  echo "  run <loop> [options]   Run a loop until complete"
   echo "  validate <loop>        Validate a loop's prd.yaml"
   echo "  list                   List available loops"
   echo "  new <loop>             Create a new loop from template"
+  echo ""
+  echo "Run options:"
+  echo "  --branch <name>        Override branch from prd.yaml"
+  echo "  -n, --max-iterations   Max iterations (default: 25)"
   echo ""
   echo "Examples:"
   echo "  .ralph/ralph.sh list"
   echo "  .ralph/ralph.sh new my-feature"
   echo "  .ralph/ralph.sh validate my-feature"
   echo "  .ralph/ralph.sh run my-feature"
-  echo "  .ralph/ralph.sh run my-feature 50"
+  echo "  .ralph/ralph.sh run my-feature -n 50"
+  echo "  .ralph/ralph.sh run my-feature --branch ralph/my-feature-opus"
 }
 
 # Parse command
 COMMAND="${1:-}"
+shift || true  # Remove command from args
 
 case "$COMMAND" in
   run)
-    cmd_run "$2" "$3"
+    cmd_run "$@"
     ;;
   validate)
-    cmd_validate "$2"
+    cmd_validate "$@"
     ;;
   list)
     cmd_list
     ;;
   new)
-    cmd_new "$2"
+    cmd_new "$@"
     ;;
   help|--help|-h)
     usage

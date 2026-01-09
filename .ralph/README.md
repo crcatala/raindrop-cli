@@ -125,8 +125,21 @@ tasks:
 .ralph/ralph.sh run <loop-name>
 
 # Run with custom iteration limit
-.ralph/ralph.sh run <loop-name> 50
+.ralph/ralph.sh run <loop-name> -n 50
+
+# Run with branch override (useful for comparing LLM models)
+.ralph/ralph.sh run <loop-name> --branch ralph/my-feature-opus
+.ralph/ralph.sh run <loop-name> --branch ralph/my-feature-sonnet
 ```
+
+### Branch Override
+
+Use `--branch` to run the same loop on a different branch. This is useful for:
+- Comparing results between different LLM models
+- Re-running a loop from scratch without affecting the original branch
+- A/B testing different approaches
+
+Sessions are stored separately per branch, so you can compare outputs.
 
 ## Creating a New Loop
 
