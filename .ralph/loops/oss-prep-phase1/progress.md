@@ -35,3 +35,10 @@ Started: 2026-01-07
 - Files changed: src/index.ts
 - **Learnings:** When using `bun build` targeting node, `import.meta.url` and `fs` operations work well for runtime file access, preserving directory structure assumptions.
 ---
+
+## [2026-01-08 16:45] - rd-u22.5
+- Replaced `any` type with `unknown` and `AxiosError` check in `src/commands/bookmarks.ts`.
+- Ensured 404 behavior is preserved when deleting bookmarks permanently.
+- Files changed: src/commands/bookmarks.ts
+- **Learnings:** Explicit error typing with `unknown` and `instanceof` is safer and preferred over `any`.
+---

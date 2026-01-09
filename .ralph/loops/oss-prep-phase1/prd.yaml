@@ -31,7 +31,7 @@ tasks:
 
   - id: rd-u22.5
     title: Fix TypeScript any usage
-    status: pending
+    status: done
 
   - id: rd-u22.6
     title: Review and harden existing CI workflow
