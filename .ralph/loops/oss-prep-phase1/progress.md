@@ -66,3 +66,10 @@ Started: 2026-01-07
 - Files changed: CONTRIBUTING.md
 - **Learnings:** Providing clear setup instructions helps new contributors get started quickly.
 ---
+
+## [2026-01-08 17:03] - rd-u22.9
+- Added CHANGELOG.md documenting the 0.1.0 release.
+- Followed Keep a Changelog format.
+- Files changed: CHANGELOG.md
+- **Learnings:** Standard changelog format clarifies what features are included in the initial release.
+---

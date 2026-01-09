@@ -47,4 +47,4 @@ tasks:
 
   - id: rd-u22.9
     title: Add CHANGELOG.md
-    status: pending
+    status: done
