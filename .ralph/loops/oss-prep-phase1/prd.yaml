@@ -22,7 +22,7 @@ tasks:
 
   - id: rd-u22.3
     title: Secure CI live tests workflow
-    status: pending
+    status: done
     notes: "Use Option B: harden with fork check (if: github.event.pull_request.head.repo.full_name == github.repository). Do NOT delete the workflow."
 
   - id: rd-u22.4

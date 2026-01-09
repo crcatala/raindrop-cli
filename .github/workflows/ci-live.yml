@@ -62,6 +62,13 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.issue.number
             });
+
+            // Security: Prevent running on forks to avoid secret exfiltration
+            if (pr.data.head.repo.full_name !== pr.data.base.repo.full_name) {
+              core.setFailed('Security: Live tests cannot be run on Pull Requests from forks.');
+              return;
+            }
+
             core.setOutput('ref', pr.data.head.ref);
             core.setOutput('sha', pr.data.head.sha);
 
