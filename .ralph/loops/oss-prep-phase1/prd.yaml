@@ -14,7 +14,7 @@ pre_commit: "bun run verify"
 tasks:
   - id: rd-u22.1
     title: Add LICENSE file
-    status: pending
+    status: done
 
   - id: rd-u22.2
     title: Package.json cleanup for npm publish
