@@ -18,7 +18,7 @@ tasks:
 
   - id: rd-u22.2
     title: Package.json cleanup for npm publish
-    status: pending
+    status: done
 
   - id: rd-u22.3
     title: Secure CI live tests workflow

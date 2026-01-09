@@ -8,8 +8,14 @@
   "types": "dist/index.d.ts",
   "bin": {
     "rd": "dist/index.js",
-    "rdcli": "dist/index.js"
+    "rdcli": "dist/index.js",
+    "raindrop-cli": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --format esm && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/temp && mv dist/temp dist/index.js && bun run build:dts",
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
@@ -31,7 +37,8 @@
     "typecheck:verbose": "tsc --noEmit",
     "verify": "bun scripts/verify.ts",
     "verify:verbose": "VERBOSE=1 bun scripts/verify.ts",
-    "postinstall": "lefthook install"
+    "prepare": "lefthook install || true",
+    "prepublishOnly": "bun run verify && bun run build"
   },
   "keywords": [
     "raindrop",
@@ -40,16 +47,16 @@
     "bookmarks",
     "ai-agent"
   ],
-  "author": "",
+  "author": "Christian Catalan <crcatala@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/crcatala/raindrop-cli-spike.git"
+    "url": "git+https://github.com/crcatala/raindrop-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/crcatala/raindrop-cli-spike/issues"
+    "url": "https://github.com/crcatala/raindrop-cli/issues"
   },
-  "homepage": "https://github.com/crcatala/raindrop-cli-spike#readme",
+  "homepage": "https://github.com/crcatala/raindrop-cli#readme",
   "engines": {
     "node": ">=20.0.0"
   },
