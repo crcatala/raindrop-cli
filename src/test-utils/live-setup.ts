@@ -41,6 +41,16 @@ let cleanupComplete = false;
  * This will run cleanup once before all live tests start.
  */
 export function setupLiveTests(): void {
+  // Debug logging
+  if (process.env.CI) {
+    const token = process.env.RAINDROP_TOKEN;
+    if (token) {
+      console.log(`[setupLiveTests] Token present (length: ${token.length})`);
+    } else {
+      console.error("[setupLiveTests] No RAINDROP_TOKEN found in environment!");
+    }
+  }
+
   beforeAll(
     async () => {
       // Enable network access for live tests (blocked by default in global setup)
