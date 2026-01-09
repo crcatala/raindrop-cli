@@ -35,19 +35,35 @@ export interface CliOptions {
 export async function runCli(args: string[], options: CliOptions = {}): Promise<CliResult> {
   const { env = {}, cwd, timeout = 10000, stdin } = options;
 
+  const spawnEnv = { ...process.env };
+
+  // Default to empty to prevent accidental network calls in tests.
+  // This forces tests to explicitly provide the token if they need it.
+  spawnEnv.RAINDROP_TOKEN = "";
+
+  // Apply user overrides
+  Object.assign(spawnEnv, env);
+
+  // Ensure consistent output for tests (disable colors)
+  spawnEnv.NO_COLOR = "1";
+  // Explicitly set FORCE_COLOR=0 to avoid Bun's warning about NO_COLOR being ignored
+  spawnEnv.FORCE_COLOR = "0";
+
+  // Debug logging for CI troubleshooting
+  if (process.env.CI && args.includes("bookmarks") && !spawnEnv.RAINDROP_TOKEN) {
+    console.error("[runCli] Warning: Starting process without RAINDROP_TOKEN");
+    // Check if it was provided in options
+    if (env.RAINDROP_TOKEN) {
+      console.error("[runCli] Token was in options but lost in merge?");
+    }
+  }
+
   const proc = Bun.spawn(["bun", "src/index.ts", ...args], {
     stdout: "pipe",
     stderr: "pipe",
     stdin: stdin !== undefined ? new Blob([stdin]) : undefined,
     cwd: cwd ?? import.meta.dir.replace("/src/test-utils", ""),
-    env: {
-      ...process.env,
-      ...env,
-      // Ensure consistent output for tests (disable colors)
-      NO_COLOR: "1",
-      // Explicitly set FORCE_COLOR=0 to avoid Bun's warning about NO_COLOR being ignored
-      FORCE_COLOR: "0",
-    },
+    env: spawnEnv,
   });
 
   // Set up timeout with proper cleanup

@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { AxiosError } from "axios";
 import { getClient } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
@@ -353,10 +354,13 @@ Examples:
           verbose(`Ensuring permanent deletion for ${id}`);
           try {
             await client.raindrop.removeRaindrop(id);
-          } catch (error: any) {
+          } catch (error: unknown) {
             // If it was already in trash, the first delete killed it.
             // So the second delete returns 404. We strictly consider 404 here 'success' (it's gone).
-            if (error?.response?.status !== 404) {
+            if (error instanceof AxiosError && error.response?.status !== 404) {
+              throw error;
+            }
+            if (!(error instanceof AxiosError)) {
               throw error;
             }
           }

@@ -18,6 +18,9 @@ setupLiveTests();
 const runCliBase = runCli;
 const runCliExpectSuccessBase = runCliExpectSuccess;
 
+// Capture token at module level to ensure stability
+const LIVE_TOKEN = process.env.RAINDROP_TOKEN || "";
+
 /**
  * Integration tests that require a valid RAINDROP_TOKEN.
  * These are skipped if no token is available.
@@ -32,11 +35,20 @@ describe("highlights command - with auth", () => {
 
   const AUTH_CLI_TIMEOUT = AUTH_CLI_TIMEOUT_MS;
   const runCli = (args: string[], options: Parameters<typeof runCliBase>[1] = {}) =>
-    runCliBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+    runCliBase(args, {
+      timeout: AUTH_CLI_TIMEOUT,
+      ...options,
+      env: { RAINDROP_TOKEN: LIVE_TOKEN, ...options.env },
+    });
   const runCliExpectSuccess = (
     args: string[],
     options: Parameters<typeof runCliExpectSuccessBase>[1] = {}
-  ) => runCliExpectSuccessBase(args, { timeout: AUTH_CLI_TIMEOUT, ...options });
+  ) =>
+    runCliExpectSuccessBase(args, {
+      timeout: AUTH_CLI_TIMEOUT,
+      ...options,
+      env: { RAINDROP_TOKEN: LIVE_TOKEN, ...options.env },
+    });
 
   testWithAuth("list returns highlights as JSON", async () => {
     const result = await runCliExpectSuccess(["highlights", "list"]);

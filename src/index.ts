@@ -1,4 +1,7 @@
 import { program, Command, CommanderError, Option } from "commander";
+import { readFileSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import { OUTPUT_FORMATS } from "./types/index.js";
 import { createAuthCommand } from "./commands/auth.js";
 import { createBookmarksCommand } from "./commands/bookmarks.js";
@@ -14,10 +17,13 @@ import { outputError } from "./utils/output-streams.js";
 import { setTimeoutSeconds, validateTimeout, DEFAULT_TIMEOUT_SECONDS } from "./utils/timeout.js";
 import { configureStyledHelpRecursive } from "./utils/help-formatter.js";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, "../package.json"), "utf-8"));
+
 program
   .name("rd")
   .description("CLI for Raindrop.io, the all-in-one bookmark manager")
-  .version("0.1.0")
+  .version(pkg.version)
   .enablePositionalOptions()
   .addHelpText("after", "\nReport issues: https://github.com/crcatala/raindrop-cli-spike/issues")
   .addOption(
