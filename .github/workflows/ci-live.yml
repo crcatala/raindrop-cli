@@ -7,10 +7,14 @@ on:
     types: [created]
   workflow_dispatch:
     inputs:
-      verbose:
-        description: 'Run in verbose mode'
-        type: boolean
-        default: false
+      pr_number:
+        description: 'PR number (for updating checks)'
+        type: string
+        required: false
+      pr_sha:
+        description: 'PR head SHA (for check status)'
+        type: string
+        required: false
 
 jobs:
   # Shows as a neutral check on PRs with instructions
@@ -37,23 +41,21 @@ jobs:
               }
             });
 
-  # Runs when someone comments /run-live-tests on a PR
-  live-tests:
+  # Dispatcher: detects /run-live-tests comment and triggers workflow_dispatch on PR branch
+  # This job runs from main branch but dispatches to the PR branch
+  dispatch-live-tests:
     if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request &&
-       contains(github.event.comment.body, '/run-live-tests') &&
-       github.actor == 'crcatala')
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/run-live-tests') &&
+      github.actor == 'crcatala'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write
-      pull-requests: write
-
+      actions: write
+      pull-requests: read
     steps:
       - name: Get PR info
-        if: github.event_name == 'issue_comment'
         id: pr
         uses: actions/github-script@v7
         with:
@@ -66,19 +68,38 @@ jobs:
 
             // Check if PR is from a fork
             const isFork = pr.data.head.repo.full_name !== pr.data.base.repo.full_name;
-            core.setOutput('is_fork', isFork.toString());
+            if (isFork) {
+              core.setFailed('Live tests cannot run on fork PRs for security reasons (secret protection)');
+              return;
+            }
 
             core.setOutput('ref', pr.data.head.ref);
             core.setOutput('sha', pr.data.head.sha);
+            core.setOutput('number', pr.data.number);
 
-      - name: Skip fork PRs
-        if: github.event_name == 'issue_comment' && steps.pr.outputs.is_fork == 'true'
+      - name: Trigger live tests on PR branch
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo "::error::Live tests cannot run on fork PRs for security reasons (secret protection)"
-          exit 1
+          gh workflow run ci-live.yml \
+            --repo ${{ github.repository }} \
+            --ref ${{ steps.pr.outputs.ref }} \
+            --field pr_number=${{ steps.pr.outputs.number }} \
+            --field pr_sha=${{ steps.pr.outputs.sha }}
+          echo "✅ Dispatched live tests workflow on branch: ${{ steps.pr.outputs.ref }}"
 
+  # Actual test job: runs via workflow_dispatch (uses workflow from target branch)
+  live-tests:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
       - name: Create pending check
-        if: github.event_name == 'issue_comment'
+        if: inputs.pr_sha != ''
         uses: actions/github-script@v7
         with:
           script: |
@@ -86,7 +107,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               name: 'Live API Tests',
-              head_sha: '${{ steps.pr.outputs.sha }}',
+              head_sha: '${{ inputs.pr_sha }}',
               status: 'in_progress',
               details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
               output: {
@@ -97,8 +118,6 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'issue_comment' && steps.pr.outputs.ref || github.ref }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -112,12 +131,11 @@ jobs:
         id: tests
         env:
           RAINDROP_TOKEN: ${{ secrets.RAINDROP_TOKEN }}
-          # Delay handled by npm script but kept here for clarity
           RDCLI_API_DELAY_MS: "250"
         run: bun run test:live:verbose
 
       - name: Update check (success)
-        if: github.event_name == 'issue_comment' && success()
+        if: inputs.pr_sha != '' && success()
         uses: actions/github-script@v7
         with:
           script: |
@@ -125,7 +143,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               name: 'Live API Tests',
-              head_sha: '${{ steps.pr.outputs.sha }}',
+              head_sha: '${{ inputs.pr_sha }}',
               status: 'completed',
               conclusion: 'success',
               details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
@@ -134,15 +152,21 @@ jobs:
                 summary: 'Live API tests completed successfully. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
               }
             });
+
+      - name: Comment on PR (success)
+        if: inputs.pr_number != '' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: ${{ inputs.pr_number }},
               body: '✅ Live tests passed! [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
             });
 
       - name: Update check (failure)
-        if: github.event_name == 'issue_comment' && failure()
+        if: inputs.pr_sha != '' && failure()
         uses: actions/github-script@v7
         with:
           script: |
@@ -150,7 +174,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               name: 'Live API Tests',
-              head_sha: '${{ steps.pr.outputs.sha }}',
+              head_sha: '${{ inputs.pr_sha }}',
               status: 'completed',
               conclusion: 'failure',
               details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
@@ -159,9 +183,15 @@ jobs:
                 summary: 'Some live API tests failed. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
               }
             });
+
+      - name: Comment on PR (failure)
+        if: inputs.pr_number != '' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: ${{ inputs.pr_number }},
               body: '❌ Live tests failed. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
             });
