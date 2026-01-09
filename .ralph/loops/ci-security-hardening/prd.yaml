@@ -57,7 +57,7 @@ tasks:
 
   - id: rd-u22.15
     title: Add CODEOWNERS for .github/workflows/
-    status: pending
+    status: done
     notes: |
       Create .github/CODEOWNERS with:
       ```

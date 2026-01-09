@@ -25,3 +25,11 @@ Started: 2026-01-09 07:11
 - Files changed: .github/workflows/gitguardian.yml (new)
 - **Learnings:** GitGuardian requires GITGUARDIAN_API_KEY repository secret to be pre-configured
 ---
+
+## [2026-01-09 07:15] - rd-u22.15
+- Created CODEOWNERS file requiring @crcatala approval for workflow changes
+- Path protection: /.github/workflows/ requires maintainer review before merging
+- Provides defense-in-depth with fork approval settings and ci-live restrictions
+- Files changed: .github/CODEOWNERS (new)
+- **Learnings:** CODEOWNERS only prevents merging without review, doesn't block workflow execution on PRs
+---
