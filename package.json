@@ -12,7 +12,12 @@
     "raindrop-cli": "dist/index.js"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "!dist/**/*.test.d.ts",
+    "!dist/**/*.test.d.ts.map",
+    "!dist/test-utils",
     "README.md",
     "LICENSE"
   ],
