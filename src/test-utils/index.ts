@@ -17,3 +17,5 @@ export {
 } from "./cleanup.js";
 
 export { setupLiveTests } from "./live-setup.js";
+
+export { captureStream, noopStream } from "./streams.js";
