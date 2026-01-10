@@ -1,0 +1,111 @@
+# CLI Architecture Refactor Loop
+# Refactor to production-ready patterns from CLI starter playbook
+
+name: "CLI Architecture Refactor"
+description: |
+  Refactor the CLI architecture to follow production-ready patterns:
+  - Three-layer entry point (cli.ts → cli-main.ts → run.ts)
+  - Stream dependency injection for testability
+  - CliContext object to consolidate global state
+  - EPIPE handling for graceful pipe closure
+  
+  Key benefits:
+  - Unit tests with mocked streams (~10ms vs ~200ms subprocess tests)
+  - Cleaner separation of concerns
+  - Graceful pipe handling (no ugly EPIPE errors)
+
+branch: "ralph/cli-architecture-refactor"
+
+create_pr: true
+pr_title: "refactor: CLI architecture for testability"
+
+issue_tracker: beads
+pre_commit: "bun run verify"
+
+# Tasks in dependency order:
+# - rd-dke.1 and rd-dke.2 have no dependencies (can run first, either order)
+# - rd-dke.3 depends on both .1 and .2
+# - rd-dke.4 and rd-dke.5 depend on .3
+
+tasks:
+  - id: rd-dke.1
+    title: Add stream injection to output-streams.ts
+    status: pending
+    notes: |
+      Non-breaking change to src/utils/output-streams.ts:
+      - Add stdoutStream/stderrStream module variables
+      - Add setOutputStream(stdout, stderr) function
+      - Add resetOutputStream() function
+      - Update all output functions to use the variables
+      - Add test demonstrating capture works
+      
+      Run `bd show rd-dke.1` for full acceptance criteria.
+
+  - id: rd-dke.2
+    title: Create CliContext type and context.ts module
+    status: pending
+    notes: |
+      Create new src/cli/ directory with:
+      - src/cli/context.ts - CliContext type and createContext()
+      - src/cli/index.ts - exports
+      
+      createContext() must:
+      - Accept (argv, env, isTty) parameters
+      - Parse format flags from argv
+      - Parse verbose/debug/quiet from argv
+      - Respect NO_COLOR env and --no-color
+      - Wrap color functions to respect color setting
+      
+      This is ADDITIVE - existing globals continue working.
+      Run `bd show rd-dke.2` for full acceptance criteria.
+
+  - id: rd-dke.3
+    title: Split index.ts into three-layer architecture
+    status: pending
+    notes: |
+      This is the MAIN refactoring task. Create:
+      - src/cli.ts - thin shell (process.* injection)
+      - src/cli-main.ts - error handling, orchestration
+      - src/run.ts - Commander logic, accepts stream params
+      - src/cli/program.ts - Commander program setup
+      
+      IMPORTANT: The existing index.ts has complex logic that must move:
+      - createRootBookmarkShortcut() → program.ts
+      - createSearchShortcut() → program.ts  
+      - preAction hook → program.ts (still set globals for compat)
+      - configureStyledHelpRecursive() → program.ts
+      
+      Also update:
+      - package.json bin → dist/cli.js
+      - src/test-utils/cli.ts → spawn src/cli.ts
+      - src/index.ts → library exports only
+      
+      Run `bd show rd-dke.3` for full details and code samples.
+
+  - id: rd-dke.4
+    title: Add EPIPE handling for graceful pipe closure
+    status: pending
+    notes: |
+      Small addition to cli-main.ts:
+      - Add handlePipeErrors(stream, exit) function
+      - Call for stdout and stderr at start of runCliMain()
+      - EPIPE → exit(0), other errors → re-throw
+      - Add unit test for the function
+      
+      Run `bd show rd-dke.4` for code samples and test examples.
+
+  - id: rd-dke.5
+    title: Add unit tests with mocked streams
+    status: pending
+    notes: |
+      Create test infrastructure and example tests:
+      - src/test-utils/streams.ts - captureStream(), noopStream()
+      - src/run.test.ts - unit tests using mocked streams
+      
+      Tests must:
+      - Use nock for API mocking (no real network!)
+      - Cover: help, --json, --quiet, --verbose, unknown command
+      - Run fast (target <50ms per test)
+      - Include explanatory comments for future test authors
+      
+      Run `bd show rd-dke.5` for full test code samples.
