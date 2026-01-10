@@ -339,14 +339,30 @@ src/
 
 ## Releasing
 
-For maintainers publishing a new version to npm.
+For maintainers publishing a new version to npm. We use [release-it](https://github.com/release-it/release-it) to automate the release process.
 
 ### Prerequisites
 
 - Push access to the repository
-- npm account with publish rights to `raindrop-cli`
-- Logged in to npm (`npm whoami` to verify)
+- npm account with publish rights to `raindrop-cli` (`npm whoami` to verify)
 - ggshield installed and authenticated (`ggshield auth status`)
+- `GITHUB_TOKEN` environment variable set (for creating GitHub releases)
+
+### Before You Release
+
+Update `CHANGELOG.md` with your changes under the `[Unreleased]` section:
+
+```markdown
+## [Unreleased]
+
+### Added
+- New feature X
+
+### Fixed
+- Bug Y
+```
+
+The release process will automatically move these entries to the new version section.
 
 ### Release Process
 
@@ -355,47 +371,56 @@ For maintainers publishing a new version to npm.
 git checkout main
 git pull
 
-# 2. Update CHANGELOG.md
-# - Move items from "Unreleased" to new version section
-# - Set the release date (e.g., ## [0.2.0] - 2026-01-15)
+# 2. Preview what will happen (recommended first time)
+bun run release:dry
 
-# 3. Commit the changelog
-git add CHANGELOG.md
-git commit -m "chore: update changelog for vX.Y.Z"
+# 3. Run the release
+bun run release
+```
 
-# 4. Bump version (creates commit + git tag automatically)
-npm version patch  # or: minor, major
-# This updates package.json and creates a vX.Y.Z tag
+The interactive prompt will ask you to select the version bump (patch/minor/major). Then release-it will:
 
-# 5. Dry run to verify package contents
-npm publish --dry-run --access public
+1. **Verify** — runs tests, lint, typecheck, format
+2. **Bump version** — updates `package.json`
+3. **Update changelog** — moves "Unreleased" items to new version section with date
+4. **Build** — compiles to `dist/`
+5. **Commit** — creates "chore: release vX.Y.Z" commit
+6. **Tag** — creates `vX.Y.Z` git tag
+7. **Secret scan** — ggshield scans for leaked secrets
+8. **Publish to npm** — uploads package
+9. **Push** — pushes commit and tag to GitHub
+10. **GitHub Release** — creates release with changelog notes
 
-# 6. Publish to npm
-npm publish --access public
+### Manual Steps (if needed)
 
-# 7. Push commits and tags to GitHub
-git push && git push --tags
+If you need to skip certain steps or recover from a partial release:
 
-# 8. Verify installation works
+```bash
+# Skip npm publish (e.g., if it succeeded but git push failed)
+bun run release -- --no-npm
+
+# Skip GitHub release
+bun run release -- --no-github
+
+# Specific version (skip prompt)
+bun run release -- 1.2.3
+
+# Pre-release
+bun run release -- --preRelease=beta
+```
+
+### Verify After Release
+
+```bash
 npm info raindrop-cli
 npx raindrop-cli@latest --version
 ```
 
-### What Happens During Publish
-
-The `prepublishOnly` script runs automatically before upload:
-
-1. **Verify** — runs tests, lint, typecheck, format
-2. **Build** — compiles to `dist/`
-3. **Secret scan** — ggshield scans source and `dist/` for leaked secrets
-4. **Package** — creates tarball with only: `dist/*`, `README.md`, `LICENSE`, `package.json`
-
-No need to run `bun run build` manually — it's all handled automatically.
-
 ### Notes
 
-- **Immutable** — published versions cannot be changed, only deprecated
-- **Tags** — `npm version` creates the git tag; just remember to `git push --tags`
+- **Immutable** — published npm versions cannot be changed, only deprecated
+- **Clean working directory required** — commit or stash changes before releasing
+- **Main branch only** — releases must be from the `main` branch
 - **Secrets** — publish will fail if ggshield detects secrets in the bundle
 
 ## Contributing
