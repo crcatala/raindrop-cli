@@ -391,9 +391,11 @@ cmd_archive() {
   
   # Commit if requested
   if [ "$do_commit" = "true" ]; then
-    git add "$loop_dir" "$archive_target" 2>/dev/null || true
-    git add -A "$SCRIPT_DIR/loops" "$SCRIPT_DIR/loops-archived" 2>/dev/null || true
-    git commit -m "chore: archive ralph loop '$loop_name'"
+    git add -A "$SCRIPT_DIR/loops" "$SCRIPT_DIR/loops-archived"
+    if ! git commit -m "chore: archive ralph loop '$loop_name'"; then
+      error "Git commit failed"
+      exit 1
+    fi
     success "Committed archive"
   fi
 }
