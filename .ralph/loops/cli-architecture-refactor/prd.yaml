@@ -61,7 +61,7 @@ tasks:
 
   - id: rd-dke.3
     title: Split index.ts into three-layer architecture
-    status: pending
+    status: done
     notes: |
       This is the MAIN refactoring task. Create:
       - src/cli.ts - thin shell (process.* injection)

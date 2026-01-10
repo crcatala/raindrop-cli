@@ -58,7 +58,7 @@ export async function runCli(args: string[], options: CliOptions = {}): Promise<
     }
   }
 
-  const proc = Bun.spawn(["bun", "src/index.ts", ...args], {
+  const proc = Bun.spawn(["bun", "src/cli.ts", ...args], {
     stdout: "pipe",
     stderr: "pipe",
     stdin: stdin !== undefined ? new Blob([stdin]) : undefined,

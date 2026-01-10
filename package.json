@@ -7,9 +7,9 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "rd": "dist/index.js",
-    "rdcli": "dist/index.js",
-    "raindrop-cli": "dist/index.js"
+    "rd": "dist/cli.js",
+    "rdcli": "dist/cli.js",
+    "raindrop-cli": "dist/cli.js"
   },
   "files": [
     "dist/**/*.js",
@@ -22,7 +22,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --format esm && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/temp && mv dist/temp dist/index.js && bun run build:dts",
+    "build": "bun build src/cli.ts --outdir dist --target node --format esm && echo '#!/usr/bin/env node' | cat - dist/cli.js > dist/temp && mv dist/temp dist/cli.js && bun run build:dts",
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "dev": "bun src/index.ts",
     "test": "bash scripts/check.sh test",

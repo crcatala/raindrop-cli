@@ -35,3 +35,21 @@ Started: 2026-01-09 20:22
 - **Learnings:** The existing `colors` export from `utils/colors.ts` is a Proxy that dynamically calls `getColors()`, which respects global flags. The new context.ts wraps these same color functions but evaluates color setting at context creation time, allowing tests to have predictable behavior.
 ---
 
+## [2026-01-09 20:27] - rd-dke.3
+- Split monolithic index.ts into three-layer architecture
+- Created `src/cli.ts` - thin shell (process.* injection, ~30 lines)
+- Created `src/cli-main.ts` - error handling, orchestration (~60 lines)
+- Created `src/run.ts` - core Commander logic, testable with mocked streams (~45 lines)
+- Created `src/cli/program.ts` - all Commander setup extracted from index.ts (~280 lines)
+- Updated `src/cli/index.ts` to export createProgram
+- Reduced `src/index.ts` to library exports only (~15 lines)
+- Updated `package.json` bin to point to `dist/cli.js`
+- Updated build script to build `src/cli.ts` instead of `src/index.ts`
+- Updated `src/test-utils/cli.ts` to spawn `src/cli.ts`
+- Files changed: `src/cli.ts` (new), `src/cli-main.ts` (new), `src/run.ts` (new), `src/cli/program.ts` (new), `src/cli/index.ts`, `src/index.ts`, `src/test-utils/cli.ts`, `package.json`
+- **Learnings:** 
+  - Commander's default exitCode for usage errors is 1, but clig.dev convention is exit code 2 for usage errors. Must explicitly set `setExitCode(2)` for CommanderError.
+  - The preAction hook still sets globals (setDebugEnabled, etc.) for backward compatibility with existing commands. Future tasks could migrate commands to use ctx directly.
+  - Root shortcuts (list, show, add, etc.) use `command.parent?.args` to get argv instead of process.argv, making them work with the new architecture.
+---
+
