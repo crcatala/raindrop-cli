@@ -43,7 +43,9 @@
     "verify": "bun scripts/verify.ts",
     "verify:verbose": "VERBOSE=1 bun scripts/verify.ts",
     "prepare": "lefthook install || true",
-    "prepublishOnly": "bun run verify && bun run build && ggshield secret scan path . -r --use-gitignore -y && ggshield secret scan path dist -r -y"
+    "prepublishOnly": "ggshield secret scan path . -r --use-gitignore -y && ggshield secret scan path dist -r -y",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run"
   },
   "keywords": [
     "raindrop",
@@ -73,6 +75,7 @@
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
+    "@release-it/keep-a-changelog": "^7.0.0",
     "@types/bun": "latest",
     "@types/nock": "^11.1.0",
     "@types/node": "^22",
@@ -81,6 +84,7 @@
     "oxlint": "^1.36.0",
     "oxlint-tsgolint": "^0.10.1",
     "prettier": "^3.7.4",
+    "release-it": "^19.2.3",
     "tasuku": "^2.0.5",
     "typescript": "^5.9.3"
   }
