@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 - Automated releases with release-it
 
+### Fixed
+- Graceful handling of broken pipes (EPIPE) when piping CLI output
+
 ## [0.1.0] - 2026-01-09
 
 ### Added
