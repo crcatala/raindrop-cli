@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-10
+
 ### Added
 - Automated releases with release-it
 - Support for `XDG_CONFIG_HOME` environment variable to override config directory
