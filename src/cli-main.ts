@@ -3,15 +3,31 @@
  *
  * This layer:
  * - Sets up output streams (for testability)
+ * - Handles EPIPE errors gracefully (pipe closed by consumer)
  * - Handles top-level errors with proper formatting
  * - Coordinates between the thin shell (cli.ts) and core logic (run.ts)
- *
- * EPIPE handling will be added in rd-dke.4.
  */
 
 import { CommanderError } from "commander";
 import { runCli } from "./run.js";
 import { setOutputStream, resetOutputStream, outputError } from "./utils/output-streams.js";
+
+/**
+ * Handle EPIPE errors gracefully (pipe closed by consumer like head/grep).
+ * This is normal when piping to commands that don't consume all output.
+ */
+export function handlePipeErrors(
+  stream: NodeJS.WritableStream,
+  exit: (code: number) => void
+): void {
+  stream.on("error", (error: NodeJS.ErrnoException) => {
+    if (error.code === "EPIPE") {
+      exit(0); // Normal exit when pipe closes
+      return;
+    }
+    throw error; // Re-throw other errors
+  });
+}
 
 export type CliMainArgs = {
   argv: string[];
@@ -23,12 +39,14 @@ export type CliMainArgs = {
 };
 
 export async function runCliMain(args: CliMainArgs): Promise<void> {
-  const { argv, env, stdout, stderr, setExitCode } = args;
+  const { argv, env, stdout, stderr, exit, setExitCode } = args;
+
+  // Handle EPIPE errors gracefully (e.g., when piping to head/grep)
+  handlePipeErrors(stdout, exit);
+  handlePipeErrors(stderr, exit);
 
   // Configure output streams (from rd-dke.1)
   setOutputStream(stdout, stderr);
-
-  // EPIPE handling will be added in rd-dke.4
 
   const debug = argv.includes("--debug") || argv.includes("-d");
   const jsonOutput = argv.includes("--json");

@@ -53,3 +53,14 @@ Started: 2026-01-09 20:22
   - Root shortcuts (list, show, add, etc.) use `command.parent?.args` to get argv instead of process.argv, making them work with the new architecture.
 ---
 
+
+## [2026-01-09 20:32] - rd-dke.4
+- Added EPIPE handling for graceful pipe closure
+- Added `handlePipeErrors(stream, exit)` function to cli-main.ts
+- Function exits with code 0 on EPIPE (normal when piping to head/grep)
+- Non-EPIPE errors are re-thrown
+- Called handlePipeErrors for both stdout and stderr at start of runCliMain
+- Added unit tests in src/cli-main.test.ts with 2 test cases
+- Files changed: `src/cli-main.ts`, `src/cli-main.test.ts`
+- **Learnings:** Node.js stream errors are emitted asynchronously. The `stream.emit('error', ...)` pattern works for testing because Writable streams handle error events synchronously when emitted manually.
+---

@@ -84,7 +84,7 @@ tasks:
 
   - id: rd-dke.4
     title: Add EPIPE handling for graceful pipe closure
-    status: pending
+    status: done
     notes: |
       Small addition to cli-main.ts:
       - Add handlePipeErrors(stream, exit) function
