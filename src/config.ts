@@ -15,7 +15,9 @@ export interface ResolvedConfig {
   defaultCollection: number;
 }
 
-const CONFIG_DIR = join(homedir(), ".config", "raindrop-cli");
+const CONFIG_DIR = process.env["XDG_CONFIG_HOME"]
+  ? join(process.env["XDG_CONFIG_HOME"], "raindrop-cli")
+  : join(homedir(), ".config", "raindrop-cli");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 /**

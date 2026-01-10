@@ -17,7 +17,7 @@
  */
 
 import type { OutputFormat } from "../types/index.js";
-import { colors as colorFns } from "../utils/colors.js";
+import { createColors } from "picocolors";
 
 export type OutputConfig = {
   format: OutputFormat | undefined; // undefined = auto-detect
@@ -77,22 +77,20 @@ export function createContext(
 
   const useColor = isTty && !noColor;
 
-  // Wrap color functions to respect color setting
-  const wrapColor =
-    (fn: (s: string) => string) =>
-    (text: string): string =>
-      useColor ? fn(text) : text;
+  // Use picocolors with forced color support, then wrap to respect our useColor setting
+  // This bypasses picocolors' own TTY detection so we control color output
+  const pc = createColors(true);
 
   return {
     isTty,
     output: { format, color: useColor, verbose, debug, quiet },
     colors: {
-      bold: wrapColor(colorFns.bold),
-      dim: wrapColor(colorFns.dim),
-      cyan: wrapColor(colorFns.cyan),
-      yellow: wrapColor(colorFns.yellow),
-      green: wrapColor(colorFns.green),
-      red: wrapColor(colorFns.red),
+      bold: useColor ? pc.bold : String,
+      dim: useColor ? pc.dim : String,
+      cyan: useColor ? pc.cyan : String,
+      yellow: useColor ? pc.yellow : String,
+      green: useColor ? pc.green : String,
+      red: useColor ? pc.red : String,
     },
     prefix: useColor
       ? { ok: "✓ ", warn: "⚠ ", err: "✗ ", info: "ℹ " }

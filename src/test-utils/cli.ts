@@ -44,6 +44,13 @@ export async function runCli(args: string[], options: CliOptions = {}): Promise<
   // Apply user overrides
   Object.assign(spawnEnv, env);
 
+  // When RAINDROP_TOKEN is empty/unset, override XDG_CONFIG_HOME to prevent
+  // finding stored tokens in ~/.config/raindrop-cli/config.json.
+  // This ensures tests that expect "no auth" don't accidentally use real credentials.
+  if (!spawnEnv.RAINDROP_TOKEN) {
+    spawnEnv.XDG_CONFIG_HOME = "/tmp/raindrop-cli-test-no-config";
+  }
+
   // Ensure consistent output for tests (disable colors)
   spawnEnv.NO_COLOR = "1";
   // Explicitly set FORCE_COLOR=0 to avoid Bun's warning about NO_COLOR being ignored
