@@ -4,6 +4,8 @@ Started: 2026-01-09 20:22
 ## Codebase Patterns
 - **Stream capture pattern**: Use Node.js `Writable` from `node:stream` to create capture streams for testing. Collect chunks in `write()`, concatenate in `getOutput()`.
 - **Test cleanup**: Always call `resetOutputStream()` in `afterEach` to restore defaults.
+- **Commander recursive config**: Commander's `configureOutput()` and `exitOverride()` only apply to the command they're called on, not subcommands. Must call recursively on all commands for consistent behavior.
+- **Nock + Bun limitation**: Nock has compatibility issues with Bun's native HTTP handling. API mocking tests should use integration tests (subprocess spawning) or live tests instead.
 
 ---
 
@@ -63,4 +65,20 @@ Started: 2026-01-09 20:22
 - Added unit tests in src/cli-main.test.ts with 2 test cases
 - Files changed: `src/cli-main.ts`, `src/cli-main.test.ts`
 - **Learnings:** Node.js stream errors are emitted asynchronously. The `stream.emit('error', ...)` pattern works for testing because Writable streams handle error events synchronously when emitted manually.
+---
+
+## [2026-01-09 20:34] - rd-dke.5
+- Added unit test infrastructure with mocked streams
+- Created `src/test-utils/streams.ts` with `captureStream()` and `noopStream()` utilities
+- Exported from `src/test-utils/index.ts`
+- Created `src/run.test.ts` with 9 unit tests covering:
+  - Help output (--help, subcommand --help, nested --help, --version)
+  - Error handling (unknown command, invalid options)
+  - Global options parsing (--json, --quiet, --verbose with --help)
+- Fixed: run.ts now calls `configureOutput()` and `exitOverride()` recursively on all commands via `configureCommandRecursive()` helper
+- Tests run fast (~2-20ms each, vs ~100-500ms for subprocess tests)
+- Files changed: `src/test-utils/streams.ts` (new), `src/test-utils/index.ts`, `src/run.ts`, `src/run.test.ts` (new)
+- **Learnings:** 
+  - Nock has compatibility issues with Bun's native HTTP handling. API mocking tests should use integration tests (subprocess) or live tests. Unit tests focus on CLI parsing/help.
+  - Commander's configureOutput and exitOverride must be applied recursively to all subcommands for proper stream redirection and error handling.
 ---

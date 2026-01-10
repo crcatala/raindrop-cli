@@ -96,7 +96,7 @@ tasks:
 
   - id: rd-dke.5
     title: Add unit tests with mocked streams
-    status: pending
+    status: done
     notes: |
       Create test infrastructure and example tests:
       - src/test-utils/streams.ts - captureStream(), noopStream()

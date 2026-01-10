@@ -10,7 +10,7 @@
  * This is the primary entry point for unit testing with mocked streams.
  */
 
-import { CommanderError } from "commander";
+import { Command, CommanderError } from "commander";
 import { createContext } from "./cli/context.js";
 import { createProgram } from "./cli/program.js";
 import { setOutputStream } from "./utils/output-streams.js";
@@ -21,6 +21,28 @@ export type RunEnv = {
   stderr: NodeJS.WritableStream;
 };
 
+/**
+ * Recursively configure output streams and exit override on all commands.
+ * Commander's configureOutput and exitOverride only apply to the command
+ * they're called on, not subcommands. This ensures consistent behavior
+ * when users invoke help on any subcommand (e.g., `rd bookmarks --help`).
+ */
+function configureCommandRecursive(
+  cmd: Command,
+  stdout: NodeJS.WritableStream,
+  stderr: NodeJS.WritableStream
+): void {
+  cmd.configureOutput({
+    writeOut: (str) => stdout.write(str),
+    writeErr: (str) => stderr.write(str),
+  });
+  cmd.exitOverride();
+
+  for (const subCmd of cmd.commands) {
+    configureCommandRecursive(subCmd, stdout, stderr);
+  }
+}
+
 export async function runCli(argv: string[], { env, stdout, stderr }: RunEnv): Promise<void> {
   setOutputStream(stdout, stderr);
 
@@ -28,12 +50,8 @@ export async function runCli(argv: string[], { env, stdout, stderr }: RunEnv): P
   const ctx = createContext(argv, env, isTty);
   const program = createProgram(ctx);
 
-  program.configureOutput({
-    writeOut: (str) => stdout.write(str),
-    writeErr: (str) => stderr.write(str),
-  });
-
-  program.exitOverride();
+  // Configure all commands recursively for proper stream handling and exit override
+  configureCommandRecursive(program, stdout, stderr);
 
   try {
     await program.parseAsync(argv, { from: "user" });
