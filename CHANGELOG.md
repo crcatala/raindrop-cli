@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 - Automated releases with release-it
+- Support for `XDG_CONFIG_HOME` environment variable to override config directory
 
 ### Fixed
 - Graceful handling of broken pipes (EPIPE) when piping CLI output
