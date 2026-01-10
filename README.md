@@ -348,6 +348,16 @@ For maintainers publishing a new version to npm. We use [release-it](https://git
 - ggshield installed and authenticated (`ggshield auth status`)
 - `GITHUB_TOKEN` environment variable set (for creating GitHub releases)
 
+#### Getting a GitHub Token
+
+1. Go to [GitHub Settings → Tokens](https://github.com/settings/tokens?type=beta) (fine-grained)
+2. Click **Generate new token**
+3. Set expiration and select **Only select repositories** → `raindrop-cli`
+4. Under **Repository permissions**, set **Contents** to **Read and write**
+5. Generate and export: `export GITHUB_TOKEN=github_pat_xxxx`
+
+Or use a [classic token](https://github.com/settings/tokens/new) with the `repo` scope (broader access).
+
 ### Before You Release
 
 Update `CHANGELOG.md` with your changes under the `[Unreleased]` section:
