@@ -30,7 +30,7 @@ pre_commit: "bun run verify"
 tasks:
   - id: rd-dke.1
     title: Add stream injection to output-streams.ts
-    status: pending
+    status: done
     notes: |
       Non-breaking change to src/utils/output-streams.ts:
       - Add stdoutStream/stderrStream module variables

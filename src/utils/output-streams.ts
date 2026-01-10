@@ -8,12 +8,35 @@
  * This enables proper piping (e.g., `rd raindrops list | jq`).
  */
 
+// Injectable streams for testability (default to process.* for normal operation)
+let stdoutStream: NodeJS.WritableStream = process.stdout;
+let stderrStream: NodeJS.WritableStream = process.stderr;
+
+/**
+ * Override output streams. Use in tests to capture output.
+ */
+export function setOutputStream(
+  stdout: NodeJS.WritableStream,
+  stderr: NodeJS.WritableStream
+): void {
+  stdoutStream = stdout;
+  stderrStream = stderr;
+}
+
+/**
+ * Reset output streams to defaults. Call in test cleanup.
+ */
+export function resetOutputStream(): void {
+  stdoutStream = process.stdout;
+  stderrStream = process.stderr;
+}
+
 /**
  * Output data to stdout. Use for primary output that may be piped.
  * Examples: JSON data, table output, IDs in quiet mode
  */
 export function outputData(message: string): void {
-  process.stdout.write(message + "\n");
+  stdoutStream.write(message + "\n");
 }
 
 /**
@@ -21,7 +44,7 @@ export function outputData(message: string): void {
  * Examples: "Validating token...", "Token saved successfully!"
  */
 export function outputMessage(message: string): void {
-  process.stderr.write(message + "\n");
+  stderrStream.write(message + "\n");
 }
 
 /**
@@ -29,7 +52,7 @@ export function outputMessage(message: string): void {
  * Examples: "Invalid token", "Warning: Rate limit approaching"
  */
 export function outputError(message: string): void {
-  process.stderr.write(message + "\n");
+  stderrStream.write(message + "\n");
 }
 
 /**
@@ -37,7 +60,7 @@ export function outputError(message: string): void {
  * TODO: Currently unused - reserved for future streaming output (rd-8o9)
  */
 export function outputDataRaw(message: string): void {
-  process.stdout.write(message);
+  stdoutStream.write(message);
 }
 
 /**
@@ -45,5 +68,5 @@ export function outputDataRaw(message: string): void {
  * TODO: Currently unused - reserved for future progress indicators (rd-8o9)
  */
 export function outputMessageRaw(message: string): void {
-  process.stderr.write(message);
+  stderrStream.write(message);
 }
