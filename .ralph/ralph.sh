@@ -304,6 +304,100 @@ cmd_validate() {
   validate_prd "$prd_file"
 }
 
+cmd_archive() {
+  local loop_name=""
+  local do_commit=false
+  local force=false
+  
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --commit)
+        do_commit=true
+        shift
+        ;;
+      --force)
+        force=true
+        shift
+        ;;
+      -*)
+        error "Unknown option: $1"
+        echo "Usage: .ralph/ralph.sh archive <loop-name> [--commit] [--force]"
+        exit 1
+        ;;
+      *)
+        if [ -z "$loop_name" ]; then
+          loop_name="$1"
+        fi
+        shift
+        ;;
+    esac
+  done
+  
+  if [ -z "$loop_name" ]; then
+    error "Loop name required"
+    echo "Usage: .ralph/ralph.sh archive <loop-name> [--commit] [--force]"
+    exit 1
+  fi
+  
+  local loop_dir="$LOOPS_DIR/$loop_name"
+  local prd_file="$loop_dir/prd.yaml"
+  local archive_dir="$SCRIPT_DIR/loops-archived"
+  
+  if [ ! -d "$loop_dir" ]; then
+    error "Loop not found: $loop_name"
+    cmd_list
+    exit 1
+  fi
+  
+  if [ ! -f "$prd_file" ]; then
+    error "prd.yaml not found: $prd_file"
+    exit 1
+  fi
+  
+  # Check if all tasks are done
+  local pending_count
+  pending_count=$(grep -c "status:[[:space:]]*pending" "$prd_file" 2>/dev/null) || pending_count=0
+  
+  if [[ "$pending_count" -gt 0 ]] && [[ "$force" != "true" ]]; then
+    error "Loop has $pending_count pending task(s)"
+    echo "    Use --force to archive incomplete loops"
+    exit 1
+  fi
+  
+  if [[ "$pending_count" -gt 0 ]]; then
+    warn "Archiving incomplete loop ($pending_count pending tasks)"
+  fi
+  
+  # Ensure archive directory exists
+  mkdir -p "$archive_dir"
+  
+  # Handle naming collision
+  local archive_target="$archive_dir/$loop_name"
+  if [ -d "$archive_target" ]; then
+    local timestamp=$(date '+%Y-%m-%d')
+    archive_target="$archive_dir/${loop_name}-${timestamp}"
+    # If still exists (multiple archives same day), add time
+    if [ -d "$archive_target" ]; then
+      timestamp=$(date '+%Y-%m-%d-%H%M%S')
+      archive_target="$archive_dir/${loop_name}-${timestamp}"
+    fi
+    info "Archive exists, using: $(basename "$archive_target")"
+  fi
+  
+  # Move the loop
+  mv "$loop_dir" "$archive_target"
+  success "Archived: $loop_name → loops-archived/$(basename "$archive_target")"
+  
+  # Commit if requested
+  if [ "$do_commit" = "true" ]; then
+    git add "$loop_dir" "$archive_target" 2>/dev/null || true
+    git add -A "$SCRIPT_DIR/loops" "$SCRIPT_DIR/loops-archived" 2>/dev/null || true
+    git commit -m "chore: archive ralph loop '$loop_name'"
+    success "Committed archive"
+  fi
+}
+
 cmd_run() {
   local loop_name=""
   local max_iterations=25
@@ -480,10 +574,15 @@ usage() {
   echo "  validate <loop>        Validate a loop's prd.yaml"
   echo "  list                   List available loops"
   echo "  new <loop>             Create a new loop from template"
+  echo "  archive <loop> [opts]  Move completed loop to archive"
   echo ""
   echo "Run options:"
   echo "  --branch <name>        Override branch from prd.yaml"
   echo "  -n, --max-iterations   Max iterations (default: 25)"
+  echo ""
+  echo "Archive options:"
+  echo "  --commit               Create a git commit for the archive"
+  echo "  --force                Archive even if tasks are incomplete"
   echo ""
   echo "Examples:"
   echo "  .ralph/ralph.sh list"
@@ -492,6 +591,7 @@ usage() {
   echo "  .ralph/ralph.sh run my-feature"
   echo "  .ralph/ralph.sh run my-feature -n 50"
   echo "  .ralph/ralph.sh run my-feature --branch ralph/my-feature-opus"
+  echo "  .ralph/ralph.sh archive my-feature --commit"
 }
 
 # Parse command
@@ -510,6 +610,9 @@ case "$COMMAND" in
     ;;
   new)
     cmd_new "$@"
+    ;;
+  archive)
+    cmd_archive "$@"
     ;;
   help|--help|-h)
     usage

@@ -130,6 +130,15 @@ tasks:
 # Run with branch override (useful for comparing LLM models)
 .ralph/ralph.sh run <loop-name> --branch ralph/my-feature-opus
 .ralph/ralph.sh run <loop-name> --branch ralph/my-feature-sonnet
+
+# Archive a completed loop
+.ralph/ralph.sh archive <loop-name>
+
+# Archive with automatic git commit
+.ralph/ralph.sh archive <loop-name> --commit
+
+# Archive an incomplete loop (abandoned/stale)
+.ralph/ralph.sh archive <loop-name> --force
 ```
 
 ### Branch Override
