@@ -43,7 +43,7 @@ tasks:
 
   - id: rd-dke.2
     title: Create CliContext type and context.ts module
-    status: pending
+    status: done
     notes: |
       Create new src/cli/ directory with:
       - src/cli/context.ts - CliContext type and createContext()

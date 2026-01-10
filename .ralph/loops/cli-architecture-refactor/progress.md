@@ -18,3 +18,20 @@ Started: 2026-01-09 20:22
 - **Learnings:** Existing tests use `spyOn(process.stdout, "write")` which still works because the module defaults to process.stdout/stderr. New injection tests work alongside spy-based tests.
 ---
 
+## [2026-01-09 20:24] - rd-dke.2
+- Created CliContext type and context.ts module
+- Created `src/cli/` directory with:
+  - `src/cli/context.ts` - CliContext type and createContext() function
+  - `src/cli/index.ts` - exports for the module
+  - `src/cli/context.test.ts` - comprehensive unit tests
+- createContext() parses all format flags (--json, --table, --plain, --tsv, --format)
+- Handles verbosity flags (--verbose/-v, --debug/-d, --quiet/-q)
+- --debug implies verbose
+- Respects NO_COLOR env and --no-color flag
+- Color functions wrapped to return plain text when color disabled
+- isTty passed explicitly for testability (defaults to process.stdout.isTTY)
+- Unicode prefixes (✓, ⚠, ✗, ℹ) when color enabled, text prefixes when disabled
+- Files changed: `src/cli/context.ts`, `src/cli/index.ts`, `src/cli/context.test.ts`
+- **Learnings:** The existing `colors` export from `utils/colors.ts` is a Proxy that dynamically calls `getColors()`, which respects global flags. The new context.ts wraps these same color functions but evaluates color setting at context creation time, allowing tests to have predictable behavior.
+---
+
