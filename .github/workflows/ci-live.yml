@@ -18,6 +18,7 @@ jobs:
   # Dispatcher: detects /run-live-tests comment and triggers workflow_dispatch on PR branch
   # This job runs from main branch but dispatches to the PR branch
   dispatch-live-tests:
+    name: Dispatch Live Tests
     if: |
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
@@ -65,6 +66,7 @@ jobs:
 
   # Actual test job: runs via workflow_dispatch (uses workflow from target branch)
   live-tests:
+    name: Run Live API Tests
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
