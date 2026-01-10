@@ -18,7 +18,7 @@
     "publishArgs": ["--access", "public"]
   },
   "hooks": {
-    "before:init": ["bun run verify"],
+    "before:init": ["bash scripts/check-changelog.sh", "bun run verify"],
     "after:bump": ["bun run build"]
   },
   "plugins": {
