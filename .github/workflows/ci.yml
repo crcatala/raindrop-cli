@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
 
     steps:
       - name: Checkout code
@@ -26,7 +26,7 @@ jobs:
         run: bun run lint:verbose
 
   typecheck:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
 
     steps:
       - name: Checkout code
@@ -44,7 +44,7 @@ jobs:
         run: bun run typecheck:verbose
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
 
     steps:
       - name: Checkout code
@@ -65,7 +65,7 @@ jobs:
         run: bun run build
 
   format:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
 
     steps:
       - name: Checkout code
