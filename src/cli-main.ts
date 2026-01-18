@@ -11,6 +11,7 @@
 import { CommanderError } from "commander";
 import { runCli } from "./run.js";
 import { setOutputStream, resetOutputStream, outputError } from "./utils/output-streams.js";
+import { isCliError } from "./utils/errors.js";
 
 /**
  * Setup signal handlers for graceful shutdown.
@@ -98,6 +99,17 @@ export async function runCliMain(args: CliMainArgs): Promise<void> {
       return;
     }
 
+    // Determine exit code: use CliError.exitCode if available, otherwise 1
+    // Exit codes follow clig.dev: 0=success, 1=runtime error, 2=usage error
+    const exitCode = isCliError(error) ? error.exitCode : 1;
+
+    // Handle structured CliErrors with JSON output
+    if (jsonOutput && isCliError(error)) {
+      outputError(JSON.stringify(error.toJSON(), null, 2));
+      setExitCode(exitCode);
+      return;
+    }
+
     // Handle other errors with proper formatting
     if (jsonOutput) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -109,7 +121,7 @@ export async function runCliMain(args: CliMainArgs): Promise<void> {
       const message = error instanceof Error ? error.message : String(error);
       outputError(message);
     }
-    setExitCode(1);
+    setExitCode(exitCode);
   } finally {
     resetOutputStream();
   }

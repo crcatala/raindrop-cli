@@ -22,3 +22,13 @@ Started: 2026-01-18T01:41:27.603Z
 - Files changed: src/cli-main.ts, src/cli-main.test.ts
 - **Learnings:** Testing signal handlers requires mocking `process.on` to capture the handlers, then calling them directly. Use spyOn(process, "on").mockImplementation() to capture handlers in a Map.
 ---
+
+## [2026-01-17 17:47] - rc-9036.3
+- Integrated structured errors into cli-main.ts error handling
+- Import and use `isCliError()` type guard from errors.ts
+- When --json flag is set and error is CliError, output `error.toJSON()` to stderr
+- Exit code comes from `error.exitCode` when error is CliError (UsageError=2, others=1)
+- Non-CliError exceptions still handled gracefully (exit 1, message to stderr)
+- Files changed: src/cli-main.ts, src/cli-main.test.ts
+- **Learnings:** When mocking imported modules with spyOn in Bun tests, MUST save the spy reference and call `mockRestore()` in afterEach, otherwise the mock persists across test files due to module caching.
+---

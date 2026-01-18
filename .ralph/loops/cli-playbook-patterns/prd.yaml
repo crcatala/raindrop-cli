@@ -98,7 +98,7 @@ tasks:
 
   - id: rc-9036.3
     title: Integrate structured errors into cli-main.ts
-    status: pending
+    status: done
     acceptance:
       - "cli-main.ts imports and uses isCliError() type guard"
       - "When --json flag is set and error is CliError, output error.toJSON() to stderr"
