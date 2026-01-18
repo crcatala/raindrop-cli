@@ -68,7 +68,8 @@ tasks:
       This requires explicit approval before workflow changes can be merged.
       Combined with GitHub's fork approval settings, provides defense in depth.
 
-  - title: Create PR and push branch
+  - id: rd-u22.16
+    title: Create PR and push branch
     status: done
     acceptance:
       - "Branch is pushed to origin"
@@ -98,7 +99,8 @@ tasks:
       
       Record the PR number/URL in progress.md for the next task.
 
-  - title: Ensure PR CI is passing
+  - id: rd-u22.17
+    title: Ensure PR CI is passing
     status: done
     acceptance:
       - "All CI workflow checks on the PR are passing (green)"

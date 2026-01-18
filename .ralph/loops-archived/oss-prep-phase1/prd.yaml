@@ -49,7 +49,8 @@ tasks:
     title: Add CHANGELOG.md
     status: done
 
-  - title: Ensure PR is passing CI
+  - id: rd-u22.10
+    title: Ensure PR is passing CI
     status: done
     acceptance:
       - "The associated PR for this branch's CI steps are all passing"
