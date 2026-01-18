@@ -32,3 +32,13 @@ Started: 2026-01-18T01:41:27.603Z
 - Files changed: src/cli-main.ts, src/cli-main.test.ts
 - **Learnings:** When mocking imported modules with spyOn in Bun tests, MUST save the spy reference and call `mockRestore()` in afterEach, otherwise the mock persists across test files due to module caching.
 ---
+
+## [2026-01-17 17:52] - rc-9036.4
+- Replaced CommanderError with UsageError for timeout validation in program.ts
+- Import UsageError from utils/errors.ts
+- Added clig.dev exit code documentation comment
+- Updated integration tests: -t validation now checks for exit code 2 specifically
+- Added new tests for zero and negative timeout values
+- Files changed: src/cli/program.ts, src/cli.integration.test.ts
+- **Learnings:** Commander's --help flag bypasses preAction hooks, so validation tests must use a real command (like `auth status`) instead of --help to properly test preAction validation errors.
+---

@@ -126,7 +126,7 @@ tasks:
 
   - id: rc-9036.4
     title: Use UsageError for validation failures
-    status: pending
+    status: done
     acceptance:
       - "Timeout validation in program.ts throws UsageError instead of generic error"
       - "Any other argument validation failures use UsageError"
