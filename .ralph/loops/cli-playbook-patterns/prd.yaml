@@ -1,0 +1,148 @@
+# CLI Playbook Patterns Adoption
+# Implements ticket rc-9036: structured errors, exit codes, signal handling
+
+name: "CLI Playbook Patterns"
+description: |
+  Adopt battle-tested CLI patterns from the cli-playbook:
+  1. Structured error classes with toJSON() for machine-readable errors
+  2. Exit code 2 for usage errors (clig.dev compliance)
+  3. Signal handling for graceful shutdown (SIGINT/SIGTERM)
+  
+  Reference: .tickets/rc-9036.md
+
+branch: "ralph/cli-playbook-patterns"
+
+create_pr: true
+pr_title: "feat: adopt CLI playbook patterns (structured errors, signal handling)"
+
+issue_tracker: tk
+issue_id: rc-9036
+pre_commit: "bun run verify"
+
+tasks:
+  - id: rc-9036.1
+    title: Create structured CliError class hierarchy
+    status: pending
+    acceptance:
+      - "CliError base class exists in src/utils/errors.ts with: code, exitCode, details, toJSON()"
+      - "UsageError subclass with exitCode=2 and code='USAGE_ERROR'"
+      - "ApiError subclass with exitCode=1, code='API_ERROR', optional statusCode"
+      - "TimeoutError subclass with exitCode=1, code='TIMEOUT', timeoutMs property"
+      - "ConfigError subclass with exitCode=1, code='CONFIG_ERROR'"
+      - "isCliError() type guard function exported"
+      - "All existing error handling in errors.ts preserved (don't break existing code)"
+      - "Unit tests for each error class and toJSON() serialization"
+    notes: |
+      This is ADDITIVE - keep existing error utilities like formatApiError().
+      The new classes complement, not replace, existing patterns.
+      
+      Example structure:
+      ```typescript
+      export class CliError extends Error {
+        constructor(
+          message: string,
+          public code: string,
+          public exitCode = 1,
+          public details?: Record<string, unknown>,
+        ) {
+          super(message)
+          this.name = 'CliError'
+        }
+        
+        toJSON(): Record<string, unknown> {
+          return {
+            error: true,
+            code: this.code,
+            message: this.message,
+            ...(this.details && { details: this.details }),
+          }
+        }
+      }
+      ```
+
+  - id: rc-9036.2
+    title: Add signal handling for graceful shutdown
+    status: pending
+    acceptance:
+      - "setupSignalHandlers() function in cli-main.ts"
+      - "SIGINT handler: first Ctrl-C shows message, second force exits with code 130"
+      - "SIGTERM handler: clean exit with code 143 (128 + 15)"
+      - "setupSignalHandlers() called at start of runCliMain()"
+      - "Unit test for signal handling behavior"
+    notes: |
+      Add to cli-main.ts:
+      ```typescript
+      function setupSignalHandlers(
+        stderr: NodeJS.WritableStream,
+        exit: (code: number) => void
+      ): void {
+        let interrupted = false
+        
+        process.on('SIGINT', () => {
+          if (interrupted) {
+            stderr.write('\nForce exiting...\n')
+            exit(130)
+            return
+          }
+          interrupted = true
+          stderr.write('\nInterrupted. Press Ctrl-C again to force exit.\n')
+          setTimeout(() => exit(130), 3000)
+        })
+        
+        process.on('SIGTERM', () => {
+          stderr.write('\nTerminated.\n')
+          exit(143)
+        })
+      }
+      ```
+
+  - id: rc-9036.3
+    title: Integrate structured errors into cli-main.ts
+    status: pending
+    acceptance:
+      - "cli-main.ts imports and uses isCliError() type guard"
+      - "When --json flag is set and error is CliError, output error.toJSON() to stderr"
+      - "Exit code comes from error.exitCode when error is CliError"
+      - "UsageError instances exit with code 2"
+      - "Non-CliError exceptions still handled gracefully (exit 1, message to stderr)"
+      - "Unit tests verify JSON error output format"
+      - "Unit tests verify exit codes for different error types"
+    notes: |
+      Update the catch block in runCliMain():
+      ```typescript
+      } catch (error: unknown) {
+        const exitCode = isCliError(error) ? error.exitCode : 1
+        
+        if (jsonOutput && isCliError(error)) {
+          stderr.write(`${JSON.stringify(error.toJSON(), null, 2)}\n`)
+          setExitCode(exitCode)
+          return
+        }
+        
+        // ... existing debug/normal error handling
+        setExitCode(exitCode)
+      }
+      ```
+
+  - id: rc-9036.4
+    title: Use UsageError for validation failures
+    status: pending
+    acceptance:
+      - "Timeout validation in program.ts throws UsageError instead of generic error"
+      - "Any other argument validation failures use UsageError"
+      - "Verify exit code 2 is returned for usage errors via integration test"
+      - "Document the exit code convention in a code comment"
+    notes: |
+      Find places where validation errors are thrown and convert to UsageError.
+      The key is consistency: usage/validation errors = exit 2, runtime errors = exit 1.
+      
+      Example in program.ts preAction hook:
+      ```typescript
+      if (globalOpts.timeout !== undefined) {
+        const error = validateTimeout(globalOpts.timeout)
+        if (error) {
+          throw new UsageError(error, { timeout: globalOpts.timeout })
+        }
+        // ...
+      }
+      ```
