@@ -7,6 +7,7 @@ import {
   TimeoutError,
   UsageError,
   handleError,
+  isCliError,
 } from "./errors.js";
 
 describe("RaindropCliError", () => {
@@ -151,6 +152,33 @@ describe("TimeoutError", () => {
   test("is instanceof RaindropCliError", () => {
     const error = new TimeoutError(30);
     expect(error instanceof RaindropCliError).toBe(true);
+  });
+});
+
+describe("isCliError", () => {
+  test("returns true for RaindropCliError", () => {
+    const error = new RaindropCliError("test", "CODE");
+    expect(isCliError(error)).toBe(true);
+  });
+
+  test("returns true for subclasses", () => {
+    expect(isCliError(new UsageError("bad input"))).toBe(true);
+    expect(isCliError(new ConfigError("missing config"))).toBe(true);
+    expect(isCliError(new ApiError("api failed", 500))).toBe(true);
+    expect(isCliError(new TimeoutError(30))).toBe(true);
+    expect(isCliError(new RateLimitError(100, 123))).toBe(true);
+  });
+
+  test("returns false for regular Error", () => {
+    expect(isCliError(new Error("regular error"))).toBe(false);
+  });
+
+  test("returns false for non-Error values", () => {
+    expect(isCliError(null)).toBe(false);
+    expect(isCliError(undefined)).toBe(false);
+    expect(isCliError("string")).toBe(false);
+    expect(isCliError(42)).toBe(false);
+    expect(isCliError({ error: true })).toBe(false);
   });
 });
 

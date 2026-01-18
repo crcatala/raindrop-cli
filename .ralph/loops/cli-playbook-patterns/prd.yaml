@@ -22,7 +22,7 @@ pre_commit: "bun run verify"
 tasks:
   - id: rc-9036.1
     title: Create structured CliError class hierarchy
-    status: pending
+    status: done
     acceptance:
       - "CliError base class exists in src/utils/errors.ts with: code, exitCode, details, toJSON()"
       - "UsageError subclass with exitCode=2 and code='USAGE_ERROR'"
