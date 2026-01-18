@@ -62,7 +62,7 @@ tasks:
 
   - id: rc-9036.2
     title: Add signal handling for graceful shutdown
-    status: pending
+    status: done
     acceptance:
       - "setupSignalHandlers() function in cli-main.ts"
       - "SIGINT handler: first Ctrl-C shows message, second force exits with code 130"
