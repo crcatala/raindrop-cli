@@ -34,5 +34,5 @@ coverage/
 .eslintcache
 .prettiercache
 
-# bv (beads viewer) local config and caches
-.bv/
+# Tickets are tracked, but local caches are not
+.tickets/.cache/
