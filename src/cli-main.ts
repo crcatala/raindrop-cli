@@ -11,6 +11,40 @@
 import { CommanderError } from "commander";
 import { runCli } from "./run.js";
 import { setOutputStream, resetOutputStream, outputError } from "./utils/output-streams.js";
+import { isCliError } from "./utils/errors.js";
+
+/**
+ * Setup signal handlers for graceful shutdown.
+ *
+ * - SIGINT (Ctrl-C): First press shows message, second force exits with code 130
+ * - SIGTERM: Clean exit with code 143 (128 + 15)
+ *
+ * Exit codes follow standard Unix conventions:
+ * - 130 = 128 + SIGINT (2)
+ * - 143 = 128 + SIGTERM (15)
+ */
+export function setupSignalHandlers(
+  stderr: NodeJS.WritableStream,
+  exit: (code: number) => void
+): void {
+  let interrupted = false;
+
+  process.on("SIGINT", () => {
+    if (interrupted) {
+      stderr.write("\nForce exiting...\n");
+      exit(130);
+      return;
+    }
+    interrupted = true;
+    stderr.write("\nInterrupted. Press Ctrl-C again to force exit.\n");
+    setTimeout(() => exit(130), 3000);
+  });
+
+  process.on("SIGTERM", () => {
+    stderr.write("\nTerminated.\n");
+    exit(143);
+  });
+}
 
 /**
  * Handle EPIPE errors gracefully (pipe closed by consumer like head/grep).
@@ -41,6 +75,9 @@ export type CliMainArgs = {
 export async function runCliMain(args: CliMainArgs): Promise<void> {
   const { argv, env, stdout, stderr, exit, setExitCode } = args;
 
+  // Setup signal handlers for graceful shutdown
+  setupSignalHandlers(stderr, exit);
+
   // Handle EPIPE errors gracefully (e.g., when piping to head/grep)
   handlePipeErrors(stdout, exit);
   handlePipeErrors(stderr, exit);
@@ -62,6 +99,17 @@ export async function runCliMain(args: CliMainArgs): Promise<void> {
       return;
     }
 
+    // Determine exit code: use CliError.exitCode if available, otherwise 1
+    // Exit codes follow clig.dev: 0=success, 1=runtime error, 2=usage error
+    const exitCode = isCliError(error) ? error.exitCode : 1;
+
+    // Handle structured CliErrors with JSON output
+    if (jsonOutput && isCliError(error)) {
+      outputError(JSON.stringify(error.toJSON(), null, 2));
+      setExitCode(exitCode);
+      return;
+    }
+
     // Handle other errors with proper formatting
     if (jsonOutput) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -73,7 +121,7 @@ export async function runCliMain(args: CliMainArgs): Promise<void> {
       const message = error instanceof Error ? error.message : String(error);
       outputError(message);
     }
-    setExitCode(1);
+    setExitCode(exitCode);
   } finally {
     resetOutputStream();
   }

@@ -25,9 +25,9 @@ import { createFiltersCommand } from "../commands/filters.js";
 import { createTrashCommand } from "../commands/trash.js";
 import { setNoColorFlag } from "../utils/tty.js";
 import { setDebugEnabled, setVerboseEnabled, debug } from "../utils/debug.js";
-import { outputError } from "../utils/output-streams.js";
 import { setTimeoutSeconds, validateTimeout, DEFAULT_TIMEOUT_SECONDS } from "../utils/timeout.js";
 import { configureStyledHelpRecursive } from "../utils/help-formatter.js";
+import { UsageError } from "../utils/errors.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf-8"));
@@ -238,11 +238,12 @@ export function createProgram(ctx: CliContext): Command {
       }
 
       // Set timeout if specified
+      // Exit code 2 for usage/validation errors per clig.dev conventions:
+      // https://clig.dev/#the-basics (0=success, 1=runtime error, 2=usage error)
       if (globalOpts.timeout !== undefined) {
         const error = validateTimeout(globalOpts.timeout);
         if (error) {
-          outputError(error);
-          throw new CommanderError(2, "commander.invalidArgument", error);
+          throw new UsageError(error, { timeout: globalOpts.timeout });
         }
         setTimeoutSeconds(parseInt(globalOpts.timeout, 10));
       }

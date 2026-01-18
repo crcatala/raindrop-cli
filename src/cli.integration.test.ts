@@ -350,10 +350,24 @@ describe("CLI integration", () => {
       expect(result.stderr).not.toContain("unknown option");
     });
 
-    test("-t validates timeout value", async () => {
+    test("-t validates timeout value and exits with code 2", async () => {
+      // Invalid timeout values are usage errors (exit code 2 per clig.dev)
       const result = await runCli(["-t", "invalid", "auth", "status"]);
-      expect(result.exitCode).not.toBe(0);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain("Invalid timeout");
+    });
+
+    test("--timeout with zero value exits with code 2", async () => {
+      // Use auth status instead of --help because --help bypasses preAction hook
+      const result = await runCli(["--timeout", "0", "auth", "status"]);
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Timeout must be at least");
+    });
+
+    test("--timeout with negative value exits with code 2", async () => {
+      const result = await runCli(["--timeout", "-5", "auth", "status"]);
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Timeout must be at least");
     });
   });
 

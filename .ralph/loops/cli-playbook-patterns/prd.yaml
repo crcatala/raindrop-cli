@@ -22,7 +22,7 @@ pre_commit: "bun run verify"
 tasks:
   - id: rc-9036.1
     title: Create structured CliError class hierarchy
-    status: pending
+    status: done
     acceptance:
       - "CliError base class exists in src/utils/errors.ts with: code, exitCode, details, toJSON()"
       - "UsageError subclass with exitCode=2 and code='USAGE_ERROR'"
@@ -62,7 +62,7 @@ tasks:
 
   - id: rc-9036.2
     title: Add signal handling for graceful shutdown
-    status: pending
+    status: done
     acceptance:
       - "setupSignalHandlers() function in cli-main.ts"
       - "SIGINT handler: first Ctrl-C shows message, second force exits with code 130"
@@ -98,7 +98,7 @@ tasks:
 
   - id: rc-9036.3
     title: Integrate structured errors into cli-main.ts
-    status: pending
+    status: done
     acceptance:
       - "cli-main.ts imports and uses isCliError() type guard"
       - "When --json flag is set and error is CliError, output error.toJSON() to stderr"
@@ -126,7 +126,7 @@ tasks:
 
   - id: rc-9036.4
     title: Use UsageError for validation failures
-    status: pending
+    status: done
     acceptance:
       - "Timeout validation in program.ts throws UsageError instead of generic error"
       - "Any other argument validation failures use UsageError"

@@ -77,6 +77,14 @@ export class TimeoutError extends RaindropCliError {
   }
 }
 
+/**
+ * Type guard to check if an error is a RaindropCliError.
+ * Use this for safe type narrowing in catch blocks.
+ */
+export function isCliError(error: unknown): error is RaindropCliError {
+  return error instanceof RaindropCliError;
+}
+
 function formatSeconds(seconds: number): string {
   if (seconds <= 0) return "a few seconds";
   if (seconds === 1) return "1 second";
