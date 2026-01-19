@@ -1,0 +1,36 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits"
+  ],
+  "labels": ["dependencies"],
+  "automerge": false,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Core API client - review separately",
+      "matchPackageNames": ["@lasuillard/raindrop-client"],
+      "groupName": null
+    },
+    {
+      "description": "TypeScript - can introduce breaking type checks",
+      "matchPackageNames": ["typescript"],
+      "groupName": null
+    },
+    {
+      "description": "Group minor/patch updates",
+      "matchUpdateTypes": ["minor", "patch"],
+      "excludePackageNames": ["@lasuillard/raindrop-client", "typescript"],
+      "groupName": "minor and patch dependencies"
+    },
+    {
+      "description": "Group type definitions",
+      "matchPackagePatterns": ["^@types/"],
+      "groupName": "type definitions"
+    }
+  ],
+  "schedule": ["before 6am on monday"]
+}
