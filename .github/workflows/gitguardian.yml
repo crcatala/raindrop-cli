@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
         with:
           fetch-depth: 0
-      - uses: GitGuardian/ggshield-action@f4b0b39a8a8c07a14b2ed99634c75b6e93f983f3  # v1.46.0
+      - uses: GitGuardian/ggshield-action@8b29edc57b582045b12d45c8cc8f8040e121693b  # v1.46.0
         env:
           GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
           GITHUB_PUSH_BASE_SHA: ${{ github.event.base }}
