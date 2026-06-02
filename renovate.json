@@ -2,9 +2,12 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    ":semanticCommits"
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigestsToSemver"
   ],
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "automerge": false,
   "lockFileMaintenance": {
     "enabled": true
@@ -12,25 +15,49 @@
   "packageRules": [
     {
       "description": "Core API client - review separately",
-      "matchPackageNames": ["@lasuillard/raindrop-client"],
+      "matchPackageNames": [
+        "@lasuillard/raindrop-client"
+      ],
       "groupName": null
     },
     {
       "description": "TypeScript - can introduce breaking type checks",
-      "matchPackageNames": ["typescript"],
+      "matchPackageNames": [
+        "typescript"
+      ],
       "groupName": null
     },
     {
       "description": "Group minor/patch updates",
-      "matchUpdateTypes": ["minor", "patch"],
-      "excludePackageNames": ["@lasuillard/raindrop-client", "typescript"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "excludePackageNames": [
+        "@lasuillard/raindrop-client",
+        "typescript"
+      ],
       "groupName": "minor and patch dependencies"
     },
     {
       "description": "Group type definitions",
-      "matchPackagePatterns": ["^@types/"],
+      "matchPackagePatterns": [
+        "^@types/"
+      ],
       "groupName": "type definitions"
+    },
+    {
+      "description": "Never automerge major updates; require human review",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
     }
   ],
-  "schedule": ["before 6am on monday"]
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "minimumReleaseAge": "7 days",
+  "osvVulnerabilityAlerts": true,
+  "ignoreScripts": true
 }
