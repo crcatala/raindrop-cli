@@ -68,7 +68,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@lasuillard/raindrop-client": "^0.7.3",
+    "@lasuillard/raindrop-client": "^0.8.0",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
     "ora": "^9.0.0",
