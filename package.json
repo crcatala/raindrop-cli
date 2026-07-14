@@ -66,10 +66,11 @@
   },
   "homepage": "https://github.com/crcatala/raindrop-cli#readme",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@lasuillard/raindrop-client": "^0.8.0",
+    "axios": "^1.13.2",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
     "ora": "^9.0.0",
