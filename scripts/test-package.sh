@@ -33,4 +33,15 @@ fi
 
 "$BIN" --help >/dev/null
 
+# Check that executing a real Axios request from the project root does not emit
+# Node deprecation warnings (e.g. from proxy-from-env using the legacy
+# url.parse() API). Running from inside node_modules suppresses these warnings,
+# so we exercise the local dist artifact directly.
+DEPRECATION_OUTPUT="$(NODE_OPTIONS=--trace-deprecation RAINDROP_TOKEN=fake ./dist/cli.js collections stats 2>&1 || true)"
+if echo "$DEPRECATION_OUTPUT" | grep -q "DeprecationWarning"; then
+  echo "Found deprecation warning in CLI output:" >&2
+  echo "$DEPRECATION_OUTPUT" >&2
+  exit 1
+fi
+
 echo "Package smoke test passed"
