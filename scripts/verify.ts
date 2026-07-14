@@ -62,6 +62,11 @@ const checks: CheckConfig[] = [
     command: ["prettier", "--check", "src/**/*.ts"],
     verboseHint: "bun run format:check:verbose",
   },
+  {
+    name: "Package smoke test",
+    command: ["bash", "scripts/test-package.sh"],
+    verboseHint: "bun run test:package",
+  },
 ];
 
 async function runCheckSimple(config: CheckConfig): Promise<CheckResult> {
