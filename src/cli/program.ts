@@ -10,9 +10,7 @@
  */
 
 import { Command, CommanderError, Option } from "commander";
-import { readFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import pkg from "../../package.json" with { type: "json" };
 import type { CliContext } from "./context.js";
 import { OUTPUT_FORMATS } from "../types/index.js";
 import { createAuthCommand } from "../commands/auth.js";
@@ -28,9 +26,6 @@ import { setDebugEnabled, setVerboseEnabled, debug } from "../utils/debug.js";
 import { setTimeoutSeconds, validateTimeout, DEFAULT_TIMEOUT_SECONDS } from "../utils/timeout.js";
 import { configureStyledHelpRecursive } from "../utils/help-formatter.js";
 import { UsageError } from "../utils/errors.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const pkg = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf-8"));
 
 /**
  * Create root-level shortcuts for bookmark commands.
