@@ -31,6 +31,7 @@
     "test:live:verbose": "RDCLI_API_DELAY_MS=250 bun test --no-parallel src/**/*.live.test.ts",
     "test:all": "RDCLI_API_DELAY_MS=250 bash scripts/check.sh test:all",
     "test:all:verbose": "RDCLI_API_DELAY_MS=250 bun test src",
+    "test:package": "bash scripts/test-package.sh",
     "lint": "bash scripts/check.sh lint",
     "lint:fix": "oxlint --type-aware --fix src/",
     "lint:verbose": "oxlint --type-aware src/",
