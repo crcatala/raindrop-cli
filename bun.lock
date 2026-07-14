@@ -5,7 +5,8 @@
     "": {
       "name": "raindrop-cli",
       "dependencies": {
-        "@lasuillard/raindrop-client": "^0.7.3",
+        "@lasuillard/raindrop-client": "^0.8.0",
+        "axios": "^1.13.2",
         "cli-table3": "^0.6.5",
         "commander": "^14.0.2",
         "ora": "^9.0.0",
@@ -62,7 +63,7 @@
 
     "@inquirer/type": ["@inquirer/type@3.0.10", "", { "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-BvziSRxfz5Ov8ch0z/n3oijRSEcEsHnhggm4xFZe93DHcUCTlutlq9Ox4SVENAfcRD22UQq7T/atg9Wr3k09eA=="],
 
-    "@lasuillard/raindrop-client": ["@lasuillard/raindrop-client@0.7.3", "", { "dependencies": { "axios": "^1.6.8" } }, "sha512-QO0FR06DbhvLQp6Gv1CSSoZ8/hFVWt3p11DCOqQygFG+OLPnIaJc55fN+JriLqADHVOdKqtqus35muSIiqNMhQ=="],
+    "@lasuillard/raindrop-client": ["@lasuillard/raindrop-client@0.8.3", "", { "peerDependencies": { "axios": "1.*" } }, "sha512-3tFws4emQYphxrh6BcDaI2Yqf2tPf2ilQUpJzjHq8+fj4apZqFiwj/q1IHfFCgJw1N+wWyTNGL+n7SXZs5OAoA=="],
 
     "@mswjs/interceptors": ["@mswjs/interceptors@0.39.8", "", { "dependencies": { "@open-draft/deferred-promise": "^2.2.0", "@open-draft/logger": "^0.3.0", "@open-draft/until": "^2.0.0", "is-node-process": "^1.2.0", "outvariant": "^1.4.3", "strict-event-emitter": "^0.5.1" } }, "sha512-2+BzZbjRO7Ct61k8fMNHEtoKjeWI9pIlHFTqBwZ5icHpqszIgEZbjb1MW5Z0+bITTCTl3gk4PDBxs9tA/csXvA=="],
 

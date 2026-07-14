@@ -1,11 +1,10 @@
-import { client, generated } from "@lasuillard/raindrop-client";
+import Raindrop, { generated } from "@lasuillard/raindrop-client";
 import { getConfig } from "./config.js";
 import { ConfigError } from "./utils/errors.js";
 import { setupClientInterceptors } from "./utils/axios-interceptors.js";
 import { debug } from "./utils/debug.js";
 import { getTimeoutMs, getTimeoutSeconds } from "./utils/timeout.js";
 
-const { Raindrop } = client;
 const { Configuration } = generated;
 
 type RaindropClient = InstanceType<typeof Raindrop>;
