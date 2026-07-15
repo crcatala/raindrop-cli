@@ -401,11 +401,11 @@ The interactive prompt will ask you to select the version bump (patch/minor/majo
 1. **Verify** — runs tests, lint, typecheck, format
 2. **Bump version** — updates `package.json`
 3. **Update changelog** — moves "Unreleased" items to new version section with date
-4. **Build** — compiles to `dist/`
+4. **Package smoke test** — rebuilds `dist/`, packs it, and executes the installed `rd` CLI
 5. **Commit** — creates "chore: release vX.Y.Z" commit
 6. **Tag** — creates `vX.Y.Z` git tag
-7. **Secret scan** — ggshield scans for leaked secrets
-8. **Publish to npm** — uploads package
+7. **Secret scan** — ggshield scans a freshly rebuilt `dist/` for leaked secrets
+8. **Publish to npm** — rebuilds immediately before packing and uploads the artifact
 9. **Push** — pushes commit and tag to GitHub
 10. **GitHub Release** — creates release with changelog notes
 

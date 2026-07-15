@@ -19,7 +19,7 @@
   },
   "hooks": {
     "before:init": ["bash scripts/check-changelog.sh", "bun run verify"],
-    "after:bump": ["bun run build"]
+    "after:bump": ["bun run test:package"]
   },
   "plugins": {
     "@release-it/keep-a-changelog": {
