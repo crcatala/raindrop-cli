@@ -59,5 +59,6 @@
   ],
   "minimumReleaseAge": "7 days",
   "osvVulnerabilityAlerts": true,
+  "dependencyDashboardOSVVulnerabilitySummary": "all",
   "ignoreScripts": true
 }
