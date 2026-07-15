@@ -153,6 +153,20 @@ describe("CLI integration", () => {
         expect(() => JSON.parse(result.stdout)).not.toThrow();
       }
     });
+
+    test("auth whoami delegates to auth status without extra arguments", async () => {
+      const result = await runCli(["auth", "whoami"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain("too many arguments");
+    });
+
+    test("auth whoami --json outputs authentication status as JSON", async () => {
+      const result = await runCli(["auth", "whoami", "--json"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({ authenticated: false });
+    });
   });
 
   describe("stream separation", () => {

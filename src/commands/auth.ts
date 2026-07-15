@@ -225,6 +225,20 @@ Examples:
       }
     });
 
+  // whoami command (alias for status)
+  auth
+    .command("whoami")
+    .description("Show the authenticated user")
+    .option("--json", "Output as JSON")
+    .action(async (options) => {
+      // Parse only the status command's arguments. With `from: "user"`,
+      // including "status" here makes Commander treat it as an extra argument.
+      const statusCmd = auth.commands.find((command) => command.name() === "status");
+      if (statusCmd) {
+        await statusCmd.parseAsync(options.json ? ["--json"] : [], { from: "user" });
+      }
+    });
+
   // clear command
   auth
     .command("clear")
