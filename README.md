@@ -360,7 +360,13 @@ Or use a [classic token](https://github.com/settings/tokens/new) with the `repo`
 
 ### Before You Release
 
-Update `CHANGELOG.md` with your changes under the `[Unreleased]` section:
+Generate a changelog draft from commits since the latest release:
+
+```bash
+bun run release:prep
+```
+
+The helper prints commit history, a changed-files summary, and a prompt you can use to draft changelog entries. Review the result and update `CHANGELOG.md` under the `[Unreleased]` section:
 
 ```markdown
 ## [Unreleased]
@@ -372,7 +378,7 @@ Update `CHANGELOG.md` with your changes under the `[Unreleased]` section:
 - Bug Y
 ```
 
-The release process will automatically move these entries to the new version section.
+The helper does not modify the changelog. The release process will automatically move your `[Unreleased]` entries to the new version section.
 
 ### Release Process
 
