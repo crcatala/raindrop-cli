@@ -32,33 +32,73 @@ export {
   TEST_COLLECTION_PREFIX,
 } from "./cleanup.js";
 
-// Share initialization across test files so validation and cleanup run once per suite.
-let setupPromise: Promise<void> | undefined;
+type BeforeAll = (callback: () => Promise<void>, options: { timeout: number }) => void;
 
-async function initializeLiveTests(): Promise<void> {
-  // Enable network access for live tests (blocked by default in global setup).
-  nock.enableNetConnect();
+type LiveTestSetupDependencies = {
+  beforeAll: BeforeAll;
+  enableNetConnect: () => void;
+  getToken: () => string | undefined;
+  runCli: typeof runCli;
+  cleanupTestArtifacts: typeof cleanupTestArtifacts;
+};
 
-  const token = process.env["RAINDROP_TOKEN"];
-  if (!token) {
-    return;
+/**
+ * Creates a live-test setup function. Dependencies are injectable so the
+ * validation and cleanup gate can be tested without making API requests.
+ */
+export function createLiveTestSetup({
+  beforeAll: registerBeforeAll,
+  enableNetConnect,
+  getToken,
+  runCli: executeCli,
+  cleanupTestArtifacts: cleanup,
+}: LiveTestSetupDependencies): () => void {
+  // Share initialization across test files so validation and cleanup run once per suite.
+  let setupPromise: Promise<void> | undefined;
+
+  async function initializeLiveTests(): Promise<void> {
+    // Enable network access for live tests (blocked by default in global setup).
+    enableNetConnect();
+
+    const token = getToken();
+    if (!token) {
+      return;
+    }
+
+    // Validate once up front so an invalid CI secret produces one clear failure
+    // instead of a cascade of failing authenticated tests.
+    const result = await executeCli(["auth", "status", "--json"], {
+      env: { RAINDROP_TOKEN: token },
+      timeout: AUTH_CLI_TIMEOUT_MS,
+    });
+
+    if (result.exitCode !== 0) {
+      throw new Error(
+        "Live test token validation failed. RAINDROP_TOKEN is invalid or expired; update it and rerun the suite."
+      );
+    }
+
+    await cleanup();
   }
 
-  // Validate once up front so an invalid CI secret produces one clear failure
-  // instead of a cascade of failing authenticated tests.
-  const result = await runCli(["auth", "status", "--json"], {
-    env: { RAINDROP_TOKEN: token },
-    timeout: AUTH_CLI_TIMEOUT_MS,
-  });
-
-  if (result.exitCode !== 0) {
-    throw new Error(
-      "Live test token validation failed. RAINDROP_TOKEN is invalid or expired; update it and rerun the suite."
+  return () => {
+    registerBeforeAll(
+      async () => {
+        setupPromise ??= initializeLiveTests();
+        await setupPromise;
+      },
+      { timeout: AUTH_TEST_TIMEOUT_MS }
     );
-  }
-
-  await cleanupTestArtifacts();
+  };
 }
+
+const setupLiveTestsOnce = createLiveTestSetup({
+  beforeAll,
+  enableNetConnect: () => nock.enableNetConnect(),
+  getToken: () => process.env["RAINDROP_TOKEN"],
+  runCli,
+  cleanupTestArtifacts,
+});
 
 /**
  * Set up live tests with cleanup.
@@ -77,11 +117,5 @@ export function setupLiveTests(): void {
     }
   }
 
-  beforeAll(
-    async () => {
-      setupPromise ??= initializeLiveTests();
-      await setupPromise;
-    },
-    { timeout: AUTH_TEST_TIMEOUT_MS }
-  );
+  setupLiveTestsOnce();
 }
