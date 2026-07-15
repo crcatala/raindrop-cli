@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-15
+
 ### Fixed
 - Added `rd auth whoami` as an alias for viewing authentication status, including JSON output support (rc-fa9w).
 
