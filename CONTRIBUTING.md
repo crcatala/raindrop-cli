@@ -1,41 +1,23 @@
-# Contributing to raindrop-cli
+# Contributing
 
-## Prerequisites
+Thanks for your interest in raindrop-cli.
 
-- Node.js 20+
-- Bun (for development)
+This is a personally maintained project. I am not accepting code contributions,
+pull requests, or feature requests at this time. Unsolicited pull requests may
+be closed without review.
 
-## Setup
+## Bug reports
 
-```bash
-git clone https://github.com/crcatala/raindrop-cli.git
-cd raindrop-cli
-bun install
-```
+Bug reports are welcome when they include a clear reproduction, the CLI version,
+your operating system, Node.js version, and relevant error output. Please search
+existing issues before opening a new one.
 
-## Development
+## Security issues
 
-```bash
-bun run verify    # Run all checks (lint, typecheck, test, format)
-bun run build     # Build for production
-bun run dev       # Watch mode
-```
+Please do not report security vulnerabilities in a public issue. Contact
+[@crcatala](https://github.com/crcatala) privately instead.
 
-## Running Live Tests
+## Forks
 
-Live tests require a Raindrop.io API token:
-
-```bash
-export RAINDROP_TOKEN=your-test-token
-bun run test:live
-```
-
-**Note:** Use a dedicated test account, not your personal bookmarks.
-
-## Pull Request Process
-
-1. Fork the repo
-2. Create a feature branch
-3. Make your changes
-4. Run `bun run verify`
-5. Submit PR
+You are welcome to fork this project and adapt it to your own needs under the
+terms of the [MIT License](LICENSE).
