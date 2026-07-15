@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Restore startup of the installed CLI.
 - Suppress a Node.js deprecation warning during CLI use.
 
+### Security
+- Remediated vulnerable transitive dependencies with enforced safe versions (rc-79cy)
+
 ## [0.1.1] - 2026-01-10
 
 ### Added
