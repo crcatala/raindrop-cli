@@ -2,7 +2,7 @@
 # Usage: ./scripts/prep-release.sh [last-tag]
 # Gathers commit information since the last release for changelog drafting.
 
-set -e
+set -euo pipefail
 
 LAST_TAG="${1:-$(git describe --tags --abbrev=0 2>/dev/null || true)}"
 
@@ -42,7 +42,9 @@ echo ""
 echo "=== Files changed ==="
 echo ""
 if [ -z "$LAST_TAG" ]; then
-  git diff --stat HEAD~20 HEAD 2>/dev/null | tail -5 || echo "(showing recent changes)"
+  # Compare against the empty tree so initial releases include the complete history.
+  EMPTY_TREE="$(git hash-object -t tree /dev/null)"
+  git diff --stat "$EMPTY_TREE" HEAD | tail -5
 else
   git diff --stat "$RANGE" | tail -10
 fi
