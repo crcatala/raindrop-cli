@@ -387,12 +387,14 @@ The helper does not modify the changelog. The release process will automatically
 git checkout main
 git pull
 
-# 2. Preview what will happen (recommended first time)
+# 2. Preview the local release steps (recommended first time)
 bun run release:dry
 
 # 3. Run the release
 bun run release
 ```
+
+`release:dry` deliberately disables the npm and GitHub integrations, so it cannot publish or open GitHub's release form. Run `release` for the full process.
 
 The interactive prompt will ask you to select the version bump (patch/minor/major). Then release-it will:
 
