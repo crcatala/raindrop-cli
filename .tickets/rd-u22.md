@@ -1,6 +1,6 @@
 ---
 id: rd-u22
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-01-06T16:40:01.559650973-08:00
@@ -35,3 +35,9 @@ Track the remaining work to make this repo ready for a public OSS release and fi
 - All documentation accurate and complete
 
 
+
+## Notes
+
+**2026-07-15T16:53:28Z**
+
+Initial v0.1.0 release readiness work is complete and its final verification/publish gate is closed. A separate P0 bug (rc-vp7m) tracks publishing the already-corrected build so npm no longer serves the malformed 0.1.1 executable.

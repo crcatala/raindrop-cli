@@ -1,6 +1,6 @@
 ---
 id: rd-u22.12
-status: open
+status: closed
 deps: [rd-u22.11]
 links: []
 created: 2026-01-07T08:38:00.712274843-08:00
@@ -87,3 +87,9 @@ npx raindrop-cli --version
 - [ ] GitHub release created (optional but nice)
 
 
+
+## Notes
+
+**2026-07-15T16:53:17Z**
+
+Verified 2026-07-15: raindrop-cli 0.1.0 and 0.1.1 are published; v0.1.0/v0.1.1 tags and GitHub release exist. The originally published 0.1.1 artifact has a duplicated shebang and fails under Node. The source build was corrected in f035697 (PR #16) and current package smoke test plus bun run verify pass. Follow-up release ticket tracks publishing the corrected artifact.
