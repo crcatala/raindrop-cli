@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-15
+
 ### Added
 - Structured JSON error output, standard exit codes, and graceful signal handling for CLI failures (#7)
 

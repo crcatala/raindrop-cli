@@ -1,6 +1,6 @@
 {
   "name": "raindrop-cli",
-  "version": "0.1.1",
+  "version": "0.3.0",
   "description": "A TypeScript CLI for Raindrop.io built for AI agent integration and personal productivity workflows",
   "type": "module",
   "main": "dist/index.js",
