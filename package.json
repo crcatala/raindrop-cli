@@ -22,7 +22,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun build src/cli.ts --outdir dist --target node --format esm && chmod +x dist/cli.js && bun run build:dts",
+    "clean": "node -e \"for (const path of ['dist', 'tsconfig.tsbuildinfo']) require('node:fs').rmSync(path, { recursive: true, force: true })\"",
+    "build": "bun run clean && bun build src/cli.ts --outdir dist --target node --format esm && chmod +x dist/cli.js && bun run build:dts",
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "dev": "bun src/index.ts",
     "test": "bash scripts/check.sh test",

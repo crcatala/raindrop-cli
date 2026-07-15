@@ -441,7 +441,7 @@ npx raindrop-cli@latest --version
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+This is a personally maintained project and does not accept code contributions, pull requests, or feature requests. Bug reports with a clear reproduction are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 Quick start:
 
