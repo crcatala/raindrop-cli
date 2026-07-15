@@ -20,7 +20,8 @@
 import { beforeAll } from "bun:test";
 import nock from "nock";
 import { cleanupTestArtifacts } from "./cleanup.js";
-import { AUTH_TEST_TIMEOUT_MS } from "./timeouts.js";
+import { runCli } from "./cli.js";
+import { AUTH_CLI_TIMEOUT_MS, AUTH_TEST_TIMEOUT_MS } from "./timeouts.js";
 
 // Re-export helpers for convenience
 export {
@@ -31,8 +32,73 @@ export {
   TEST_COLLECTION_PREFIX,
 } from "./cleanup.js";
 
-// Track if cleanup has already run (to avoid running multiple times)
-let cleanupComplete = false;
+type BeforeAll = (callback: () => Promise<void>, options: { timeout: number }) => void;
+
+type LiveTestSetupDependencies = {
+  beforeAll: BeforeAll;
+  enableNetConnect: () => void;
+  getToken: () => string | undefined;
+  runCli: typeof runCli;
+  cleanupTestArtifacts: typeof cleanupTestArtifacts;
+};
+
+/**
+ * Creates a live-test setup function. Dependencies are injectable so the
+ * validation and cleanup gate can be tested without making API requests.
+ */
+export function createLiveTestSetup({
+  beforeAll: registerBeforeAll,
+  enableNetConnect,
+  getToken,
+  runCli: executeCli,
+  cleanupTestArtifacts: cleanup,
+}: LiveTestSetupDependencies): () => void {
+  // Share initialization across test files so validation and cleanup run once per suite.
+  let setupPromise: Promise<void> | undefined;
+
+  async function initializeLiveTests(): Promise<void> {
+    // Enable network access for live tests (blocked by default in global setup).
+    enableNetConnect();
+
+    const token = getToken();
+    if (!token) {
+      return;
+    }
+
+    // Validate once up front so an invalid CI secret produces one clear failure
+    // instead of a cascade of failing authenticated tests.
+    const result = await executeCli(["auth", "status", "--json"], {
+      env: { RAINDROP_TOKEN: token },
+      timeout: AUTH_CLI_TIMEOUT_MS,
+    });
+
+    if (result.exitCode !== 0) {
+      throw new Error(
+        "Live test token validation failed. RAINDROP_TOKEN is invalid or expired; update it and rerun the suite."
+      );
+    }
+
+    await cleanup();
+  }
+
+  return () => {
+    registerBeforeAll(
+      async () => {
+        setupPromise ??= initializeLiveTests();
+        await setupPromise;
+      },
+      { timeout: AUTH_TEST_TIMEOUT_MS }
+    );
+  };
+}
+
+const setupLiveTestsOnce = createLiveTestSetup({
+  beforeAll,
+  enableNetConnect: () => nock.enableNetConnect(),
+  getToken: () => process.env["RAINDROP_TOKEN"],
+  runCli,
+  cleanupTestArtifacts,
+});
 
 /**
  * Set up live tests with cleanup.
@@ -51,22 +117,5 @@ export function setupLiveTests(): void {
     }
   }
 
-  beforeAll(
-    async () => {
-      // Enable network access for live tests (blocked by default in global setup)
-      nock.enableNetConnect();
-
-      // Only run cleanup once, even if multiple files import this
-      if (cleanupComplete) {
-        return;
-      }
-
-      // Only cleanup if we have a token (i.e., live tests will actually run)
-      if (process.env["RAINDROP_TOKEN"]) {
-        await cleanupTestArtifacts();
-        cleanupComplete = true;
-      }
-    },
-    { timeout: AUTH_TEST_TIMEOUT_MS }
-  );
+  setupLiveTestsOnce();
 }
