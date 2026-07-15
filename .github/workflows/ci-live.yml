@@ -108,7 +108,7 @@ jobs:
         id: tests
         env:
           RAINDROP_TOKEN: ${{ secrets.RAINDROP_TOKEN }}
-          RDCLI_API_DELAY_MS: "250"
+          RDCLI_API_DELAY_MS: "300"
         run: bun run test:live:verbose
 
       - name: Update check (success)
