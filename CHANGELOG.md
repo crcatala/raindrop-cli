@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- Structured JSON error output, standard exit codes, and graceful signal handling for CLI failures (#7)
+
+### Changed
+- Require Node.js 22 or later for compatibility with the Raindrop client update (#14)
+
+### Fixed
+- Restore startup of the installed CLI.
+- Suppress a Node.js deprecation warning during CLI use.
+
 ## [0.1.1] - 2026-01-10
 
 ### Added
