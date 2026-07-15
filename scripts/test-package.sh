@@ -19,10 +19,19 @@ trap cleanup EXIT
 
 bun run build >/dev/null
 
-TARBALL="$(npm pack --silent | tail -n 1)"
+# dist was built above; do not run lifecycle scripts again while packing the
+# artifact under test. `prepack` separately guarantees direct npm publish
+# commands rebuild dist immediately before upload.
+TARBALL="$(npm pack --ignore-scripts --silent | tail -n 1)"
 npm install -g --prefix "$TMP_DIR/prefix" --ignore-scripts "./$TARBALL" >/dev/null
 
-BIN="$TMP_DIR/prefix/bin/rdcli"
+SHEBANG_COUNT="$(grep -c '^#!' dist/cli.js || true)"
+if [[ "$SHEBANG_COUNT" != "1" ]]; then
+  echo "Expected dist/cli.js to have exactly one shebang, got $SHEBANG_COUNT" >&2
+  exit 1
+fi
+
+BIN="$TMP_DIR/prefix/bin/rd"
 EXPECTED_VERSION="$(node -p "require('./package.json').version")"
 ACTUAL_VERSION="$($BIN --version)"
 
