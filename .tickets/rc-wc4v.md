@@ -1,6 +1,6 @@
 ---
 id: rc-wc4v
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-07-16T18:42:08Z
