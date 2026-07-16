@@ -1,10 +1,12 @@
 import { expect, test } from "bun:test";
-import nock from "nock";
+import axios from "axios";
 
-test("network interception is active by default", () => {
-  // Coverage instrumentation can prevent Axios from reaching Nock under Bun,
-  // making an HTTP request here hang despite the interceptor being enabled.
-  // The preload setup owns the policy; verify its observable active state
-  // without performing a real network operation.
-  expect(nock.isActive()).toBe(true);
+test("axios requests should be blocked by default", async () => {
+  try {
+    await axios.get("https://example.com");
+    throw new Error("Should have failed");
+  } catch (error: any) {
+    // Nock error message for axios usually comes through as a network error.
+    expect(error.message).toContain("Disallowed net connect");
+  }
 });

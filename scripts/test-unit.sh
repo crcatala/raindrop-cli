@@ -12,13 +12,17 @@
 
 set -e
 
-# Find all .test.ts files except .live.test.ts files
-test_files=$(find src -name "*.test.ts" ! -name "*.live.test.ts" -type f | sort)
+# The Axios/Nock test is run separately without coverage below. Bun coverage
+# instrumentation can prevent Axios from reaching Nock and cause a timeout.
+test_files=$(find src -name "*.test.ts" ! -name "*.live.test.ts" ! -name "nock-enforcement.test.ts" -type f | sort)
 
 if [ -z "$test_files" ]; then
   echo "No unit test files found"
   exit 0
 fi
 
-# Run bun test with the found files (all args passed through)
-exec bun test $test_files "$@"
+# Run the general unit suite with caller-provided options (including coverage).
+bun test $test_files "$@"
+
+# Preserve a real network-isolation assertion in an uninstrumented process.
+bun test src/test-utils/nock-enforcement.test.ts

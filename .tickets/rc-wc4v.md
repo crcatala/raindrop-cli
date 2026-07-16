@@ -34,3 +34,11 @@ Reopened to fix CI test isolation: config-storage tests mock the credentials mod
 **2026-07-16T19:29:51Z**
 
 Fixed CI: replaced the coverage-incompatible Axios/Nock assertion with an active-interceptor check, and removed global credentials-module mocking from storage tests. Full coverage suite now passes (584 tests).
+
+**2026-07-16T19:49:59Z**
+
+Reopened to restore the full Axios/Nock enforcement assertion in a separate non-coverage test process, avoiding Bun coverage incompatibility without weakening the check.
+
+**2026-07-16T19:50:38Z**
+
+Restored the Axios/Nock assertion and split it into its own non-coverage Bun process. The coverage suite runs 583 tests, then the network-isolation test runs separately; both pass.
