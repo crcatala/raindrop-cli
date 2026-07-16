@@ -68,23 +68,41 @@ export async function getStoredToken(): Promise<string | null> {
   return config.token ?? null;
 }
 
+export interface TokenStorageResult {
+  /** The config fallback was saved, but an old keyring entry could not be removed. */
+  keyringCleanupFailed: boolean;
+}
+
 /** Store a token in the keyring by default, or plaintext when explicitly requested. */
-export async function setStoredToken(token: string, useConfig = false): Promise<void> {
+export async function setStoredToken(
+  token: string,
+  useConfig = false
+): Promise<TokenStorageResult> {
   const config = loadConfigFile();
 
   if (useConfig) {
-    if (config.tokenStorage === "keyring") {
-      await clearKeyringToken();
-    }
+    const hadKeyringToken = config.tokenStorage === "keyring";
     config.token = token;
     config.tokenStorage = "config";
-  } else {
-    await setKeyringToken(token);
-    delete config.token;
-    config.tokenStorage = "keyring";
+    // Persist the fallback before attempting keyring cleanup, so a headless
+    // session can always recover from an unavailable keyring.
+    saveConfigFile(config);
+
+    if (hadKeyringToken) {
+      try {
+        await clearKeyringToken();
+      } catch {
+        return { keyringCleanupFailed: true };
+      }
+    }
+    return { keyringCleanupFailed: false };
   }
 
+  await setKeyringToken(token);
+  delete config.token;
+  config.tokenStorage = "keyring";
   saveConfigFile(config);
+  return { keyringCleanupFailed: false };
 }
 
 /** Remove the token from its configured storage location. */
@@ -140,7 +158,10 @@ export function getConfigSync(): ResolvedConfig {
 
   return {
     token: fileConfig.tokenStorage === "keyring" ? null : (fileConfig.token ?? null),
-    tokenSource: fileConfig.tokenStorage === "keyring" ? null : fileConfig.token ? "config" : null,
+    // Report the configured source even though this synchronous function cannot
+    // retrieve a keyring credential.
+    tokenSource:
+      fileConfig.tokenStorage === "keyring" ? "keyring" : fileConfig.token ? "config" : null,
     defaultFormat: fileConfig.defaultFormat ?? "json",
     defaultCollection: fileConfig.defaultCollection ?? 0,
   };

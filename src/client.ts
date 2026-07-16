@@ -42,6 +42,12 @@ export function getClient(): RaindropClient {
 
   const config = getConfigSync();
   if (!config.token) {
+    if (config.tokenSource === "keyring") {
+      throw new ConfigError(
+        "The configured API token is stored in the system keyring. " +
+          "Use `getClientAsync()` to access keyring-backed credentials."
+      );
+    }
     throw noTokenError();
   }
   return createClient(config.token);

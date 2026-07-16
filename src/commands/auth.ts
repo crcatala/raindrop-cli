@@ -124,20 +124,30 @@ Get your token from: https://app.raindrop.io/settings/integrations`
           process.exit(1);
         }
 
-        await setStoredToken(token, options.useConfig);
+        const storageResult = await setStoredToken(token, options.useConfig);
         resetConfig();
         outputMessage(
           `Token saved successfully${options.useConfig ? " to config file" : " to system keyring"}!`
         );
+        if (storageResult.keyringCleanupFailed) {
+          outputError(
+            "Warning: the previous system-keyring token could not be removed; the config-file token will be used."
+          );
+        }
         if (result.user) {
           outputMessage(`Authenticated as: ${result.user.name} (${result.user.email})`);
         }
       } else {
-        await setStoredToken(token, options.useConfig);
+        const storageResult = await setStoredToken(token, options.useConfig);
         resetConfig();
         outputMessage(
           `Token saved${options.useConfig ? " to config file" : " to system keyring"} (not validated).`
         );
+        if (storageResult.keyringCleanupFailed) {
+          outputError(
+            "Warning: the previous system-keyring token could not be removed; the config-file token will be used."
+          );
+        }
       }
 
       outputMessage(`Config file: ${getConfigFilePath()}`);
