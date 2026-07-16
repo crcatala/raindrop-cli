@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getClient } from "../client.js";
+import { getClientAsync } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { outputTree } from "../output/tree.js";
 import { ApiError, handleError, UsageError } from "../utils/errors.js";
@@ -125,7 +125,7 @@ Examples:
         debug("List collections options", { flat: options.flat });
         verbose("Fetching collections");
 
-        const client = getClient();
+        const client = await getClientAsync();
 
         // Fetch root and child collections in parallel
         const [rootResponse, childResponse] = await withProgress("Fetching collections", () =>
@@ -194,7 +194,7 @@ Examples:
         debug("Show collection options", { collectionId });
         verbose(`Fetching collection ${collectionId}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching collection", () =>
           client.collection.getCollection(collectionId)
         );
@@ -249,7 +249,7 @@ Examples:
         debug("Create collection options", { name, parentId });
         verbose(`Creating collection: ${name}${parentId ? ` (parent: ${parentId})` : ""}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Creating collection", () =>
           client.collection.createCollection({
             title: name,
@@ -308,7 +308,7 @@ Examples:
 
         debug("Delete collection options", { collectionId, force: options.force });
 
-        const client = getClient();
+        const client = await getClientAsync();
 
         // Fetch collection first to show what we're deleting
         if (!options.force) {
@@ -363,7 +363,7 @@ Examples:
         debug("Stats command");
         verbose("Fetching system collection stats");
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching stats", () =>
           client.collection.getSystemCollectionStats()
         );

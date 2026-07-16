@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getClient } from "../client.js";
+import { getClientAsync } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { addOutputOptions } from "../utils/command-options.js";
@@ -69,7 +69,7 @@ Examples:
         debug("List tags options", { collectionId });
         verbose(`Fetching tags from collection ${collectionId}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching tags", () =>
           client.tag.getTagsInCollection(collectionId)
         );
@@ -142,7 +142,7 @@ Examples:
         debug("Rename tag options", { oldTag, newTag, collectionId });
         verbose(`Renaming tag "${oldTag}" to "${newTag}" in collection ${collectionId}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Renaming tag", () =>
           client.tag.renameOrMergeTags(collectionId, {
             replace: newTag,
@@ -199,7 +199,7 @@ Examples:
         debug("Delete tag options", { tag, collectionId });
         verbose(`Deleting tag "${tag}" from collection ${collectionId}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Deleting tag", () =>
           client.tag.removeTagsFromCollection(collectionId, {
             tags: [tag],

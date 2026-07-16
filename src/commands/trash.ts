@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getClient } from "../client.js";
+import { getClientAsync } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { SPECIAL_COLLECTIONS } from "../utils/collections.js";
 import { addOutputOptions } from "../utils/command-options.js";
@@ -88,7 +88,7 @@ Examples:
         if (options.dryRun) {
           verbose("Dry-run mode: fetching trash stats");
 
-          const client = getClient();
+          const client = await getClientAsync();
           const response = await withProgress("Fetching trash stats", () =>
             client.collection.getSystemCollectionStats()
           );
@@ -127,7 +127,7 @@ Examples:
 
         verbose("Emptying trash");
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Emptying trash", () => client.collection.emptyTrash());
 
         debug("API response", { result: response.data.result });
@@ -204,7 +204,7 @@ Examples:
 
         verbose("Fetching items from trash");
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching trash items", () =>
           client.raindrop.getRaindrops(SPECIAL_COLLECTIONS.trash, sort, limit, page, search)
         );

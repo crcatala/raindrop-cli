@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { AxiosError } from "axios";
-import { getClient } from "../client.js";
+import { getClientAsync } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { addOutputOptions } from "../utils/command-options.js";
@@ -293,7 +293,7 @@ Examples:
         const force = !!options.force;
         const dryRun = !!options.dryRun;
 
-        const client = getClient();
+        const client = await getClientAsync();
 
         // For dry-run, fetch bookmark info to show what would be deleted
         if (dryRun) {
@@ -498,7 +498,7 @@ Examples:
 
         verbose(`Fetching bookmarks from collection ${collectionId}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching bookmarks", () =>
           client.raindrop.getRaindrops(collectionId, sort, limit, page, search)
         );
@@ -556,7 +556,7 @@ Examples:
         debug("Get bookmark options", { id });
         verbose(`Fetching bookmark ${id}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching bookmark", () =>
           client.raindrop.getRaindrop(id)
         );
@@ -663,7 +663,7 @@ Examples:
 
         verbose(`Adding bookmark: ${url}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
 
         // Build the request payload
         // Note: We include 'note' even though it may not be in the TypeScript types,
@@ -851,7 +851,7 @@ Examples:
           important: resolvedImportant,
         });
 
-        const client = getClient();
+        const client = await getClientAsync();
 
         // If using --add-tags or --remove-tags, we need to fetch current tags first
         let currentTags: string[] | undefined;
@@ -1064,7 +1064,7 @@ Examples:
     .action(async function (this: Command, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
-        const client = getClient();
+        const client = await getClientAsync();
 
         // Collect IDs from --ids flag and/or stdin
         let ids: number[] = [];
@@ -1372,7 +1372,7 @@ Examples:
     .action(async function (this: Command, options) {
       try {
         const globalOpts = this.optsWithGlobals() as GlobalOptions;
-        const client = getClient();
+        const client = await getClientAsync();
 
         // Collect IDs from --ids flag and/or stdin
         let ids: number[] = [];

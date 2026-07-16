@@ -1,125 +1,200 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { clearKeyringToken, getKeyringToken, setKeyringToken } from "./credentials.js";
 
 export interface StoredConfig {
+  /** Legacy plaintext token or the explicit --use-config fallback. */
   token?: string;
+  tokenStorage?: "keyring" | "config";
   defaultFormat?: "json" | "table" | "tsv";
   defaultCollection?: number;
 }
 
 export interface ResolvedConfig {
   token: string | null;
-  tokenSource: "env" | "config" | null;
+  tokenSource: "env" | "keyring" | "config" | null;
   defaultFormat: "json" | "table" | "tsv";
   defaultCollection: number;
 }
 
-const CONFIG_DIR = process.env["XDG_CONFIG_HOME"]
-  ? join(process.env["XDG_CONFIG_HOME"], "raindrop-cli")
-  : join(homedir(), ".config", "raindrop-cli");
-const CONFIG_FILE = join(CONFIG_DIR, "config.json");
-
-/**
- * Ensure config directory exists with secure permissions (700).
- */
-function ensureConfigDir(): void {
-  if (!existsSync(CONFIG_DIR)) {
-    mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
-  }
+function getConfigDir(): string {
+  return process.env["XDG_CONFIG_HOME"]
+    ? join(process.env["XDG_CONFIG_HOME"], "raindrop-cli")
+    : join(homedir(), ".config", "raindrop-cli");
 }
 
-/**
- * Load raw config from file.
- */
+function getConfigFile(): string {
+  return join(getConfigDir(), "config.json");
+}
+
+function ensureConfigDir(): void {
+  const configDir = getConfigDir();
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true, mode: 0o700 });
+  }
+  chmodSync(configDir, 0o700);
+}
+
 function loadConfigFile(): StoredConfig {
-  if (existsSync(CONFIG_FILE)) {
+  const configFile = getConfigFile();
+  if (existsSync(configFile)) {
     try {
-      const content = readFileSync(CONFIG_FILE, "utf-8");
+      const content = readFileSync(configFile, "utf-8");
       return JSON.parse(content) as StoredConfig;
     } catch {
-      // Ignore malformed config files
+      // Ignore malformed config files.
     }
   }
   return {};
 }
 
-/**
- * Save config to file with secure permissions (600).
- */
 function saveConfigFile(config: StoredConfig): void {
   ensureConfigDir();
-  const content = JSON.stringify(config, null, 2);
-  // mode option only applies to new files; chmodSync ensures existing files also get correct perms
-  writeFileSync(CONFIG_FILE, content, { mode: 0o600 });
-  chmodSync(CONFIG_FILE, 0o600);
+  const configFile = getConfigFile();
+  writeFileSync(configFile, JSON.stringify(config, null, 2), { mode: 0o600 });
+  chmodSync(configFile, 0o600);
 }
 
 /**
- * Get the stored token from config file (not env var).
+ * Get the locally stored token. Existing plaintext tokens remain supported;
+ * newly saved tokens use the system keyring unless --use-config is selected.
  */
-export function getStoredToken(): string | null {
+export async function getStoredToken(): Promise<string | null> {
   const config = loadConfigFile();
+  if (config.tokenStorage === "keyring") {
+    return getKeyringToken();
+  }
   return config.token ?? null;
 }
 
-/**
- * Store token in config file.
- */
-export function setStoredToken(token: string): void {
-  const config = loadConfigFile();
-  config.token = token;
-  saveConfigFile(config);
+export interface TokenStorageResult {
+  /** The config fallback was saved, but an old keyring entry could not be removed. */
+  keyringCleanupFailed: boolean;
 }
 
-/**
- * Clear token from config file.
- */
-export function clearStoredToken(): void {
+export interface KeyringTokenOperations {
+  clear: () => Promise<void>;
+  set: (token: string) => Promise<void>;
+}
+
+const defaultKeyringTokenOperations: KeyringTokenOperations = {
+  clear: clearKeyringToken,
+  set: setKeyringToken,
+};
+
+/** Store a token in the keyring by default, or plaintext when explicitly requested. */
+export async function setStoredToken(
+  token: string,
+  useConfig = false,
+  keyring: KeyringTokenOperations = defaultKeyringTokenOperations
+): Promise<TokenStorageResult> {
   const config = loadConfigFile();
+
+  if (useConfig) {
+    const hadKeyringToken = config.tokenStorage === "keyring";
+    config.token = token;
+    config.tokenStorage = "config";
+    // Persist the fallback before attempting keyring cleanup, so a headless
+    // session can always recover from an unavailable keyring.
+    saveConfigFile(config);
+
+    if (hadKeyringToken) {
+      try {
+        await keyring.clear();
+      } catch {
+        return { keyringCleanupFailed: true };
+      }
+    }
+    return { keyringCleanupFailed: false };
+  }
+
+  await keyring.set(token);
   delete config.token;
+  config.tokenStorage = "keyring";
   saveConfigFile(config);
+  return { keyringCleanupFailed: false };
 }
 
-/**
- * Check if a token is configured (either env or config file).
- */
-export function hasToken(): boolean {
-  return !!(process.env["RAINDROP_TOKEN"] || getStoredToken());
+/** Remove the token from its configured storage location. */
+export async function clearStoredToken(): Promise<"keyring" | "config" | null> {
+  const config = loadConfigFile();
+  const storage = config.tokenStorage ?? (config.token ? "config" : null);
+
+  if (storage === "keyring") {
+    await clearKeyringToken();
+  }
+
+  delete config.token;
+  delete config.tokenStorage;
+  saveConfigFile(config);
+  return storage;
 }
 
-/**
- * Get token source for display purposes.
- */
-export function getTokenSource(): "env" | "config" | null {
+export async function hasToken(): Promise<boolean> {
+  return !!(process.env["RAINDROP_TOKEN"] || (await getStoredToken()));
+}
+
+export async function getTokenSource(): Promise<ResolvedConfig["tokenSource"]> {
   if (process.env["RAINDROP_TOKEN"]) {
     return "env";
   }
-  if (getStoredToken()) {
-    return "config";
+
+  const config = loadConfigFile();
+  if (config.tokenStorage === "keyring") {
+    return (await getKeyringToken()) ? "keyring" : null;
   }
-  return null;
+  return config.token ? "config" : null;
 }
 
 let cachedConfig: ResolvedConfig | null = null;
 
 /**
- * Get resolved config with precedence: env > config file.
+ * Resolve sources that can be read synchronously. This preserves the original
+ * library client API for environment and plaintext-config consumers; keyring
+ * credentials require getConfig() because keytar is asynchronous.
  */
-export function getConfig(): ResolvedConfig {
+export function getConfigSync(): ResolvedConfig {
+  const fileConfig = loadConfigFile();
+  const envToken = process.env["RAINDROP_TOKEN"];
+
+  if (envToken) {
+    return {
+      token: envToken,
+      tokenSource: "env",
+      defaultFormat: fileConfig.defaultFormat ?? "json",
+      defaultCollection: fileConfig.defaultCollection ?? 0,
+    };
+  }
+
+  return {
+    token: fileConfig.tokenStorage === "keyring" ? null : (fileConfig.token ?? null),
+    // Report the configured source even though this synchronous function cannot
+    // retrieve a keyring credential.
+    tokenSource:
+      fileConfig.tokenStorage === "keyring" ? "keyring" : fileConfig.token ? "config" : null,
+    defaultFormat: fileConfig.defaultFormat ?? "json",
+    defaultCollection: fileConfig.defaultCollection ?? 0,
+  };
+}
+
+/** Get resolved config with precedence: env > keyring/config. */
+export async function getConfig(): Promise<ResolvedConfig> {
   if (cachedConfig) {
     return cachedConfig;
   }
 
   const fileConfig = loadConfigFile();
   const envToken = process.env["RAINDROP_TOKEN"];
-
   let token: string | null = null;
-  let tokenSource: "env" | "config" | null = null;
+  let tokenSource: ResolvedConfig["tokenSource"] = null;
 
   if (envToken) {
     token = envToken;
     tokenSource = "env";
+  } else if (fileConfig.tokenStorage === "keyring") {
+    token = await getKeyringToken();
+    tokenSource = token ? "keyring" : null;
   } else if (fileConfig.token) {
     token = fileConfig.token;
     tokenSource = "config";
@@ -131,20 +206,13 @@ export function getConfig(): ResolvedConfig {
     defaultFormat: fileConfig.defaultFormat ?? "json",
     defaultCollection: fileConfig.defaultCollection ?? 0,
   };
-
   return cachedConfig;
 }
 
-/**
- * Reset cached config (useful for testing or after token changes).
- */
 export function resetConfig(): void {
   cachedConfig = null;
 }
 
-/**
- * Get the config file path (for display purposes).
- */
 export function getConfigFilePath(): string {
-  return CONFIG_FILE;
+  return getConfigFile();
 }

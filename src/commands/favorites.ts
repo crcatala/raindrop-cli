@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getClient } from "../client.js";
+import { getClientAsync } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { addOutputOptions } from "../utils/command-options.js";
@@ -158,7 +158,7 @@ To add or remove favorites:
 
         verbose(`Fetching favorites from collection ${collectionId}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching favorites", () =>
           client.raindrop.getRaindrops(collectionId, sort, limit, page, search)
         );

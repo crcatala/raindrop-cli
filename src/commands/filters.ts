@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getClient } from "../client.js";
+import { getClientAsync } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { addOutputOptions } from "../utils/command-options.js";
@@ -117,7 +117,7 @@ Examples:
         debug("List filters options", { collectionId });
         verbose(`Fetching filters for collection ${collectionId}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching filters", () =>
           client.filter.getFilters(collectionId)
         );
