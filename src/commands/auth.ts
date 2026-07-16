@@ -2,14 +2,13 @@ import { Command } from "commander";
 import { createInterface } from "node:readline";
 import {
   getConfig,
-  getStoredToken,
   setStoredToken,
   clearStoredToken,
   getTokenSource,
   getConfigFilePath,
   resetConfig,
 } from "../config.js";
-import { getClient, resetClient } from "../client.js";
+import { getClientAsync, resetClient } from "../client.js";
 import { outputData, outputMessage, outputError } from "../utils/output-streams.js";
 import { verbose, debug } from "../utils/debug.js";
 import { withProgress } from "../utils/progress.js";
@@ -18,6 +17,16 @@ import { withProgress } from "../utils/progress.js";
  * Prompt for input. Using readline avoids token appearing in shell history
  * (unlike passing via CLI args). Note: input is visible while typing.
  */
+function formatTokenSource(source: "env" | "keyring" | "config" | null): string {
+  if (source === "env") {
+    return "RAINDROP_TOKEN env var";
+  }
+  if (source === "keyring") {
+    return "system keyring";
+  }
+  return `config file (${getConfigFilePath()})`;
+}
+
 async function prompt(message: string): Promise<string> {
   const rl = createInterface({
     input: process.stdin,
@@ -47,7 +56,7 @@ async function validateToken(
   debug("Validating token against Raindrop API");
 
   try {
-    const client = getClient();
+    const client = await getClientAsync();
     const response = await withProgress("Calling Raindrop API", () => client.user.getCurrentUser());
     const user = response.data.user;
     debug("API response received", { userId: user?._id, email: user?.email });
@@ -84,11 +93,13 @@ export function createAuthCommand(): Command {
     .description("Set your Raindrop.io API token")
     .option("--validate", "Validate token against API before saving", true)
     .option("--no-validate", "Skip token validation")
+    .option("--use-config", "Store token in plaintext config instead of the system keyring")
     .addHelpText(
       "after",
       `
 Examples:
-  rd auth set-token                        # Prompt for token (validates)
+  rd auth set-token                        # Prompt for token (validates, saves to keyring)
+  rd auth set-token --use-config           # Save plaintext token in config file
   rd auth set-token --no-validate          # Save without validation
 
 Get your token from: https://app.raindrop.io/settings/integrations`
@@ -113,16 +124,20 @@ Get your token from: https://app.raindrop.io/settings/integrations`
           process.exit(1);
         }
 
-        setStoredToken(token);
+        await setStoredToken(token, options.useConfig);
         resetConfig();
-        outputMessage(`Token saved successfully!`);
+        outputMessage(
+          `Token saved successfully${options.useConfig ? " to config file" : " to system keyring"}!`
+        );
         if (result.user) {
           outputMessage(`Authenticated as: ${result.user.name} (${result.user.email})`);
         }
       } else {
-        setStoredToken(token);
+        await setStoredToken(token, options.useConfig);
         resetConfig();
-        outputMessage("Token saved (not validated).");
+        outputMessage(
+          `Token saved${options.useConfig ? " to config file" : " to system keyring"} (not validated).`
+        );
       }
 
       outputMessage(`Config file: ${getConfigFilePath()}`);
@@ -142,8 +157,8 @@ Examples:
     )
     .action(async (options) => {
       verbose("Checking authentication status");
-      const config = getConfig();
-      const source = getTokenSource();
+      const config = await getConfig();
+      const source = await getTokenSource();
       debug("Token lookup result", { hasToken: !!config.token, source });
 
       if (!config.token) {
@@ -164,7 +179,7 @@ Examples:
 
       // Try to validate and get user info
       try {
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching user info", () =>
           client.user.getCurrentUser()
         );
@@ -194,9 +209,7 @@ Examples:
             outputMessage(`  User:   ${user.fullName ?? "Unknown"}`);
             outputMessage(`  Email:  ${user.email ?? "Unknown"}`);
           }
-          outputMessage(
-            `  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`
-          );
+          outputMessage(`  Source: ${formatTokenSource(source)}`);
         }
       } catch {
         // JSON output goes to stdout even on error (for scripts to parse).
@@ -215,9 +228,7 @@ Examples:
           );
         } else {
           outputMessage("Token configured but invalid or expired.");
-          outputMessage(
-            `  Source: ${source === "env" ? "RAINDROP_TOKEN env var" : `config file (${getConfigFilePath()})`}`
-          );
+          outputMessage(`  Source: ${formatTokenSource(source)}`);
           outputMessage("");
           outputMessage("Run 'rd auth set-token' to set a new token.");
         }
@@ -242,22 +253,23 @@ Examples:
   // clear command
   auth
     .command("clear")
-    .description("Remove stored token from config file")
+    .description("Remove the locally stored token")
     .addHelpText(
       "after",
       `
 Examples:
   rd auth clear                            # Remove saved token`
     )
-    .action(() => {
-      const hadToken = !!getStoredToken();
-      clearStoredToken();
+    .action(async () => {
+      const storage = await clearStoredToken();
       resetConfig();
 
-      if (hadToken) {
+      if (storage === "keyring") {
+        outputMessage("Token cleared from system keyring.");
+      } else if (storage === "config") {
         outputMessage("Token cleared from config file.");
       } else {
-        outputMessage("No token was stored in config file.");
+        outputMessage("No token was stored locally.");
       }
 
       if (process.env["RAINDROP_TOKEN"]) {

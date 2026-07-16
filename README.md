@@ -51,7 +51,7 @@ Get a test token from [Raindrop.io Integrations Settings](https://app.raindrop.i
 
 ```bash
 rd auth set-token
-# Paste your token when prompted
+# Paste your token when prompted; it is stored in your system keyring by default
 ```
 
 Or set via environment variable:
@@ -278,7 +278,16 @@ rd tags rename "javascript" "js" -f
 Tokens can be provided via:
 
 1. **Environment variable** (takes precedence): `RAINDROP_TOKEN`
-2. **Config file**: `~/.config/raindrop-cli/config.json` (set via `rd auth set-token`)
+2. **System keyring** (default for `rd auth set-token`): macOS Keychain, Windows Credential Manager, or Linux Secret Service
+3. **Config file**: `~/.config/raindrop-cli/config.json` (only with `rd auth set-token --use-config`, or for legacy tokens)
+
+The keyring is preferred because the config file does not contain the bearer token. Linux keyring storage requires an active Secret Service/D-Bus session; in headless or SSH environments where it is unavailable, use the explicit fallback:
+
+```bash
+rd auth set-token --use-config
+```
+
+The fallback stores the token unencrypted in `config.json`, which is restricted to the current user (`0600`).
 
 ### Environment Variables
 

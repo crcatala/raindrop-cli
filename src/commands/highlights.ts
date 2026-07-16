@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getClient } from "../client.js";
+import { getClientAsync } from "../client.js";
 import { output, type ColumnConfig } from "../output/index.js";
 import { parseCollectionId } from "../utils/collections.js";
 import { addOutputOptions } from "../utils/command-options.js";
@@ -87,7 +87,7 @@ Examples:
         const limit = parseLimit(options.limit);
         const page = parsePage(options.page);
 
-        const client = getClient();
+        const client = await getClientAsync();
         let items: HighlightWithColor[];
 
         if (options.collection !== undefined) {
@@ -151,7 +151,7 @@ Examples:
         debug("Get highlights options", { bookmarkId });
         verbose(`Fetching highlights for bookmark ${bookmarkId}`);
 
-        const client = getClient();
+        const client = await getClientAsync();
         const response = await withProgress("Fetching bookmark", () =>
           client.highlight.getRaindrop(bookmarkId)
         );
