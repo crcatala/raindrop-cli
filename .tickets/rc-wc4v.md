@@ -26,3 +26,11 @@ Reopened to address review findings: safe keyring-to-config fallback, synchronou
 **2026-07-16T19:21:28Z**
 
 Addressed review findings: config fallback is persisted before best-effort keyring cleanup (with warning), synchronous callers get an actionable getClientAsync error, and storage lifecycle coverage was added.
+
+**2026-07-16T19:25:56Z**
+
+Reopened to fix CI test isolation: config-storage tests mock the credentials module globally, which races credential tests in Bun's parallel runner.
+
+**2026-07-16T19:29:51Z**
+
+Fixed CI: replaced the coverage-incompatible Axios/Nock assertion with an active-interceptor check, and removed global credentials-module mocking from storage tests. Full coverage suite now passes (584 tests).

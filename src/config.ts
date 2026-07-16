@@ -73,10 +73,21 @@ export interface TokenStorageResult {
   keyringCleanupFailed: boolean;
 }
 
+export interface KeyringTokenOperations {
+  clear: () => Promise<void>;
+  set: (token: string) => Promise<void>;
+}
+
+const defaultKeyringTokenOperations: KeyringTokenOperations = {
+  clear: clearKeyringToken,
+  set: setKeyringToken,
+};
+
 /** Store a token in the keyring by default, or plaintext when explicitly requested. */
 export async function setStoredToken(
   token: string,
-  useConfig = false
+  useConfig = false,
+  keyring: KeyringTokenOperations = defaultKeyringTokenOperations
 ): Promise<TokenStorageResult> {
   const config = loadConfigFile();
 
@@ -90,7 +101,7 @@ export async function setStoredToken(
 
     if (hadKeyringToken) {
       try {
-        await clearKeyringToken();
+        await keyring.clear();
       } catch {
         return { keyringCleanupFailed: true };
       }
@@ -98,7 +109,7 @@ export async function setStoredToken(
     return { keyringCleanupFailed: false };
   }
 
-  await setKeyringToken(token);
+  await keyring.set(token);
   delete config.token;
   config.tokenStorage = "keyring";
   saveConfigFile(config);
