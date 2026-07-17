@@ -1,174 +1,241 @@
 name: Live Tests
 
+# Maintainer-only live API tests.
+#
+# Two entry points:
+# 1) issue_comment `/run-live-tests` (preferred; workflow always from default branch)
+# 2) workflow_dispatch with optional pr_number/pr_sha (manual runs / transition)
+#
+# Security model:
+# - Only the repository owner can trigger via comment
+# - Fork PRs are rejected
+# - The job that executes PR-controlled code has contents:read only (no write token)
+# - Secrets are injected only into the test job
+# - Report job posts checks/comments and does not check out PR code
+# - triggering_actor is re-checked so collaborators cannot re-run an owner-approved job
+
 on:
   issue_comment:
     types: [created]
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number (for updating checks)'
+        description: PR number for status updates
         type: string
         required: false
       pr_sha:
-        description: 'PR head SHA (for check status)'
+        description: PR head SHA to test (defaults to the workflow ref SHA)
         type: string
         required: false
 
 jobs:
-  # Dispatcher: detects /run-live-tests comment and triggers workflow_dispatch on PR branch
-  # This job runs from main branch but dispatches to the PR branch
-  dispatch-live-tests:
-    name: Dispatch Live Tests
+  prepare:
+    name: Authorize Live Tests
+    # issue_comment workflows run from the default branch. The triggering actor
+    # check also prevents a collaborator from re-running an owner-approved run.
     if: |
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/run-live-tests') &&
-      (github.event.comment.author_association == 'OWNER' ||
-       github.event.comment.author_association == 'COLLABORATOR')
+      github.event.comment.body == '/run-live-tests' &&
+      github.actor == github.repository_owner &&
+      github.triggering_actor == github.repository_owner
     runs-on: ubicloud-standard-2
     permissions:
-      contents: read
-      actions: write
       pull-requests: read
+    outputs:
+      pr_number: ${{ steps.pr.outputs.number }}
+      pr_sha: ${{ steps.pr.outputs.sha }}
+
     steps:
-      - name: Get PR info
+      - name: Get PR information
         id: pr
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.issue.number
+              pull_number: context.issue.number,
             });
 
-            // Check if PR is from a fork
-            const isFork = pr.data.head.repo.full_name !== pr.data.base.repo.full_name;
-            if (isFork) {
-              core.setFailed('Live tests cannot run on fork PRs for security reasons (secret protection)');
+            if (pr.data.head.repo.full_name !== pr.data.base.repo.full_name) {
+              core.setFailed('Live tests cannot run on fork PRs because they require repository secrets.');
               return;
             }
 
-            core.setOutput('ref', pr.data.head.ref);
+            core.setOutput('number', String(pr.data.number));
             core.setOutput('sha', pr.data.head.sha);
-            core.setOutput('number', pr.data.number);
 
-      - name: Trigger live tests on PR branch
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh workflow run ci-live.yml \
-            --repo ${{ github.repository }} \
-            --ref ${{ steps.pr.outputs.ref }} \
-            --field pr_number=${{ steps.pr.outputs.number }} \
-            --field pr_sha=${{ steps.pr.outputs.sha }}
-          echo "✅ Dispatched live tests workflow on branch: ${{ steps.pr.outputs.ref }}"
-
-  # Actual test job: runs via workflow_dispatch (uses workflow from target branch)
-  live-tests:
-    name: Run Live API Tests
-    if: github.event_name == 'workflow_dispatch'
+  test:
+    name: Run Live Tests
+    needs: prepare
+    # Re-check authorization on the issue_comment path. workflow_dispatch is
+    # already limited to users who can run workflows (write access).
+    if: |
+      always() &&
+      !cancelled() &&
+      (
+        (
+          github.event_name == 'issue_comment' &&
+          needs.prepare.result == 'success' &&
+          github.actor == github.repository_owner &&
+          github.triggering_actor == github.repository_owner
+        ) ||
+        github.event_name == 'workflow_dispatch'
+      )
     runs-on: ubicloud-standard-2
+    timeout-minutes: 15
+    # This job executes PR-controlled code. It deliberately has no write token.
     permissions:
       contents: read
-      checks: write
-      pull-requests: write
+    outputs:
+      skipped: ${{ steps.token.outputs.skipped }}
+      pr_number: ${{ steps.meta.outputs.pr_number }}
+      pr_sha: ${{ steps.meta.outputs.pr_sha }}
 
     steps:
-      - name: Create pending check
-        if: inputs.pr_sha != ''
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
-        with:
-          script: |
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'Live API Tests',
-              head_sha: '${{ inputs.pr_sha }}',
-              status: 'in_progress',
-              details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
-              output: {
-                title: 'Running live tests...',
-                summary: '[View live logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
-              }
-            });
+      - name: Resolve target metadata
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "pr_number=${{ inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+            SHA="${{ inputs.pr_sha }}"
+            if [ -z "$SHA" ]; then
+              SHA="${{ github.sha }}"
+            fi
+            echo "pr_sha=$SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr_number=${{ needs.prepare.outputs.pr_number }}" >> "$GITHUB_OUTPUT"
+            echo "pr_sha=${{ needs.prepare.outputs.pr_sha }}" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - name: Check for API token
+        id: token
+        env:
+          API_TOKEN: ${{ secrets.RAINDROP_TOKEN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "::warning::RAINDROP_TOKEN secret is not set. Skipping live tests."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skipped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout PR head
+        if: steps.token.outputs.skipped != 'true'
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ steps.meta.outputs.pr_sha }}
+          persist-credentials: false
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2.2.0
+        if: steps.token.outputs.skipped != 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install
+        if: steps.token.outputs.skipped != 'true'
+        run: bun install --frozen-lockfile
 
       - name: Run live tests
         id: tests
+        if: steps.token.outputs.skipped != 'true'
         env:
           RAINDROP_TOKEN: ${{ secrets.RAINDROP_TOKEN }}
           RDCLI_API_DELAY_MS: "300"
         run: bun run test:live:verbose
 
-      - name: Update check (success)
-        if: inputs.pr_sha != '' && success()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+      - name: Test summary
+        if: always()
+        run: |
+          {
+            echo "## Live Integration Test Results"
+            if [ "${{ steps.token.outputs.skipped }}" = "true" ]; then
+              echo "⚠️ Skipped — RAINDROP_TOKEN secret is not configured."
+            elif [ "${{ steps.tests.outcome }}" = "success" ]; then
+              echo "✅ All live tests passed"
+            else
+              echo "❌ Some live tests failed"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  report:
+    name: Report Live Test Result
+    needs: [prepare, test]
+    # Re-check authorization because a collaborator can re-run this job alone.
+    if: |
+      always() &&
+      !cancelled() &&
+      needs.test.result != 'skipped' &&
+      (
+        (
+          github.event_name == 'issue_comment' &&
+          needs.prepare.result == 'success' &&
+          github.actor == github.repository_owner &&
+          github.triggering_actor == github.repository_owner
+        ) ||
+        (
+          github.event_name == 'workflow_dispatch' &&
+          inputs.pr_number != ''
+        )
+      )
+    runs-on: ubicloud-standard-2
+    permissions:
+      checks: write
+      # PR comments use the issues comments API but require pull-requests write.
+      pull-requests: write
+
+    steps:
+      - name: Create check and comment on PR
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
+            const skipped = '${{ needs.test.outputs.skipped }}' === 'true';
+            const result = '${{ needs.test.result }}';
+            const conclusion = skipped
+              ? 'neutral'
+              : result === 'success'
+                ? 'success'
+                : result === 'cancelled'
+                  ? 'cancelled'
+                  : 'failure';
+            const sha = '${{ needs.test.outputs.pr_sha }}';
+            const prNumber = Number('${{ needs.test.outputs.pr_number }}');
+            const logsUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+
+            let title;
+            let body;
+            if (skipped) {
+              title = 'Live tests skipped';
+              body = `⚠️ Live tests skipped (API token secret not configured). Tested commit: \`${sha}\`. [View logs](${logsUrl})`;
+            } else if (conclusion === 'success') {
+              title = 'Live tests passed';
+              body = `✅ Live tests passed. Tested commit: \`${sha}\`. [View logs](${logsUrl})`;
+            } else {
+              title = 'Live tests failed';
+              body = `❌ Live tests failed. Tested commit: \`${sha}\`. [View logs](${logsUrl})`;
+            }
+
             await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              name: 'Live API Tests',
-              head_sha: '${{ inputs.pr_sha }}',
+              name: 'Live Tests',
+              head_sha: sha,
               status: 'completed',
-              conclusion: 'success',
-              details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
+              conclusion,
+              details_url: logsUrl,
               output: {
-                title: 'All live tests passed',
-                summary: 'Live API tests completed successfully. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
-              }
+                title,
+                summary: `[View live-test logs](${logsUrl})`,
+              },
             });
 
-      - name: Comment on PR (success)
-        if: inputs.pr_number != '' && success()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
-        with:
-          script: |
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ inputs.pr_number }},
-              body: '✅ Live tests passed! [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
-            });
-
-      - name: Update check (failure)
-        if: inputs.pr_sha != '' && failure()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
-        with:
-          script: |
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'Live API Tests',
-              head_sha: '${{ inputs.pr_sha }}',
-              status: 'completed',
-              conclusion: 'failure',
-              details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
-              output: {
-                title: 'Live tests failed',
-                summary: 'Some live API tests failed. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
-              }
-            });
-
-      - name: Comment on PR (failure)
-        if: inputs.pr_number != '' && failure()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
-        with:
-          script: |
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ inputs.pr_number }},
-              body: '❌ Live tests failed. [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
-            });
+            if (Number.isFinite(prNumber) && prNumber > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
