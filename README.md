@@ -331,9 +331,12 @@ Most commands have a `:verbose` variant with human-friendly output (e.g., `bun r
 
 ### Live Tests in CI
 
-Live tests run against the real Raindrop.io API and require a token. In CI, maintainers and collaborators can trigger them by commenting `/run-live-tests` on a PR.
+Live tests run against the real Raindrop.io API and require a `RAINDROP_TOKEN` repository secret. The repository owner can trigger them by commenting exactly `/run-live-tests` on a same-repo PR.
 
-> **Note:** Live tests only work on PRs from the same repository, not forks (secrets aren't available to forks for security).
+> **Notes:**
+> - Only the repository owner can trigger live tests (not collaborators).
+> - Fork PRs are rejected so repository secrets are never exposed to untrusted code paths.
+> - The workflow definition always runs from the default branch; only the PR head commit is checked out for the test job.
 
 ### Project Structure
 
