@@ -86,7 +86,7 @@
     "form-data": "4.0.6",
     "ip-address": "10.4.0",
     "picomatch": "4.0.5",
-    "undici": "6.28.0"
+    "undici": "8.10.0"
   },
   "devDependencies": {
     "@release-it/keep-a-changelog": "^8.0.0",
