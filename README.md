@@ -1,4 +1,4 @@
-# raindrop-cli
+<h1><img src="assets/icon.png" width="40" height="40" align="top" alt="" /> raindrop-cli</h1>
 
 [![npm version](https://img.shields.io/npm/v/raindrop-cli)](https://npmjs.com/package/raindrop-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
