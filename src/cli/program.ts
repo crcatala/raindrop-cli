@@ -10,7 +10,6 @@
  */
 
 import { Command, CommanderError, Option } from "commander";
-import pkg from "../../package.json" with { type: "json" };
 import type { CliContext } from "./context.js";
 import { OUTPUT_FORMATS } from "../types/index.js";
 import { createAuthCommand } from "../commands/auth.js";
@@ -23,6 +22,7 @@ import { createFiltersCommand } from "../commands/filters.js";
 import { createTrashCommand } from "../commands/trash.js";
 import { setNoColorFlag } from "../utils/tty.js";
 import { setDebugEnabled, setVerboseEnabled, debug } from "../utils/debug.js";
+import { runUpdate, versionLine } from "../cli-meta.js";
 import { setTimeoutSeconds, validateTimeout, DEFAULT_TIMEOUT_SECONDS } from "../utils/timeout.js";
 import { configureStyledHelpRecursive } from "../utils/help-formatter.js";
 import { UsageError } from "../utils/errors.js";
@@ -184,6 +184,68 @@ All bookmarks list options are supported.`
 }
 
 /**
+ * Create the root `update` command.
+ *
+ * Without a bookmark ID it updates the CLI itself the way it was installed (the release
+ * standard's self-update command). With an ID it stays a shortcut for `rd bookmarks update`.
+ */
+function createUpdateCommand(program: Command): Command {
+  return new Command("update")
+    .description(
+      "Update rd itself, or update a bookmark when given an ID (shortcut for: bookmarks update)"
+    )
+    .allowUnknownOption()
+    .allowExcessArguments()
+    .passThroughOptions()
+    .helpOption(false) // pass --help through to `bookmarks update`, as the other shortcuts do
+    .addHelpText(
+      "after",
+      `
+Without a bookmark ID, updates rd the way it was installed:
+  rd update                 # check, then update
+  rd update --check         # exit 0 up to date, 1 update available, 2 unknown
+  rd update --force         # update even when already up to date
+
+With a bookmark ID, updates that bookmark (shortcut for: rd bookmarks update):
+  rd update 12345 --title "New Title"`
+    )
+    .action(async (_opts, command: Command) => {
+      // Get the raw argv from the root program, as the other shortcuts do.
+      const rawArgs: string[] = command.parent?.args ?? [];
+      const cmdIndex = rawArgs.indexOf("update");
+      const rest = cmdIndex === -1 ? [] : rawArgs.slice(cmdIndex + 1);
+
+      // The bare command and its own two flags update the CLI; anything else (a bookmark ID,
+      // --help, an unknown option) is handed to `bookmarks update` as before.
+      const isSelfUpdate = rest.every((arg) => arg === "--check" || arg === "--force");
+      if (isSelfUpdate) {
+        process.exitCode = runUpdate("rd", {
+          check: rest.includes("--check"),
+          force: rest.includes("--force"),
+        });
+        return;
+      }
+
+      try {
+        await program.parseAsync([...rawArgs.slice(0, cmdIndex), "bookmarks", "update", ...rest], {
+          from: "user",
+        });
+      } catch (err) {
+        if (err instanceof CommanderError) {
+          const isHelpOrVersion =
+            err.code === "commander.help" ||
+            err.code === "commander.helpDisplayed" ||
+            err.code === "commander.version";
+          if (isHelpOrVersion) {
+            return; // Let it propagate naturally
+          }
+        }
+        throw err;
+      }
+    });
+}
+
+/**
  * Create and configure the Commander program.
  *
  * @param ctx - CLI context with output configuration
@@ -195,7 +257,7 @@ export function createProgram(ctx: CliContext): Command {
   program
     .name("rd")
     .description("CLI for Raindrop.io, the all-in-one bookmark manager")
-    .version(pkg.version)
+    .version(versionLine("rd"), "-V, --version", "print the version and commit")
     .enablePositionalOptions()
     .addHelpText("after", "\nReport issues: https://github.com/crcatala/raindrop-cli-spike/issues")
     .addOption(
@@ -286,14 +348,7 @@ export function createProgram(ctx: CliContext): Command {
       "Add a bookmark (shortcut for: bookmarks add)"
     )
   );
-  program.addCommand(
-    createRootBookmarkShortcut(
-      program,
-      "update",
-      [],
-      "Update a bookmark (shortcut for: bookmarks update)"
-    )
-  );
+  program.addCommand(createUpdateCommand(program));
   program.addCommand(
     createRootBookmarkShortcut(
       program,

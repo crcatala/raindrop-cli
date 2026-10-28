@@ -18,12 +18,13 @@
     "!dist/**/*.test.d.ts",
     "!dist/**/*.test.d.ts.map",
     "!dist/test-utils",
+    "dist/build-info.json",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "clean": "node -e \"for (const path of ['dist', 'tsconfig.tsbuildinfo']) require('node:fs').rmSync(path, { recursive: true, force: true })\"",
-    "build": "bun run clean && bun build src/cli.ts --outdir dist --target node --format esm && chmod +x dist/cli.js && bun run build:dts",
+    "build": "bun run clean && bun build src/cli.ts --outdir dist --target node --format esm && chmod +x dist/cli.js && bun run build:dts && node scripts/build-info.mjs",
     "build:dts": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "dev": "bun src/index.ts",
     "test": "bash scripts/check.sh test",
@@ -46,9 +47,10 @@
     "verify:verbose": "VERBOSE=1 bun scripts/verify.ts",
     "prepack": "bun run build",
     "prepublishOnly": "bun run build && ggshield secret scan path . -r --use-gitignore -y && ggshield secret scan path dist -r -y",
-    "release": "release-it",
-    "release:dry": "release-it --dry-run --no-npm --no-github",
-    "release:prep": "./scripts/prep-release.sh"
+    "release": "node scripts/release.mjs release",
+    "release:dry": "node scripts/release.mjs release --dry-run",
+    "release:publish": "node scripts/release.mjs publish",
+    "release:prep": "bash scripts/prep-release.sh"
   },
   "keywords": [
     "raindrop",

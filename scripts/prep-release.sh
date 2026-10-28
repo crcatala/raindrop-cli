@@ -1,73 +1,44 @@
-#!/bin/bash
-# Usage: ./scripts/prep-release.sh [last-tag]
-# Gathers commit information since the last release for changelog drafting.
-
+#!/usr/bin/env bash
+# release-standard: scripts/prep-release.sh r1 (do not edit; see RELEASING.md)
+# Usage: scripts/prep-release.sh [last-tag]
+# Prints a changelog-drafting prompt, then the commits and files changed since the last tag.
 set -euo pipefail
 
-LAST_TAG="${1:-$(git describe --tags --abbrev=0 2>/dev/null || true)}"
-
-if [ -n "$LAST_TAG" ] && ! git rev-parse --verify --quiet "${LAST_TAG}^{commit}" >/dev/null; then
-  echo "Error: '$LAST_TAG' is not a valid tag or commit." >&2
+# Only version tags (vX.Y.Z) mark releases; other tags never become the range start.
+last_tag="${1:-$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true)}"
+if [[ -n "$last_tag" ]] && ! git rev-parse --verify --quiet "${last_tag}^{commit}" >/dev/null; then
+  echo "Error: '$last_tag' is not a valid tag or commit." >&2
   exit 1
 fi
 
-if [ -z "$LAST_TAG" ]; then
-  RANGE="HEAD"
-else
-  RANGE="${LAST_TAG}..HEAD"
-fi
+range='HEAD'
+[[ -n "$last_tag" ]] && range="${last_tag}..HEAD"
 
-echo "=== Release Prep ==="
-echo ""
+echo '=== Release Prep ==='
+if [[ -n "$last_tag" ]]; then echo "Changes since: $last_tag"; else echo 'No prior tag; showing all commits.'; fi
+echo
 
-if [ -z "$LAST_TAG" ]; then
-  echo "No previous tag found. Showing all commits."
-else
-  echo "Changes since: $LAST_TAG"
-fi
-echo ""
+# Prompt first, so everything below it can be copied into an LLM in one go.
+cat <<'EOF'
+=== Changelog prompt (copy everything below this line) ===
 
-echo "=== Commits ==="
-echo ""
-git log "$RANGE" --pretty=format:"- %s (%h)" --no-merges
-echo ""
-echo ""
+Draft Keep a Changelog entries for the Unreleased section from the commits below.
+Include only user-facing changes. Group items under Added, Changed, Fixed, Removed,
+or Security; omit empty groups. Exclude internal tests, CI, refactors, and routine
+dependency updates unless users are affected. Keep each item to one line and keep
+PR or issue numbers in parentheses where the commits mention them.
 
-echo "=== Merged PRs (if using GitHub) ==="
-echo ""
-git log "$RANGE" --pretty=format:"%s" | grep -E "^Merge pull request|#[0-9]+" || echo "(none found)"
-echo ""
-echo ""
-
-echo "=== Files changed ==="
-echo ""
-if [ -z "$LAST_TAG" ]; then
-  # Compare against the empty tree so initial releases include the complete history.
-  EMPTY_TREE="$(git hash-object -t tree /dev/null)"
-  git diff --stat "$EMPTY_TREE" HEAD | tail -5
-else
-  git diff --stat "$RANGE" | tail -10
-fi
-echo ""
-echo ""
-
-echo "=== AI Prompt Template ==="
-echo ""
-cat << 'EOF'
-Review these commits and generate changelog entries in Keep a Changelog format.
-Group entries by: Added, Changed, Fixed, Removed, and Security (only include sections that have entries).
-Include only user-facing changes; exclude tests, CI, internal refactors, and routine dependency updates unless they affect users.
-Be concise. Include PR or issue numbers in parentheses where mentioned.
-
-Format example:
-### Added
-- New feature description (#123)
-
-### Fixed
-- Bug fix description
-
-Commits to review:
+=== Full commit messages ===
 EOF
-echo ""
-git log "$RANGE" --pretty=format:"- %s" --no-merges
-echo ""
+
+# Drop co-author trailers (any case). awk, not sed's GNU-only `I` flag, so this runs on macOS too.
+git log "$range" --format='## %s%n%n%b%n---' --no-merges | awk 'tolower($0) !~ /^co-authored-by:/' | cat -s
+
+echo
+echo '=== Changed files ==='
+if [[ -n "$last_tag" ]]; then
+  git diff --stat "$range"
+else
+  # Compare against the empty tree so a first release shows everything.
+  git diff --stat "$(git hash-object -t tree /dev/null)" HEAD
+fi

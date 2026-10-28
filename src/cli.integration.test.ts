@@ -119,19 +119,48 @@ describe("CLI integration", () => {
   });
 
   describe("version command", () => {
-    test("--version outputs version to stdout", async () => {
+    // "<name> <version> (<sha7>[-dirty] <YYYY-MM-DD>)", see the release standard.
+    const VERSION_LINE = /^rd \d+\.\d+\.\d+( \([0-9a-f]{7}(-dirty)? \d{4}-\d{2}-\d{2}\))?$/;
+
+    test("--version outputs the version line to stdout", async () => {
       const result = await runCli(["--version"]);
 
       expect(result.exitCode).toBe(0);
       // Version should be in stdout, not stderr
-      expect(result.stdout).toMatch(/\d+\.\d+\.\d+/);
+      expect(result.stdout.trim()).toMatch(VERSION_LINE);
+      expect(result.stderr).toBe("");
     });
 
     test("-V is alias for --version", async () => {
       const result = await runCli(["-V"]);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toMatch(/\d+\.\d+\.\d+/);
+      expect(result.stdout.trim()).toMatch(VERSION_LINE);
+    });
+  });
+
+  describe("update command", () => {
+    test("update --check reports without changing the install", async () => {
+      const result = await runCli(["update", "--check"], { timeout: 30000 });
+
+      // 0 up to date, 1 update available, 2 cannot tell (e.g. no network to origin).
+      expect([0, 1, 2]).toContain(result.exitCode);
+      expect(result.stdout + result.stderr).not.toContain("Error:");
+    });
+
+    test("update <id> still updates a bookmark (shortcut kept)", async () => {
+      const result = await runCli(["update", "not-a-number", "--title", "x"]);
+
+      // Reaches the bookmark command's own validation, so no API call is made.
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain("Invalid bookmark ID");
+    });
+
+    test("update --help documents the bookmark form", async () => {
+      const result = await runCli(["update", "--help"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Update an existing bookmark");
     });
   });
 
