@@ -83,8 +83,11 @@ describe("runCli unit tests", () => {
         stderr: noopStream(),
       });
 
-      // Version should match semver pattern
-      expect(getOutput()).toMatch(/\d+\.\d+\.\d+/);
+      // "<name> <version> (<sha7>[-dirty] <YYYY-MM-DD>)", or just "<name> <version>"
+      // when the running code has no commit information.
+      expect(getOutput().trim()).toMatch(
+        /^rd \d+\.\d+\.\d+( \([0-9a-f]{7}(-dirty)? \d{4}-\d{2}-\d{2}\))?$/
+      );
     });
   });
 
