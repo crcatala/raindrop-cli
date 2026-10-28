@@ -57,7 +57,8 @@ describe("release prep helper", () => {
     const result = runReleasePrep(directory);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("No previous tag found. Showing all commits.");
+    expect(result.stdout).toContain("No prior tag; showing all commits.");
+    expect(result.stdout).toContain("=== Changelog prompt");
     expect(result.stdout).toMatch(/initial\.txt\s+\|\s+1 \+/);
     expect(result.stdout).toContain("1 file changed, 1 insertion(+)");
   });
