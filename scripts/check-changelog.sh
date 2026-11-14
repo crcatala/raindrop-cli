@@ -1,22 +1,19 @@
-#!/bin/bash
-# Validates that CHANGELOG.md has entries in the [Unreleased] section before releasing.
+#!/usr/bin/env bash
+# release-standard: scripts/check-changelog.sh r1 (do not edit; see RELEASING.md)
+# Fail a release when CHANGELOG.md has no unreleased user-facing entries.
+set -euo pipefail
 
-set -e
-
-# Extract content between [Unreleased] and next version header
-content=$(awk '/^## \[Unreleased\]/{found=1;next} /^## \[/{exit} found{print}' CHANGELOG.md)
-
-# Check if there's any actual content (### headers like Added, Fixed, etc.)
-if ! echo "$content" | grep -q '^### '; then
-  echo "Error: No entries in [Unreleased] section of CHANGELOG.md"
-  echo ""
-  echo "Add your changes before releasing:"
-  echo "  ### Added"
-  echo "  - New feature description"
-  echo ""
-  echo "  ### Fixed"
-  echo "  - Bug fix description"
+file="${1:-CHANGELOG.md}"
+if [[ ! -f "$file" ]]; then
+  echo "Error: $file not found." >&2
   exit 1
 fi
 
-echo "✓ Changelog has unreleased entries"
+content=$(awk '/^## \[Unreleased\]/{found=1; next} /^## \[/{exit} found{print}' "$file")
+if ! awk '/^### /{section=1; next} section && /^[-*+] /{found=1} END{exit !found}' <<<"$content"; then
+  echo "Error: $file has no unreleased user-facing entries." >&2
+  echo 'Run the release prep script, then add a section under "## [Unreleased]", such as "### Added" followed by "- New feature".' >&2
+  exit 1
+fi
+
+echo 'Changelog has unreleased entries.'

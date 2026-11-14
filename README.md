@@ -23,23 +23,46 @@ Built for power users, automation workflows, and AI agent integration.
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 22+
 
 ## Installation
 
 ```bash
-npm install -g raindrop-cli
+npm install -g raindrop-cli        # or: pnpm add -g raindrop-cli, bun add -g raindrop-cli
+npx raindrop-cli --help            # run without installing
 ```
 
-Or use without installing:
-```bash
-npx raindrop-cli --help
-```
+Requires Node.js 22 or later.
 
 This installs `rd` as the primary command. An `rdcli` alias is also available if `rd` conflicts with another tool:
 
 - **Windows**: `rd` is a built-in command (remove directory)
 - **oh-my-zsh**: `rd` is aliased to `rmdir` — add `unalias rd` to your `~/.zshrc` or use `rdcli`
+
+### From source
+
+```bash
+git clone https://github.com/crcatala/raindrop-cli.git
+cd raindrop-cli
+bun install
+bun run build
+bun link                     # puts `rd` on your PATH, pointing at this clone
+rd --version                 # rd X.Y.Z (sha7 YYYY-MM-DD): the commit you built
+```
+
+Rebuild after pulling (`bun run build`); the link keeps pointing at the clone. If `rd` is
+also installed globally, remove that copy so the linked build is the one on `PATH`
+(`command -v rd` should resolve inside the clone).
+
+### Updating
+
+```bash
+rd update --check       # exit 0: up to date, 1: update available, 2: unknown
+rd update               # updates the same way it was installed
+```
+
+`rd update` pulls and rebuilds a source checkout (it refuses when the tree is dirty or
+not on `main`), and runs `npm install -g raindrop-cli@latest` for a global npm install.
 
 ## Quick Start
 
@@ -351,107 +374,10 @@ src/
 
 ## Releasing
 
-For maintainers publishing a new version to npm. We use [release-it](https://github.com/release-it/release-it) to automate the release process.
-
-### Prerequisites
-
-- Push access to the repository
-- npm account with publish rights to `raindrop-cli` (`npm whoami` to verify)
-- ggshield installed and authenticated (`ggshield auth status`)
-- `GITHUB_TOKEN` environment variable set (for creating GitHub releases)
-
-#### Getting a GitHub Token
-
-1. Go to [GitHub Settings → Tokens](https://github.com/settings/tokens?type=beta) (fine-grained)
-2. Click **Generate new token**
-3. Set expiration and select **Only select repositories** → `raindrop-cli`
-4. Under **Repository permissions**, set **Contents** to **Read and write**
-5. Generate and export: `export GITHUB_TOKEN=github_pat_xxxx`
-
-Or use a [classic token](https://github.com/settings/tokens/new) with the `repo` scope (broader access).
-
-### Before You Release
-
-Generate a changelog draft from commits since the latest release:
-
-```bash
-bun run release:prep
-```
-
-The helper prints commit history, a changed-files summary, and a prompt you can use to draft changelog entries. Review the result and update `CHANGELOG.md` under the `[Unreleased]` section:
-
-```markdown
-## [Unreleased]
-
-### Added
-- New feature X
-
-### Fixed
-- Bug Y
-```
-
-The helper does not modify the changelog. The release process will automatically move your `[Unreleased]` entries to the new version section.
-
-### Release Process
-
-```bash
-# 1. Ensure you're on main with latest changes
-git checkout main
-git pull
-
-# 2. Preview the local release steps (recommended first time)
-bun run release:dry
-
-# 3. Run the release
-bun run release
-```
-
-`release:dry` deliberately disables the npm and GitHub integrations, so it cannot publish or open GitHub's release form. Run `release` for the full process.
-
-The interactive prompt will ask you to select the version bump (patch/minor/major). Then release-it will:
-
-1. **Verify** — runs tests, lint, typecheck, format
-2. **Bump version** — updates `package.json`
-3. **Update changelog** — moves "Unreleased" items to new version section with date
-4. **Package smoke test** — rebuilds `dist/`, packs it, and executes the installed `rd` CLI
-5. **Commit** — creates "chore: release vX.Y.Z" commit
-6. **Tag** — creates `vX.Y.Z` git tag
-7. **Secret scan** — ggshield scans a freshly rebuilt `dist/` for leaked secrets
-8. **Publish to npm** — rebuilds immediately before packing and uploads the artifact
-9. **Push** — pushes commit and tag to GitHub
-10. **GitHub Release** — creates release with changelog notes
-
-### Manual Steps (if needed)
-
-If you need to skip certain steps or recover from a partial release:
-
-```bash
-# Skip npm publish (e.g., if it succeeded but git push failed)
-bun run release -- --no-npm
-
-# Skip GitHub release
-bun run release -- --no-github
-
-# Specific version (skip prompt)
-bun run release -- 1.2.3
-
-# Pre-release
-bun run release -- --preRelease=beta
-```
-
-### Verify After Release
-
-```bash
-npm info raindrop-cli
-npx raindrop-cli@latest --version
-```
-
-### Notes
-
-- **Immutable** — published npm versions cannot be changed, only deprecated
-- **Clean working directory required** — commit or stash changes before releasing
-- **Main branch only** — releases must be from the `main` branch
-- **Secrets** — publish will fail if ggshield detects secrets in the bundle
+For maintainers publishing a new version to npm. Releases are cut by hand from a clean
+`main` with [release-it](https://github.com/release-it/release-it), wrapped by
+`scripts/release.mjs`; the full process, prerequisites and recovery steps are in
+[RELEASING.md](RELEASING.md).
 
 ## Contributing
 

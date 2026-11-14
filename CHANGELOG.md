@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- `rd update` updates the CLI the way it was installed, with `--check` to report only (exit 0 up to date, 1 update available, 2 unknown) and `--force` to reinstall even when current. `rd update <id>` still updates a bookmark.
+
+### Changed
+- `rd --version` now prints the commit as well: `rd X.Y.Z (sha7 YYYY-MM-DD)`, with `-dirty` for a build from uncommitted changes, so it is obvious which commit is installed.
+
 ## [0.3.1] - 2026-07-15
 
 ### Fixed
